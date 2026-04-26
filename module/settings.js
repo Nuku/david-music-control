@@ -75,17 +75,25 @@ Hooks.once('setup', () => {
 Hooks.on('renderSettingsConfig', (app, html) => {
 	if (!game.user.isGM) return;
 
-	// Find the Pause Tracks setting row — insert our buttons after it.
-	const pauseTrackLabel = html instanceof HTMLElement
-		? html.querySelector(`[name="${MODULE_ID}.pauseTrack"]`)
-		: html.find(`[name="${MODULE_ID}.pauseTrack"]`)[0];
-	if (!pauseTrackLabel) return;
+	const root = html instanceof HTMLElement ? html : html[0];
+	if (!root) return;
 
-	const row = pauseTrackLabel.closest('.form-group') ?? pauseTrackLabel.closest('div');
+	// Find our module's section header first, then look for pauseTrack within it.
+	const allInputs = root.querySelectorAll('input, select');
+	let pauseTrackInput = null;
+	for (const el of allInputs) {
+		if (el.name === `${MODULE_ID}.pauseTrack`) { pauseTrackInput = el; break; }
+	}
+	if (!pauseTrackInput) return;
+
+	const row = pauseTrackInput.closest('.form-group') ?? pauseTrackInput.closest('div');
 	if (!row) return;
 
+	// Don't inject twice.
+	if (row.nextElementSibling?.classList.contains('cmm-transfer-row')) return;
+
 	const wrapper = document.createElement('div');
-	wrapper.className = 'form-group';
+	wrapper.className = 'form-group cmm-transfer-row';
 	wrapper.innerHTML = `
 		<label>Music Config</label>
 		<div class="form-fields" style="gap: 0.5rem;">
