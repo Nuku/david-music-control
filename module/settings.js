@@ -26,6 +26,7 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	pauseTrack: {
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',
 		scope: 'world',
