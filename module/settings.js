@@ -45,8 +45,8 @@ const settings = {
 		name: 'Migrated',
 		scope: 'world',
 		config: false,
-		type: Boolean,
-		default: false,
+		type: String,
+		default: '',
 	},
 };
 

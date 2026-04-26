@@ -24,9 +24,9 @@ async function migrateFlags(doc) {
 export async function migrate() {
 	if (!game.user.isGM) return;
 
-	// Check if migration has already been done.
-	const migrated = game.settings.get(MODULE_ID, 'migrated') ?? false;
-	if (migrated) return;
+	// Check if this migration version has already run.
+	const migratedVersion = game.settings.get(MODULE_ID, 'migrated');
+	if (migratedVersion === '2.3.0') return;
 
 	console.log('David Music Control | Checking for flag migration...');
 
@@ -37,12 +37,21 @@ export async function migrate() {
 		}
 	}
 
-	// Migrate all actors (catches unlinked token data too).
+	// Migrate all actors and their prototype tokens.
 	for (const actor of game.actors.contents) {
 		await migrateFlags(actor);
-		// Also migrate prototype token flags.
-		if (actor.prototypeToken?.flags) {
-			await migrateFlags(actor.prototypeToken);
+		// Prototype token flags live on the actor document under prototypeToken.flags.
+		for (const oldId of OLD_IDS) {
+			if (oldId === MODULE_ID) continue;
+			const oldFlags = actor.prototypeToken?.flags?.[oldId];
+			if (!oldFlags || Object.keys(oldFlags).length === 0) continue;
+			const updates = { prototypeToken: { flags: {} } };
+			updates.prototypeToken.flags[MODULE_ID] = { ...oldFlags };
+			updates.prototypeToken.flags[oldId] = Object.fromEntries(
+				Object.keys(oldFlags).map((k) => [`-=${k}`, null])
+			);
+			await actor.update(updates);
+			console.log(`David Music Control | Migrated prototype token flags from ${oldId} on ${actor.name}`);
 		}
 	}
 
@@ -52,6 +61,6 @@ export async function migrate() {
 	}
 
 	// Mark migration as done so it never runs again.
-	await game.settings.set(MODULE_ID, 'migrated', true);
+	await game.settings.set(MODULE_ID, 'migrated', '2.3.0');
 	console.log('David Music Control | Migration complete.');
 }
