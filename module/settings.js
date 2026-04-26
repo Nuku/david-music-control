@@ -41,6 +41,13 @@ const settings = {
 		type: String,
 		default: '[]',
 	},
+	migrated: {
+		name: 'Migrated',
+		scope: 'world',
+		config: false,
+		type: Boolean,
+		default: false,
+	},
 };
 
 export function getSetting(name) {
