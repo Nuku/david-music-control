@@ -123,7 +123,7 @@ class PlaylistManager extends HandlebarsApplicationMixin(ApplicationV2) {
 		window: {
 			contentClasses: ['standard-form'],
 			icon: 'fa-solid fa-music',
-			title: 'Combat Music Master',
+			title: 'David Music Control',
 		},
 		position: { width: 400 },
 		form: {
@@ -231,7 +231,7 @@ class PlaylistManager extends HandlebarsApplicationMixin(ApplicationV2) {
 
 Hooks.once('setup', () => {
 	game.settings.registerMenu(MODULE_ID, 'combatMusicMenu', {
-		name: 'Combat Music Master',
+		name: 'David Music Control',
 		label: 'Combat Playlists',
 		hint: 'Select which ones are your combat playlists.',
 		icon: 'fas fa-music',

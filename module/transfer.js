@@ -46,7 +46,7 @@ export async function exportMusicConfig() {
 
 	const json = JSON.stringify(data, null, 2);
 	saveDataToFile(json, 'application/json', `${game.world.id}.music.json`);
-	ui.notifications.info('Combat Music Master | Music config exported.');
+	ui.notifications.info('David Music Control | Music config exported.');
 }
 
 /* -------------------------------------------- */
@@ -69,11 +69,11 @@ export function importMusicConfig() {
 		try {
 			data = JSON.parse(text);
 		} catch {
-			ui.notifications.error('Combat Music Master | Invalid JSON file.');
+			ui.notifications.error('David Music Control | Invalid JSON file.');
 			return;
 		}
 		if (!data.playlists || !Array.isArray(data.playlists)) {
-			ui.notifications.error('Combat Music Master | Not a valid music export file.');
+			ui.notifications.error('David Music Control | Not a valid music export file.');
 			return;
 		}
 		await applyImport(data);
@@ -88,7 +88,7 @@ export function importMusicConfig() {
 }
 
 async function applyImport(data) {
-	ui.notifications.info('Combat Music Master | Importing music config...');
+	ui.notifications.info('David Music Control | Importing music config...');
 	let defaultPlaylistId = '';
 
 	// Build a name→playlist map as we go so trait resolution sees newly created playlists.
@@ -145,5 +145,5 @@ async function applyImport(data) {
 		await setSetting('traitRules', resolvedRules);
 	}
 
-	ui.notifications.info('Combat Music Master | Import complete!');
+	ui.notifications.info('David Music Control | Import complete!');
 }

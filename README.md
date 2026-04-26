@@ -1,4 +1,4 @@
-# Foundry VTT - 🎹 Combat Music Master
+# Foundry VTT - 🎹 David Music Control
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Nuku/pf2-david-music-control)
 ![GitHub Releases](https://img.shields.io/github/downloads/Nuku/pf2-david-music-control/latest/pf2-david-music-control.zip)

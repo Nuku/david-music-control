@@ -277,7 +277,7 @@ export function getTokenHeaderButtons(sheet, buttons) {
 			onClick: () => new TokenMusicConfig(sheet.token).render(true),
 		});
 	} catch (error) {
-		console.error('Combat Music Master | Error adding actor sheet header buttons:', error);
+		console.error('David Music Control | Error adding actor sheet header buttons:', error);
 	}
 }
 
