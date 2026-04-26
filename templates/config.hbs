@@ -1,0 +1,16 @@
+<div>
+    <p>Choose your combat playlists:</p>
+    <search class="flexrow" aria-label="Search Playlists">
+        <input type="search" autocomplete="off" placeholder="Filter Playlists" name="search"
+            aria-label="Search Playlists">
+    </search>
+    <ul class="cmm-playlists cmm-pl-chooser">
+        {{#each playlists}}
+        <li>
+            <input id="playlist-{{this.playlist.id}}" name="combat" type="checkbox" {{#if this.active}}checked{{/if}}>
+            <label class="playlist-name {{#if this.default}}star{{/if}}" for="playlist-{{this.playlist.id}}">{{this.playlist.name}}</label>
+        </li>
+        {{/each}}
+    </ul>
+    <p><i class="fa fa-star" style="color:darkorange"></i> Default Playlist (priority 1)</p>
+</div>

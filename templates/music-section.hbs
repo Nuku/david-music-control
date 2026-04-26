@@ -1,0 +1,96 @@
+<div class="tab flexcol">
+	<div class="form-group">
+		<label>Active</label>
+		<input type="checkbox" name="music-active" {{#if musicActive}}checked{{/if}}>
+	</div>
+
+	<div class="form-group">
+		<label>Turn Only</label>
+		<input type="checkbox" name="turn-only" {{#if turnOnly}}checked{{/if}}>
+		<p class="hint">
+			Whether the track should only play on the token's turn.
+			<br />
+			Priority is still respected -> will compete against other tracks with same priority.
+		</p>
+	</div>
+
+	<div class="form-group">
+		<label>Combat Theme</label>
+		<input type="checkbox" name="combat-theme" {{#if combatTheme}}checked{{/if}}>
+		<p class="hint">
+			Use this token's track as the encounter-wide combat theme whenever this token is in battle.
+			<br />
+			Competes only against other tokens also flagged as Combat Theme.
+		</p>
+	</div>
+
+	<div class="form-group slim">
+		<label>Priority</label>
+		<div class="form-fields">
+			<input type="number" value="{{musicPriority}}" step="any" name="priority" placeholder="10" />
+		</div>
+		<p class="hint">The priority this token's playlist will compete against the others.</p>
+	</div>
+
+	<div class="form-group">
+		<label>Tracked Resource</label>
+		<div class="form-fields">
+			<select class="bar-attribute" name="tracked-resource">
+				{{selectOptions completeAttributes selected=trackedResource.attribute blank=(localize "None")}}
+			</select>
+		</div>
+	</div>
+
+	{{#unless isDefault}}
+	<div class="form-group slim">
+		<div class="form-fields bar-data">
+			<input type="number" data-tracked-resource-value value="{{trackedResource.value}}" disabled />
+			<span class="sep">/</span>
+			<input type="number" data-tracked-resource-max value="{{trackedResource.max}}" disabled />
+		</div>
+	</div>
+	{{/unless}}
+
+	<hr />
+
+	<div class="track-selections">
+		<header class="track-selection">
+			<div class="track-selection-playlist">Playlist</div>
+			<div class="track-selection-track">Track</div>
+			<div class="track-selection-range">Resource Threshold (%)</div>
+			<div class="track-selection-controls">
+				<a class="action-button" data-action="addTrack" data-tooltip="Add Track">
+					<i class="fa-solid fa-plus"></i>
+				</a>
+			</div>
+		</header>
+		{{!-- Each track selection --}}
+		{{#each trackSelection}}
+		<fieldset class="track-selection" data-index="{{@index}}">
+			<div>
+				<select name="playlist">
+					<option value=""></option>
+				</select>
+			</div>
+
+			<div>
+				<select name="track">
+					<option value=""></option>
+				</select>
+			</div>
+
+			<div>
+				<input name="threshold" type="number" value="{{this.threshold}}" min="0" max="100" step="any"
+				{{#if this.disabled}}disabled{{/if}}>
+			</div>
+			<div class="track-selection-controls">
+				{{#unless this.disabled}}
+				<a class="action-button" data-action="removeTrack" data-tooltip="Remove Track">
+					<i class="fa-solid fa-times"></i>
+				</a>
+				{{/unless}}
+			</div>
+		</fieldset>
+		{{/each}}
+	</div>
+</div>

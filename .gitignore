@@ -1,0 +1,4 @@
+.vscode
+*.lock
+.env
+temp
