@@ -32,7 +32,7 @@ class TokenMusicConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 	};
 
 	static PARTS = {
-		body: { template: 'modules/david-music-control/templates/music-section.hbs' },
+		body: { template: 'modules/pf2-david-music-control/templates/music-section.hbs' },
 		footer: { template: 'templates/generic/form-footer.hbs' },
 	};
 

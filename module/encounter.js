@@ -21,7 +21,7 @@ class CombatTrackerMusicManager extends HandlebarsApplicationMixin(ApplicationV2
 	};
 
 	static PARTS = {
-		body: { template: 'modules/david-music-control/templates/tracker.hbs', scrollable: [''] },
+		body: { template: 'modules/pf2-david-music-control/templates/tracker.hbs', scrollable: [''] },
 		footer: { template: 'templates/generic/form-footer.hbs' },
 	};
 

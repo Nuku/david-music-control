@@ -1,4 +1,4 @@
-export const MODULE_ID = 'david-music-control';
+export const MODULE_ID = 'pf2-david-music-control';
 import { exportMusicConfig, importMusicConfig } from './transfer.js';
 
 const settings = {

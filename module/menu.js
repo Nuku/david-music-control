@@ -21,7 +21,7 @@ class TraitMusicManager extends HandlebarsApplicationMixin(ApplicationV2) {
 	};
 
 	static PARTS = {
-		body: { template: 'modules/david-music-control/templates/trait-music.hbs', scrollable: [''] },
+		body: { template: 'modules/pf2-david-music-control/templates/trait-music.hbs', scrollable: [''] },
 		footer: { template: 'templates/generic/form-footer.hbs' },
 	};
 
@@ -133,7 +133,7 @@ class PlaylistManager extends HandlebarsApplicationMixin(ApplicationV2) {
 	};
 
 	static PARTS = {
-		body: { template: 'modules/david-music-control/templates/config.hbs', scrollable: [''] },
+		body: { template: 'modules/pf2-david-music-control/templates/config.hbs', scrollable: [''] },
 		footer: { template: 'templates/generic/form-footer.hbs' },
 	};
 

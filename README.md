@@ -1,8 +1,8 @@
 # Foundry VTT - 🎹 Combat Music Master
 
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Nuku/david-music-control)
-![GitHub Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/latest/david-music-control.zip)
-![GitHub All Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/david-music-control.zip?label=downloads)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Nuku/pf2-david-music-control)
+![GitHub Releases](https://img.shields.io/github/downloads/Nuku/pf2-david-music-control/latest/pf2-david-music-control.zip)
+![GitHub All Releases](https://img.shields.io/github/downloads/Nuku/pf2-david-music-control/pf2-david-music-control.zip?label=downloads)
 
 Control your battle music! Automatically play songs amongst your combat playlists when combat starts.
 
@@ -17,7 +17,7 @@ Everytime combat starts the module checks for the highest priority playlist for 
 
 ## Installation
 
-In the setup screen, use the manifest URL https://raw.githubusercontent.com/Nuku/david-music-control/master/module.json to install the module.
+In the setup screen, use the manifest URL https://raw.githubusercontent.com/Nuku/pf2-david-music-control/master/module.json to install the module.
 
 ## How to Use
 
