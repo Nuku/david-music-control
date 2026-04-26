@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.2] - 2026-04-26
+
+### Added
+- **Play Scene Music**: When enabled in Module Settings, automatically plays a playlist matching the current scene's name (or navigation name) when you enter a scene. Stops when combat starts, resumes when combat ends. No matching playlist? Nothing plays.
+
+## [2.3.1] - 2026-04-26
+
+### Fixed
+- Flag migration now correctly transfers prototype token music settings from older module versions.
+
 ## [2.3.0] - 2026-04-26
 
 ### Added
