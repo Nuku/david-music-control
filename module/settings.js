@@ -18,7 +18,14 @@ const settings = {
 		type: Boolean,
 		default: true,
 	},
-	pauseTrack: {
+	playSceneMusic: {
+		name: 'Play Scene Music',
+		hint: 'When entering a scene, if nothing is playing, look for a playlist matching the scene name and play it.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',
 		scope: 'world',
