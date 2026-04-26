@@ -1,4 +1,5 @@
-import { MODULE_ID, getSetting } from './settings.js';
+import { getSetting } from './settings.js';
+import { getCombatMusic } from './music-manager.js';
 
 function findScenePlaylist(scene) {
 	if (!scene) return null;
@@ -8,41 +9,36 @@ function findScenePlaylist(scene) {
 	) ?? null;
 }
 
-function anythingPlaying() {
-	return game.playlists.playing.length > 0;
+function stopNonCombatMusic() {
+	const combatIds = new Set(getCombatMusic().map((p) => p.id));
+	for (const playlist of game.playlists.playing) {
+		if (!combatIds.has(playlist.id)) playlist.stopAll();
+	}
 }
 
-export function playSceneMusic(scene) {
+export async function handleSceneChange(scene) {
 	if (!getSetting('playSceneMusic')) return;
 	if (!scene) return;
 	if (game.combat?.started) return;
-	if (anythingPlaying()) return;
 
 	const playlist = findScenePlaylist(scene);
+
+	// Stop any non-combat music currently playing.
+	stopNonCombatMusic();
+
 	if (!playlist) return;
 
 	console.log(`David Music Control | Starting scene music: ${playlist.name}`);
-	playlist.playAll();
-}
-
-export function stopSceneMusic(previousScene) {
-	if (!getSetting('playSceneMusic')) return;
-	if (!previousScene) return;
-	const playlist = findScenePlaylist(previousScene);
-	if (!playlist) return;
-	if (!playlist.playing) return;
-	playlist.stopAll();
+	await playlist.playAll();
 }
 
 Hooks.on('canvasReady', () => {
 	if (!game.user.isGM) return;
-	playSceneMusic(game.scenes.active);
+	handleSceneChange(game.scenes.active);
 });
 
 Hooks.on('updateScene', (scene, changes) => {
 	if (!game.user.isGM) return;
-	if (!('active' in changes)) return;
-	if (!changes.active) return;
-	// A new scene became active — try to play its music.
-	playSceneMusic(scene);
+	if (!('active' in changes) || !changes.active) return;
+	handleSceneChange(scene);
 });
