@@ -138,8 +138,8 @@ async function promptPlaylistSelection(scene, playlists) {
 	});
 }
 
-export async function handleSceneChange(scene) {
-	if (!getSetting('playSceneMusic')) return;
+export async function handleSceneChange(scene, { ignoreSettingCheck = false } = {}) {
+	if (!ignoreSettingCheck && !getSetting('playSceneMusic')) return;
 	if (!scene) return;
 	if (game.combat?.started) return;
 
@@ -198,7 +198,7 @@ Hooks.on('renderPlaylistDirectory', (app, html) => {
 	btn.id = 'cmm-scene-music-btn';
 	btn.type = 'button';
 	btn.innerHTML = '<i class="fas fa-music"></i> Play Scene Music';
-	btn.addEventListener('click', () => handleSceneChange(game.scenes.active));
+	btn.addEventListener('click', () => handleSceneChange(game.scenes.active, { ignoreSettingCheck: true }));
 
 	// Try various known locations in v13's playlist sidebar.
 	const footer = root.querySelector('.directory-footer');
