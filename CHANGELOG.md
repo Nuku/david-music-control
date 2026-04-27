@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.3] - 2026-04-26
+
+### Added
+- **Scene Music folder support**: If no playlist matches the scene name exactly, the module now looks for a playlist folder with that name and offers a selection dialog if multiple playlists are found within it.
+- **Progressive scene name matching**: If no exact match is found, the module trims the last word from the scene name and tries again (e.g. "Agent Castle Eastside" → "Agent Castle" → "Agent") until something matches or all options are exhausted.
+- **v14 compatibility**: Module now marked compatible up to Foundry v14. Dialog windows use the new DialogV2 API when available.
+
+### Fixed
+- Module settings (Pause Tracks, Play Scene Music etc.) were not appearing in the settings panel due to a corrupted settings registration.
+
 ## [2.3.2] - 2026-04-26
 
 ### Added
