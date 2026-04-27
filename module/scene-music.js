@@ -1,13 +1,31 @@
 import { getSetting } from './settings.js';
 import { getCombatMusic } from './music-manager.js';
 
+const LEADING_ARTICLES = /^(the|a|an)\s+/i;
+const LEADING_PREFIX = /^[\w\d]+\s*[-–—]\s*/; // e.g. "H - ", "01 - ", "A - "
+
+function normalize(name) {
+	return name.trim()
+		.replace(LEADING_PREFIX, '')  // strip "H - "
+		.replace(LEADING_ARTICLES, '') // strip "The "
+		.trim()
+		.toLowerCase();
+}
+
 function getCandidates(scene) {
 	const names = [scene.name, scene.navName].filter(Boolean).map((n) => n.trim());
 	const candidates = new Set();
 	for (const name of names) {
+		// Progressive word trimming on original name.
 		const words = name.split(/\s+/);
 		for (let i = words.length; i > 0; i--) {
 			candidates.add(words.slice(0, i).join(' ').toLowerCase());
+		}
+		// Progressive word trimming on normalized name.
+		const normalized = normalize(name);
+		const normWords = normalized.split(/\s+/);
+		for (let i = normWords.length; i > 0; i--) {
+			candidates.add(normWords.slice(0, i).join(' '));
 		}
 	}
 	return [...candidates];
@@ -16,25 +34,46 @@ function getCandidates(scene) {
 function findScenePlaylist(scene) {
 	if (!scene) return null;
 	const candidates = getCandidates(scene);
-	// Try each candidate in order (most specific first).
+	// Exact match first.
 	for (const candidate of candidates) {
 		const match = game.playlists.contents.find((p) => p.name.trim().toLowerCase() === candidate);
 		if (match) return match;
 	}
-	return null;
+	// Normalized subset fallback: strip prefix/articles from playlist name and compare.
+	const sceneNorms = new Set(getCandidates(scene).map((c) => normalize(c)).filter(Boolean));
+	return game.playlists.contents.find((p) => sceneNorms.has(normalize(p.name))) ?? null;
 }
 
 function findSceneFolder(scene) {
 	if (!scene) return null;
 	const candidates = getCandidates(scene);
-	for (const candidate of candidates) {
+
+	const tryFolder = (name) => {
 		const folder = game.folders.contents.find((f) =>
-			f.type === 'Playlist' && f.name.trim().toLowerCase() === candidate
+			f.type === 'Playlist' && f.name.trim().toLowerCase() === name
+		);
+		if (!folder) return null;
+		const playlists = game.playlists.contents.filter((p) => p.folder?.id === folder.id);
+		return playlists.length > 0 ? { folder, playlists } : null;
+	};
+
+	// Exact match first.
+	for (const candidate of candidates) {
+		const result = tryFolder(candidate);
+		if (result) return result;
+	}
+
+	// Normalized fallback.
+	const sceneNorms = new Set(getCandidates(scene).map((c) => normalize(c)).filter(Boolean));
+	for (const norm of sceneNorms) {
+		const folder = game.folders.contents.find((f) =>
+			f.type === 'Playlist' && normalize(f.name) === norm
 		);
 		if (!folder) continue;
 		const playlists = game.playlists.contents.filter((p) => p.folder?.id === folder.id);
 		if (playlists.length > 0) return { folder, playlists };
 	}
+
 	return null;
 }
 
