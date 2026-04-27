@@ -29,6 +29,27 @@ function stopNonCombatMusic() {
 }
 
 async function promptPlaylistSelection(scene, playlists) {
+	// Use DialogV2 if available (v14+), fall back to Dialog (v13).
+	if (foundry.applications?.api?.DialogV2) {
+		const options = playlists.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+		const result = await foundry.applications.api.DialogV2.prompt({
+			window: { title: `Scene Music — ${scene.name}` },
+			content: `
+				<p>Multiple playlists found for this scene. Which would you like to play?</p>
+				<div class="form-group">
+					<select name="playlist" style="width:100%">${options}</select>
+				</div>
+			`,
+			ok: {
+				label: 'Play',
+				icon: 'fas fa-play',
+				callback: (event, button) => button.form.elements.playlist.value,
+			},
+		}).catch(() => null);
+		return result ? (game.playlists.get(result) ?? null) : null;
+	}
+
+	// v13 fallback.
 	const options = playlists.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
 	return new Promise((resolve) => {
 		new Dialog({

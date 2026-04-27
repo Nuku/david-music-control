@@ -17,7 +17,8 @@
     ],
     "compatibility": {
         "minimum": 13,
-        "verified": "13.350"
+        "verified": "13.350",
+        "maximum": "14"
     },
     "url": "https://github.com/Nuku/david-music-control/",
     "manifest": "https://raw.githubusercontent.com/Nuku/david-music-control/main/module.json",
