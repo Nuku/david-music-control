@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3.4] - 2026-04-26
+
+### Added
+- **Play Scene Music button**: A "Play Scene Music" button now appears in the playlist sidebar for GMs. Clicking it manually triggers the scene music search for the current scene, including the folder fallback and playlist selection dialog.
+
 ## [2.3.3] - 2026-04-26
 
 ### Added
