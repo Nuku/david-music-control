@@ -44,7 +44,8 @@ async function promptPlaylistSelection(scene, playlists) {
 					icon: '<i class="fas fa-play"></i>',
 					label: 'Play',
 					callback: (html) => {
-						const id = html.querySelector('#cmm-playlist-select').value;
+						const root = html instanceof HTMLElement ? html : html[0];
+						const id = root.querySelector('#cmm-playlist-select').value;
 						resolve(game.playlists.get(id) ?? null);
 					},
 				},
