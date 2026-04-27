@@ -1,24 +1,41 @@
 import { getSetting } from './settings.js';
 import { getCombatMusic } from './music-manager.js';
 
+function getCandidates(scene) {
+	const names = [scene.name, scene.navName].filter(Boolean).map((n) => n.trim());
+	const candidates = new Set();
+	for (const name of names) {
+		const words = name.split(/\s+/);
+		for (let i = words.length; i > 0; i--) {
+			candidates.add(words.slice(0, i).join(' ').toLowerCase());
+		}
+	}
+	return [...candidates];
+}
+
 function findScenePlaylist(scene) {
 	if (!scene) return null;
-	const candidates = [scene.name, scene.navName].filter(Boolean).map((n) => n.trim().toLowerCase());
-	return game.playlists.contents.find((p) =>
-		candidates.includes(p.name.trim().toLowerCase())
-	) ?? null;
+	const candidates = getCandidates(scene);
+	// Try each candidate in order (most specific first).
+	for (const candidate of candidates) {
+		const match = game.playlists.contents.find((p) => p.name.trim().toLowerCase() === candidate);
+		if (match) return match;
+	}
+	return null;
 }
 
 function findSceneFolder(scene) {
 	if (!scene) return null;
-	const candidates = [scene.name, scene.navName].filter(Boolean).map((n) => n.trim().toLowerCase());
-	const folder = game.folders.contents.find((f) =>
-		f.type === 'Playlist' && candidates.includes(f.name.trim().toLowerCase())
-	) ?? null;
-	if (!folder) return null;
-	// Get all playlists in this folder.
-	const playlists = game.playlists.contents.filter((p) => p.folder?.id === folder.id);
-	return playlists.length > 0 ? { folder, playlists } : null;
+	const candidates = getCandidates(scene);
+	for (const candidate of candidates) {
+		const folder = game.folders.contents.find((f) =>
+			f.type === 'Playlist' && f.name.trim().toLowerCase() === candidate
+		);
+		if (!folder) continue;
+		const playlists = game.playlists.contents.filter((p) => p.folder?.id === folder.id);
+		if (playlists.length > 0) return { folder, playlists };
+	}
+	return null;
 }
 
 function stopNonCombatMusic() {
