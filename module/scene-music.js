@@ -155,19 +155,25 @@ Hooks.on('renderPlaylistDirectory', (app, html) => {
 	// Don't inject twice.
 	if (root.querySelector('#cmm-scene-music-btn')) return;
 
-	const searchBar = root.querySelector('.search-filter, .directory-search, input[name="search"]');
-	if (!searchBar) return;
-	const searchRow = searchBar.closest('div') ?? searchBar.parentElement;
-	if (!searchRow) return;
-
 	const btn = document.createElement('button');
 	btn.id = 'cmm-scene-music-btn';
 	btn.type = 'button';
-	btn.style.cssText = 'width:100%; margin-top: 0.25rem;';
 	btn.innerHTML = '<i class="fas fa-music"></i> Play Scene Music';
-	btn.addEventListener('click', () => {
-		handleSceneChange(game.scenes.active);
-	});
+	btn.addEventListener('click', () => handleSceneChange(game.scenes.active));
 
-	searchRow.after(btn);
+	// Try various known locations in v13's playlist sidebar.
+	const footer = root.querySelector('.directory-footer');
+	const header = root.querySelector('.directory-header');
+	const searchRow = root.querySelector('.search-filter')?.closest('div, li, header')
+		?? root.querySelector('.directory-search')?.closest('div, li, header');
+
+	if (footer) {
+		footer.prepend(btn);
+	} else if (searchRow) {
+		searchRow.after(btn);
+	} else if (header) {
+		header.append(btn);
+	} else {
+		root.prepend(btn);
+	}
 });
