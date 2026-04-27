@@ -144,3 +144,30 @@ Hooks.on('updateScene', (scene, changes) => {
 	if (!('active' in changes) || !changes.active) return;
 	handleSceneChange(scene);
 });
+
+// Inject "Play Scene Music" button into the playlist sidebar.
+Hooks.on('renderPlaylistDirectory', (app, html) => {
+	if (!game.user.isGM && !game.user.hasPermission('PLAYLIST_CREATE')) return;
+
+	const root = html instanceof HTMLElement ? html : html[0];
+	if (!root) return;
+
+	// Don't inject twice.
+	if (root.querySelector('#cmm-scene-music-btn')) return;
+
+	const searchBar = root.querySelector('.search-filter, .directory-search, input[name="search"]');
+	if (!searchBar) return;
+	const searchRow = searchBar.closest('div') ?? searchBar.parentElement;
+	if (!searchRow) return;
+
+	const btn = document.createElement('button');
+	btn.id = 'cmm-scene-music-btn';
+	btn.type = 'button';
+	btn.style.cssText = 'width:100%; margin-top: 0.25rem;';
+	btn.innerHTML = '<i class="fas fa-music"></i> Play Scene Music';
+	btn.addEventListener('click', () => {
+		handleSceneChange(game.scenes.active);
+	});
+
+	searchRow.after(btn);
+});
