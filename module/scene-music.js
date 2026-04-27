@@ -16,18 +16,27 @@ function getCandidates(scene) {
 	const names = [scene.name, scene.navName].filter(Boolean).map((n) => n.trim());
 	const candidates = new Set();
 	for (const name of names) {
-		// Progressive word trimming on original name.
 		const words = name.split(/\s+/);
+		// Left-trim: "Agent Castle Eastside" -> "Agent Castle" -> "Agent"
 		for (let i = words.length; i > 0; i--) {
 			candidates.add(words.slice(0, i).join(' ').toLowerCase());
 		}
-		// Progressive word trimming on normalized name.
+		// Right-trim: "Agent Castle Eastside" -> "Castle Eastside" -> "Eastside"
+		for (let i = 0; i < words.length; i++) {
+			candidates.add(words.slice(i).join(' ').toLowerCase());
+		}
+		// Same on normalized name.
 		const normalized = normalize(name);
 		const normWords = normalized.split(/\s+/);
 		for (let i = normWords.length; i > 0; i--) {
 			candidates.add(normWords.slice(0, i).join(' '));
 		}
+		for (let i = 0; i < normWords.length; i++) {
+			candidates.add(normWords.slice(i).join(' '));
+		}
 	}
+	// Remove empty strings.
+	candidates.delete('');
 	return [...candidates];
 }
 
@@ -198,7 +207,14 @@ Hooks.on('renderPlaylistDirectory', (app, html) => {
 	btn.id = 'cmm-scene-music-btn';
 	btn.type = 'button';
 	btn.innerHTML = '<i class="fas fa-music"></i> Play Scene Music';
-	btn.addEventListener('click', () => handleSceneChange(game.scenes.active, { ignoreSettingCheck: true }));
+	btn.addEventListener('click', async () => {
+		const icon = btn.querySelector('i');
+		icon.className = 'fas fa-spinner fa-spin';
+		btn.disabled = true;
+		await handleSceneChange(game.scenes.active, { ignoreSettingCheck: true });
+		icon.className = 'fas fa-music';
+		btn.disabled = false;
+	});
 
 	// Try various known locations in v13's playlist sidebar.
 	const footer = root.querySelector('.directory-footer');
