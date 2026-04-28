@@ -289,7 +289,7 @@ function getVictoryMusic(combat) {
 	const players = combat.combatants.contents.filter((c) => c.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY);
 	const playerCount = Math.max(players.length, 1);
 	const enemies = combat.combatants.contents.filter((c) =>
-		c.token?.disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY && c.defeated
+		c.token?.disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY
 	);
 
 	let totalXP = 0;
