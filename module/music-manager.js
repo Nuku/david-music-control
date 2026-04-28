@@ -313,14 +313,15 @@ function getVictoryMusic(combat) {
 		const level = enemy.actor?.level ?? partyLevel;
 		totalXP += xpFromLevelDiff(level - partyLevel);
 	}
-	const xpPerPlayer = totalXP / playerCount;
+	const trivialThreshold = 40 * playerCount;
+	const bossThreshold = 120 * playerCount;
 
 	const generic = getSetting('victoryMusicGeneric');
 	const trivial = getSetting('victoryMusicTrivial');
 	const boss = getSetting('victoryMusicBoss');
 
-	if (xpPerPlayer >= 120) return boss || generic || null;
-	if (xpPerPlayer < 40) return trivial || generic || null;
+	if (totalXP >= bossThreshold) return boss || generic || null;
+	if (totalXP < trivialThreshold) return trivial || generic || null;
 	return generic || null;
 }
 
