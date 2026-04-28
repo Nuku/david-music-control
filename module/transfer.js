@@ -36,12 +36,28 @@ export async function exportMusicConfig() {
 		};
 	});
 
+	// Resolve victory music to names.
+	const resolveVictoryMusic = (key) => {
+		const flag = getSetting(key);
+		if (!flag) return null;
+		const sound = parseMusic(flag);
+		if ('error' in sound) return null;
+		const playlist = sound.parent ?? sound;
+		const track = sound.documentName === 'PlaylistSound' ? sound : null;
+		return { playlistName: playlist.name, trackName: track?.name ?? '' };
+	};
+
 	const data = {
 		world: game.world.id,
 		version: game.modules.get(MODULE_ID)?.version ?? '?',
 		exportedAt: new Date().toISOString(),
 		playlists,
 		traitRules: resolvedTraitRules,
+		victoryMusic: {
+			generic: resolveVictoryMusic('victoryMusicGeneric'),
+			trivial: resolveVictoryMusic('victoryMusicTrivial'),
+			boss: resolveVictoryMusic('victoryMusicBoss'),
+		},
 	};
 
 	const json = JSON.stringify(data, null, 2);
@@ -143,6 +159,23 @@ async function applyImport(data) {
 			};
 		}).filter((r) => r.music);
 		await setSetting('traitRules', resolvedRules);
+	}
+
+	// Resolve victory music using the playlist map.
+	if (data.victoryMusic) {
+		const resolveVictory = (entry) => {
+			if (!entry?.playlistName) return '';
+			const playlist = playlistMap.get(entry.playlistName) ?? game.playlists.contents.find((p) => p.name === entry.playlistName);
+			if (!playlist) return '';
+			const track = entry.trackName ? playlist.sounds.contents.find((s) => s.name === entry.trackName) : null;
+			return track ? (playlist.id + '.' + track.id) : playlist.id;
+		};
+		const generic = resolveVictory(data.victoryMusic.generic);
+		const trivial = resolveVictory(data.victoryMusic.trivial);
+		const boss = resolveVictory(data.victoryMusic.boss);
+		if (generic) await setSetting('victoryMusicGeneric', generic);
+		if (trivial) await setSetting('victoryMusicTrivial', trivial);
+		if (boss) await setSetting('victoryMusicBoss', boss);
 	}
 
 	ui.notifications.info('David Music Control | Import complete!');
