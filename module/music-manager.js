@@ -313,9 +313,8 @@ function getVictoryMusic(combat) {
 		const level = enemy.actor?.level ?? partyLevel;
 		totalXP += xpFromLevelDiff(level - partyLevel);
 	}
-	// The level-diff XP table gives values for a standard 4-player party.
-	// Divide by 4 to get per-player XP, then compare against PF2e thresholds.
-	const xpPerPlayer = totalXP / 4;
+	// The level-diff table gives XP per person for a 4-player party. Scale for other party sizes.
+	const xpPerPlayer = totalXP * (4 / playerCount);
 
 	const generic = getSetting('victoryMusicGeneric');
 	const trivial = getSetting('victoryMusicTrivial');
