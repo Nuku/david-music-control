@@ -303,12 +303,8 @@ function getVictoryMusic(combat) {
 	const trivial = getSetting('victoryMusicTrivial');
 	const boss = getSetting('victoryMusicBoss');
 
-	console.log(`DMC | Victory Music | players: ${playerCount}, enemies defeated: ${enemies.length}, totalXP: ${totalXP}, xpPerPlayer: ${xpPerPlayer}`);
-	console.log(`DMC | Victory Music | generic: ${generic}, trivial: ${trivial}, boss: ${boss}`);
-
-	if (xpPerPlayer >= 120) { console.log('DMC | Victory: Boss'); return boss || generic || null; }
-	if (xpPerPlayer < 40) { console.log('DMC | Victory: Trivial'); return trivial || generic || null; }
-	console.log('DMC | Victory: Generic');
+	if (xpPerPlayer >= 120) return boss || generic || null;
+	if (xpPerPlayer < 40) return trivial || generic || null;
 	return generic || null;
 }
 
