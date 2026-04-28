@@ -285,17 +285,33 @@ async function resumePlaylists(combat) {
 	}
 }
 
+function xpFromLevelDiff(diff) {
+	if (diff <= -4) return 10;
+	if (diff === -3) return 15;
+	if (diff === -2) return 20;
+	if (diff === -1) return 30;
+	if (diff === 0) return 40;
+	if (diff === 1) return 60;
+	if (diff === 2) return 80;
+	if (diff === 3) return 120;
+	return 160; // +4 or more
+}
+
 function getVictoryMusic(combat) {
-	const players = combat.combatants.contents.filter((c) => c.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY);
-	const playerCount = Math.max(players.length, 1);
+	const playerCombatants = combat.combatants.contents.filter((c) => c.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY);
+	const playerCount = Math.max(playerCombatants.length, 1);
+	const partyLevel = playerCombatants.length > 0
+		? Math.round(playerCombatants.reduce((sum, c) => sum + (c.actor?.level ?? 0), 0) / playerCombatants.length)
+		: 1;
+
 	const enemies = combat.combatants.contents.filter((c) =>
 		c.token?.disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY
 	);
 
 	let totalXP = 0;
 	for (const enemy of enemies) {
-		const xp = enemy.actor?.system?.details?.xp?.value ?? enemy.actor?.system?.details?.xp ?? 0;
-		totalXP += typeof xp === 'number' ? xp : 0;
+		const level = enemy.actor?.level ?? partyLevel;
+		totalXP += xpFromLevelDiff(level - partyLevel);
 	}
 	const xpPerPlayer = totalXP / playerCount;
 
