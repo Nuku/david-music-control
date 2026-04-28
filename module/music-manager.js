@@ -289,7 +289,6 @@ async function resumePlaylists(combat) {
 }
 
 function getVictoryMusic(combat) {
-	// Calculate XP per player from defeated enemies (PF2e).
 	const players = combat.combatants.contents.filter((c) => c.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY);
 	const playerCount = Math.max(players.length, 1);
 	const enemies = combat.combatants.contents.filter((c) =>
@@ -307,8 +306,12 @@ function getVictoryMusic(combat) {
 	const trivial = getSetting('victoryMusicTrivial');
 	const boss = getSetting('victoryMusicBoss');
 
-	if (xpPerPlayer >= 120) return boss || generic || null;
-	if (xpPerPlayer < 40) return trivial || generic || null;
+	console.log(`DMC | Victory Music | players: ${playerCount}, enemies defeated: ${enemies.length}, totalXP: ${totalXP}, xpPerPlayer: ${xpPerPlayer}`);
+	console.log(`DMC | Victory Music | generic: ${generic}, trivial: ${trivial}, boss: ${boss}`);
+
+	if (xpPerPlayer >= 120) { console.log('DMC | Victory: Boss'); return boss || generic || null; }
+	if (xpPerPlayer < 40) { console.log('DMC | Victory: Trivial'); return trivial || generic || null; }
+	console.log('DMC | Victory: Generic');
 	return generic || null;
 }
 
