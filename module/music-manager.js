@@ -261,6 +261,9 @@ async function playCombatMusic(combat) {
 }
 
 async function resumePlaylists(combat) {
+	// Calculate encounter XP before stopping music.
+	const victoryMusic = getVictoryMusic(combat);
+
 	// Stop combat music.
 	const currentMusic = getCurrentMusic(combat);
 	if (currentMusic) {
@@ -271,13 +274,42 @@ async function resumePlaylists(combat) {
 	await combat.unsetFlag(MODULE_ID, 'encounterInterrupted');
 	await combat.unsetFlag(MODULE_ID, 'pausedEncounterMusic');
 
-	// Resume whatever was playing before combat, by name.
-	const preCombatMusic = combat.getFlag(MODULE_ID, 'preCombatMusic') ?? [];
-	for (const flag of preCombatMusic) {
-		const sound = parseMusic(flag);
+	// Play victory music if set, otherwise resume pre-combat music.
+	if (victoryMusic) {
+		const sound = parseMusic(victoryMusic);
 		if (!('error' in sound)) await playSound(sound);
+	} else {
+		const preCombatMusic = combat.getFlag(MODULE_ID, 'preCombatMusic') ?? [];
+		for (const flag of preCombatMusic) {
+			const sound = parseMusic(flag);
+			if (!('error' in sound)) await playSound(sound);
+		}
 	}
 	await combat.unsetFlag(MODULE_ID, 'preCombatMusic');
+}
+
+function getVictoryMusic(combat) {
+	// Calculate XP per player from defeated enemies (PF2e).
+	const players = combat.combatants.contents.filter((c) => c.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY);
+	const playerCount = Math.max(players.length, 1);
+	const enemies = combat.combatants.contents.filter((c) =>
+		c.token?.disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY && c.defeated
+	);
+
+	let totalXP = 0;
+	for (const enemy of enemies) {
+		const xp = enemy.actor?.system?.details?.xp?.value ?? enemy.actor?.system?.details?.xp ?? 0;
+		totalXP += typeof xp === 'number' ? xp : 0;
+	}
+	const xpPerPlayer = totalXP / playerCount;
+
+	const generic = getSetting('victoryMusicGeneric');
+	const trivial = getSetting('victoryMusicTrivial');
+	const boss = getSetting('victoryMusicBoss');
+
+	if (xpPerPlayer >= 120) return boss || generic || null;
+	if (xpPerPlayer < 40) return trivial || generic || null;
+	return generic || null;
 }
 
 /* -------------------------------------------- */

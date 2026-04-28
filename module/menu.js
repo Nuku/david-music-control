@@ -229,6 +229,93 @@ class PlaylistManager extends HandlebarsApplicationMixin(ApplicationV2) {
 	}
 }
 
+class VictoryMusicManager extends HandlebarsApplicationMixin(ApplicationV2) {
+	static DEFAULT_OPTIONS = {
+		id: 'combat-master-victory-config',
+		tag: 'form',
+		window: {
+			contentClasses: ['standard-form'],
+			icon: 'fa-solid fa-trophy',
+			title: 'Victory Music',
+		},
+		position: { width: 550, height: 'auto' },
+		form: {
+			closeOnSubmit: true,
+			handler: VictoryMusicManager.#saveSettings,
+		},
+	};
+
+	static PARTS = {
+		body: { template: 'modules/pf2-david-music-control/templates/victory-music.hbs', scrollable: [''] },
+		footer: { template: 'templates/generic/form-footer.hbs' },
+	};
+
+	_prepareContext() {
+		return {
+			buttons: [{ type: 'submit', icon: 'fa-solid fa-floppy-disk', label: 'SETTINGS.Save' }],
+		};
+	}
+
+	_onRender(context, options) {
+		super._onRender(context, options);
+		const keys = ['victoryMusicGeneric', 'victoryMusicTrivial', 'victoryMusicBoss'];
+		const playlists = getCombatMusic().concat(
+			game.playlists.contents.filter((p) => !getCombatMusic().find((cp) => cp.id === p.id))
+		);
+		for (const key of keys) {
+			const current = getSetting(key);
+			const currentSound = current ? parseMusic(current) : null;
+			const currentPlaylist = currentSound && !('error' in currentSound)
+				? (currentSound.documentName === 'PlaylistSound' ? currentSound.parent : currentSound)
+				: null;
+			const currentTrack = currentSound?.documentName === 'PlaylistSound' ? currentSound : null;
+
+			const playlistSelect = this.element.querySelector(`select[name="${key}-playlist"]`);
+			const trackSelect = this.element.querySelector(`select[name="${key}-track"]`);
+
+			playlistSelect.innerHTML = '<option value=""></option>';
+			for (const p of playlists) {
+				const opt = document.createElement('option');
+				opt.value = p.id;
+				opt.textContent = p.name;
+				opt.selected = p.id === currentPlaylist?.id;
+				playlistSelect.appendChild(opt);
+			}
+
+			if (currentPlaylist) this.#populateTracks(trackSelect, currentPlaylist.id, currentTrack?.id);
+
+			playlistSelect.addEventListener('change', (ev) => {
+				this.#populateTracks(trackSelect, ev.target.value);
+			});
+		}
+	}
+
+	#populateTracks(trackSelect, playlistId, selectedId = '') {
+		trackSelect.innerHTML = '<option value=""></option>';
+		const playlist = game.playlists.get(playlistId);
+		if (!playlist) return;
+		for (const track of playlist.sounds.contents) {
+			const opt = document.createElement('option');
+			opt.value = track.id;
+			opt.textContent = track.name;
+			opt.selected = track.id === selectedId;
+			trackSelect.appendChild(opt);
+		}
+	}
+
+	static async #saveSettings(_event, _form, _formData) {
+		const keys = ['victoryMusicGeneric', 'victoryMusicTrivial', 'victoryMusicBoss'];
+		for (const key of keys) {
+			const playlistId = this.element.querySelector(`select[name="${key}-playlist"]`).value;
+			const trackId = this.element.querySelector(`select[name="${key}-track"]`).value;
+			const playlist = game.playlists.get(playlistId);
+			const track = playlist?.sounds.get(trackId);
+			const music = track ? stringifyMusic(track) : playlist ? stringifyMusic(playlist) : '';
+			await setSetting(key, music);
+		}
+	}
+}
+
 Hooks.once('setup', () => {
 	game.settings.registerMenu(MODULE_ID, 'combatMusicMenu', {
 		name: 'David Music Control',
@@ -244,6 +331,14 @@ Hooks.once('setup', () => {
 		hint: 'Map PF2e traits to tracks that play when those creatures are in combat.',
 		icon: 'fas fa-skull',
 		type: TraitMusicManager,
+		restricted: true,
+	});
+	game.settings.registerMenu(MODULE_ID, 'victoryMusicMenu', {
+		name: 'Victory Music',
+		label: 'Victory Music',
+		hint: 'Set tracks to play when combat ends based on encounter difficulty.',
+		icon: 'fas fa-trophy',
+		type: VictoryMusicManager,
 		restricted: true,
 	});
 });

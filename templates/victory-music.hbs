@@ -1,0 +1,30 @@
+<div class="tab flexcol">
+	<p>Set tracks to play when combat ends, based on how hard the fight was. If a specific track isn't set, the Generic track will be used as a fallback.</p>
+
+	<div class="form-group">
+		<label>Generic Victory</label>
+		<div class="form-fields">
+			<select name="victoryMusicGeneric-playlist"><option value=""></option></select>
+			<select name="victoryMusicGeneric-track"><option value=""></option></select>
+		</div>
+		<p class="hint">Plays after any combat if no more specific track is set.</p>
+	</div>
+
+	<div class="form-group">
+		<label>Trivial Victory</label>
+		<div class="form-fields">
+			<select name="victoryMusicTrivial-playlist"><option value=""></option></select>
+			<select name="victoryMusicTrivial-track"><option value=""></option></select>
+		</div>
+		<p class="hint">Plays after a trivial encounter (less than 40 XP per player).</p>
+	</div>
+
+	<div class="form-group">
+		<label>Boss Victory</label>
+		<div class="form-fields">
+			<select name="victoryMusicBoss-playlist"><option value=""></option></select>
+			<select name="victoryMusicBoss-track"><option value=""></option></select>
+		</div>
+		<p class="hint">Plays after a severe or extreme encounter (120+ XP per player).</p>
+	</div>
+</div>

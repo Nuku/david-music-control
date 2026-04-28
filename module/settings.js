@@ -56,6 +56,27 @@ const settings = {
 		type: String,
 		default: '',
 	},
+	victoryMusicGeneric: {
+		name: 'Victory Music (Generic)',
+		scope: 'world',
+		config: false,
+		type: String,
+		default: '',
+	},
+	victoryMusicTrivial: {
+		name: 'Victory Music (Trivial)',
+		scope: 'world',
+		config: false,
+		type: String,
+		default: '',
+	},
+	victoryMusicBoss: {
+		name: 'Victory Music (Boss)',
+		scope: 'world',
+		config: false,
+		type: String,
+		default: '',
+	},
 };
 
 export function getSetting(name) {
