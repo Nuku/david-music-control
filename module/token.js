@@ -1,4 +1,3 @@
-// TODO: Remove ALL jQuery from hooks as they now use HTMLElements
 import {
 	parseMusic,
 	updateCombatMusic,
