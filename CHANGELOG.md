@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.4.0] - 2026-04-26
+
+### Added
+- **Victory Music**: After combat ends, plays a track based on how hard the fight was. Set a Generic track as a fallback, a Trivial track for easy encounters (under 40 XP per player), and a Boss track for severe/extreme encounters (120+ XP per player). Configured via a new Victory Music panel in Module Settings.
+
+## [2.3.5] - 2026-04-26
+
+### Added
+- **Improved scene music matching**: After left-trimming words fails ("Agent Castle Eastside" → "Agent Castle" → "Agent"), the search now also tries right-trimming ("Castle Eastside" → "Eastside"). Combined with prefix/article stripping, this catches cases like "H - Farm" matching "The Farm".
+- **Button feedback**: The Play Scene Music button now shows a spinner while searching, returning to normal once complete.
+
 ## [2.3.4] - 2026-04-26
 
 ### Added
