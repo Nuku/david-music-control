@@ -261,8 +261,8 @@ async function playCombatMusic(combat) {
 }
 
 async function resumePlaylists(combat) {
-	// Calculate encounter XP before stopping music.
-	const victoryMusic = getVictoryMusic(combat);
+	const victoryMusic = pendingVictoryMusic;
+	pendingVictoryMusic = null;
 
 	// Stop combat music.
 	const currentMusic = getCurrentMusic(combat);
@@ -271,21 +271,18 @@ async function resumePlaylists(combat) {
 		if (!('error' in sound)) await stopSound(sound);
 	}
 	combat._combatMusic = '';
-	await combat.unsetFlag(MODULE_ID, 'encounterInterrupted');
-	await combat.unsetFlag(MODULE_ID, 'pausedEncounterMusic');
 
 	// Play victory music if set, otherwise resume pre-combat music.
+	const preCombatMusic = combat.getFlag(MODULE_ID, 'preCombatMusic') ?? [];
 	if (victoryMusic) {
 		const sound = parseMusic(victoryMusic);
 		if (!('error' in sound)) await playSound(sound);
 	} else {
-		const preCombatMusic = combat.getFlag(MODULE_ID, 'preCombatMusic') ?? [];
 		for (const flag of preCombatMusic) {
 			const sound = parseMusic(flag);
 			if (!('error' in sound)) await playSound(sound);
 		}
 	}
-	await combat.unsetFlag(MODULE_ID, 'preCombatMusic');
 }
 
 function getVictoryMusic(combat) {
@@ -365,10 +362,15 @@ window.CombatMusicMaster = {
 	setTokenConfig,
 };
 
+let pendingVictoryMusic = null;
+
 Hooks.once('setup', () => {
 	if (game.user.isGM) {
 		Hooks.on('combatStart', playCombatMusic);
 		Hooks.on('updateCombat', updateTurnMusic);
+		Hooks.on('preDeleteCombat', (combat) => {
+			pendingVictoryMusic = getVictoryMusic(combat);
+		});
 		Hooks.on('deleteCombat', resumePlaylists);
 	}
 });
