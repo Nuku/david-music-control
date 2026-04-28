@@ -91,10 +91,11 @@ class TokenMusicConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 		});
 
 		const usesTrackableAttributes = !foundry.utils.isEmpty(CONFIG.Actor.trackableAttributes);
+		const actor = token.actor;
 		const attributeSource =
-			this.actor?.system instanceof foundry.abstract.DataModel && usesTrackableAttributes
-				? this.actor?.type
-				: this.actor?.system;
+			actor?.system instanceof foundry.abstract.DataModel && usesTrackableAttributes
+				? actor.type
+				: actor?.system;
 		const TokenDocument = foundry.utils.getDocumentClass('Token');
 		const attributes = TokenDocument.getTrackedAttributes(attributeSource);
 		const barAttributes = TokenDocument.getTrackedAttributeChoices(attributes);

@@ -202,7 +202,7 @@ class PlaylistManager extends HandlebarsApplicationMixin(ApplicationV2) {
 	static async #saveSettings(_event, _form, submitData) {
 		const data = foundry.utils.expandObject(submitData.object);
 		const playlists = game.playlists.contents;
-		if (data.combat === undefined) return;
+		if (data.combat === undefined) data.combat = Array(playlists.length).fill(false);
 		if (typeof data.combat === 'boolean') data.combat = [data.combat];
 		if (playlists.length !== data.combat.length) {
 			ui.notifications.error(`Playlists changed while configuration window was on.`);
