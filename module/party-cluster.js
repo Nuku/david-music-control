@@ -1,6 +1,18 @@
 const OUTPUT_SIZE = 512;
 const OUTPUT_FOLDER = 'party-token-clusters';
 const IMAGE_EXTENSIONS = new Set(['apng', 'avif', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'svg', 'webp']);
+const SIZE_SCALE = {
+	tiny: 0.84,
+	sm: 0.92,
+	small: 0.92,
+	med: 1,
+	medium: 1,
+	lg: 1.1,
+	large: 1.1,
+	huge: 1.18,
+	grg: 1.25,
+	gargantuan: 1.25,
+};
 
 function isPartyTokenApplication(app) {
 	const actor = app?.token?.actor;
@@ -113,9 +125,30 @@ function collectTokenPortraits(members) {
 				member.prototypeToken?.texture?.src,
 				member.img
 			);
-			return src ? { name: member.name, src } : null;
+			return src
+				? {
+						name: member.name,
+						src,
+						sizeScale: getMemberSizeScale(member, activeToken?.document),
+				  }
+				: null;
 		})
 		.filter(Boolean);
+}
+
+function getMemberSizeScale(actor, tokenDocument) {
+	const size = actor.system?.traits?.size?.value ?? actor.system?.traits?.size;
+	const actorScale = typeof size === 'string' ? SIZE_SCALE[size.toLowerCase()] : null;
+	if (actorScale) return actorScale;
+
+	const tokenWidth = Number(tokenDocument?.width ?? actor.prototypeToken?.width);
+	const tokenHeight = Number(tokenDocument?.height ?? actor.prototypeToken?.height);
+	const tokenScale = Math.sqrt(Math.max(tokenWidth || 1, tokenHeight || 1));
+	return clamp(1 + (tokenScale - 1) * 0.12, 0.84, 1.25);
+}
+
+function clamp(value, min, max) {
+	return Math.min(max, Math.max(min, value));
 }
 
 function firstImagePath(...paths) {
@@ -194,7 +227,7 @@ function spiralSlot(index) {
 }
 
 function drawPortrait(context, portrait) {
-	const size = portrait.size;
+	const size = portrait.size * portrait.sizeScale;
 	const x = portrait.x - size / 2;
 	const y = portrait.y - size / 2;
 	const { width, height } = portrait.image;

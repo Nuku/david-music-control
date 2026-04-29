@@ -3,7 +3,7 @@
 ## [2.4.2] - 2026-04-29
 
 ### Added
-- **Party token cluster**: PF2e party tokens now have a Cluster Party button in Token Configuration. It builds a crowd-style token image from party member token art, saves it in the world folder, and applies it to the party actor and token.
+- **Party token cluster**: PF2e party tokens now have a Cluster Party button in Token Configuration. It builds a crowd-style token image from party member token art, lightly scales members by creature size, saves it in the world folder, and applies it to the party actor and token.
 
 ## [2.4.1] - 2026-04-28
 
