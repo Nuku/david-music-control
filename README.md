@@ -26,3 +26,5 @@ First things first! Let's start by configuring the module, so the module knows w
 There is a new button in the encounter tracker for overring the battle music for a specific encounter.
 
 In the **Token Configuration** application there is a new button on the header called **Combat Music**, using that application you can configure specific music configurations related to that specific token.
+
+For PF2e party actors, the **Token Configuration** application also has a **Cluster Party** button. It builds a single crowd-style image from the party members' token images, saves it in the world folder, and sets it as the party actor and token image.
