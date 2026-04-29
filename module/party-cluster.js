@@ -52,12 +52,39 @@ async function createPartyTokenCluster(partyToken) {
 			img: path,
 			'prototypeToken.texture.src': path,
 		});
-		await partyToken.update({ 'texture.src': path });
+		await updatePlacedPartyTokens(party, partyToken, path);
 		ui.notifications.info(`${party.name} party token updated.`);
 	} catch (error) {
 		console.error('David Music Control | Error creating party token cluster:', error);
 		ui.notifications.error('Unable to create the party token cluster. See the console for details.');
 	}
+}
+
+async function updatePlacedPartyTokens(party, partyToken, path) {
+	const tokenDocuments = new Map();
+
+	if (partyToken?.parent?.documentName === 'Scene') {
+		tokenDocuments.set(partyToken.id, partyToken);
+	}
+
+	if (canvas?.ready) {
+		for (const token of canvas.tokens.controlled) {
+			if (token.actor?.id === party.id) tokenDocuments.set(token.document.id, token.document);
+		}
+
+		for (const token of canvas.tokens.placeables) {
+			if (token.actor?.id === party.id) tokenDocuments.set(token.document.id, token.document);
+		}
+	}
+
+	if (!tokenDocuments.size && partyToken?.update) {
+		await partyToken.update({ 'texture.src': path });
+		return;
+	}
+
+	await Promise.all(
+		Array.from(tokenDocuments.values()).map((tokenDocument) => tokenDocument.update({ 'texture.src': path }))
+	);
 }
 
 async function getPartyMembers(party) {
@@ -266,7 +293,7 @@ async function uploadClusterImage(party, blob) {
 	const safeName = slugify(party.name) || `party-${party.id}`;
 	const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
 	const file = new File([blob], `${safeName}-${stamp}.webp`, { type: 'image/webp' });
-	const response = await FilePicker.upload('data', folder, file, {}, { notify: false });
+	const response = await getFilePicker().upload('data', folder, file, {}, { notify: false });
 	return response.path;
 }
 
@@ -279,10 +306,14 @@ function slugify(value) {
 
 async function ensureDirectory(folder) {
 	try {
-		await FilePicker.createDirectory('data', folder, {}, { notify: false });
+		await getFilePicker().createDirectory('data', folder, {}, { notify: false });
 	} catch (error) {
 		if (!String(error.message ?? error).toLowerCase().includes('exists')) throw error;
 	}
+}
+
+function getFilePicker() {
+	return foundry.applications.apps.FilePicker.implementation;
 }
 
 Hooks.on('getHeaderControlsTokenApplication', addPartyClusterButton);

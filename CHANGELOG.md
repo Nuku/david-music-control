@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.3] - 2026-04-29
+
+### Fixed
+- **Party token cluster**: Updated placed party tokens on the active scene after generating the cluster image and removed Foundry v13 FilePicker deprecation warnings.
+
 ## [2.4.2] - 2026-04-29
 
 ### Added
