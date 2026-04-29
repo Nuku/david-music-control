@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.4] - 2026-04-29
+
+### Fixed
+- **Party token cluster**: Trimmed transparent padding from generated party images so the party view thumbnail displays at a usable size.
+
 ## [2.4.3] - 2026-04-29
 
 ### Fixed

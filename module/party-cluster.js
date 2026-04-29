@@ -213,12 +213,59 @@ async function renderClusterImage(portraits) {
 		.sort((a, b) => a.y - b.y)
 		.forEach((portrait) => drawPortrait(context, portrait));
 
+	const outputCanvas = trimTransparentPadding(canvasEl);
 	return new Promise((resolve, reject) => {
-		canvasEl.toBlob((blob) => {
+		outputCanvas.toBlob((blob) => {
 			if (blob) resolve(blob);
 			else reject(new Error('Canvas export failed.'));
 		}, 'image/webp', 0.92);
 	});
+}
+
+function trimTransparentPadding(sourceCanvas) {
+	const context = sourceCanvas.getContext('2d');
+	const imageData = context.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+	const bounds = getVisibleBounds(imageData);
+	if (!bounds) return sourceCanvas;
+
+	const padding = 18;
+	const visibleWidth = bounds.right - bounds.left + 1;
+	const visibleHeight = bounds.bottom - bounds.top + 1;
+	const cropSize = Math.min(
+		Math.max(visibleWidth, visibleHeight) + padding * 2,
+		Math.min(sourceCanvas.width, sourceCanvas.height)
+	);
+	const centerX = (bounds.left + bounds.right) / 2;
+	const centerY = (bounds.top + bounds.bottom) / 2;
+	const cropX = clamp(centerX - cropSize / 2, 0, sourceCanvas.width - cropSize);
+	const cropY = clamp(centerY - cropSize / 2, 0, sourceCanvas.height - cropSize);
+
+	const outputCanvas = document.createElement('canvas');
+	outputCanvas.width = OUTPUT_SIZE;
+	outputCanvas.height = OUTPUT_SIZE;
+	outputCanvas
+		.getContext('2d')
+		.drawImage(sourceCanvas, cropX, cropY, cropSize, cropSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+	return outputCanvas;
+}
+
+function getVisibleBounds(imageData) {
+	const { data, width, height } = imageData;
+	const bounds = { left: width, top: height, right: -1, bottom: -1 };
+
+	for (let y = 0; y < height; y++) {
+		for (let x = 0; x < width; x++) {
+			const alpha = data[(y * width + x) * 4 + 3];
+			if (alpha <= 8) continue;
+
+			bounds.left = Math.min(bounds.left, x);
+			bounds.top = Math.min(bounds.top, y);
+			bounds.right = Math.max(bounds.right, x);
+			bounds.bottom = Math.max(bounds.bottom, y);
+		}
+	}
+
+	return bounds.right >= bounds.left && bounds.bottom >= bounds.top ? bounds : null;
 }
 
 function getClusterLayout(count) {
