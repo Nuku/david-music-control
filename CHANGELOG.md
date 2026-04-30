@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.6] - 2026-04-30
+
+### Fixed
+- **Auto Walls prototype**: Correctly maps detected image coordinates onto the padded Foundry scene canvas so previews and created walls align with the map image.
+
 ## [2.4.5] - 2026-04-30
 
 ### Added

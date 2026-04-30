@@ -150,18 +150,21 @@ async function detectActiveScene(options = {}) {
   const maxDimension = Number(options.maxDimension) || game.settings.get(MODULE_ID, "maxDimension") || DEFAULTS.maxDimension;
   const gridSize = Number(options.gridSize) || getSceneGridSize(canvas.scene);
   const image = await loadHtmlImage(imageSource);
+  const imageWidth = image.naturalWidth || image.width;
+  const imageHeight = image.naturalHeight || image.height;
+  const imageTransform = getSceneImageTransform(imageWidth, imageHeight);
   const prepared = drawScaledImage(image, maxDimension);
   const detection = detectWallsFromImageData(prepared.imageData, {
-    gridSize: gridSize * prepared.scale,
-    scale: prepared.scale,
-    sceneWidth: image.naturalWidth || image.width,
-    sceneHeight: image.naturalHeight || image.height
+    gridSize: (gridSize / imageTransform.averageScale) * prepared.scale,
+    scale: prepared.scale
   });
+  const walls = detection.walls.map(segment => imageSegmentToScene(segment, imageTransform));
+  const doors = detection.doors.map(segment => imageSegmentToScene(segment, imageTransform));
 
   lastDetection = {
     sceneId: canvas.scene.id,
-    walls: detection.walls,
-    doors: detection.doors,
+    walls,
+    doors,
     source: imageSource
   };
   renderPreview(lastDetection);
@@ -175,6 +178,33 @@ function getSceneImageSource(scene) {
 
 function getSceneGridSize(scene) {
   return Number(scene.grid?.size || scene.grid?.distance || 72);
+}
+
+function getSceneImageTransform(imageWidth, imageHeight) {
+  const dimensions = canvas.dimensions ?? canvas.scene?.dimensions ?? {};
+  const sceneX = Number(dimensions.sceneX ?? dimensions.sceneRect?.x ?? 0);
+  const sceneY = Number(dimensions.sceneY ?? dimensions.sceneRect?.y ?? 0);
+  const sceneWidth = Number(dimensions.sceneWidth ?? dimensions.sceneRect?.width ?? canvas.scene?.width ?? imageWidth);
+  const sceneHeight = Number(dimensions.sceneHeight ?? dimensions.sceneRect?.height ?? canvas.scene?.height ?? imageHeight);
+  const scaleX = sceneWidth / Math.max(imageWidth, 1);
+  const scaleY = sceneHeight / Math.max(imageHeight, 1);
+  return {
+    sceneX,
+    sceneY,
+    scaleX,
+    scaleY,
+    averageScale: (scaleX + scaleY) / 2
+  };
+}
+
+function imageSegmentToScene(segment, transform) {
+  return {
+    x1: Math.round(transform.sceneX + (segment.x1 * transform.scaleX)),
+    y1: Math.round(transform.sceneY + (segment.y1 * transform.scaleY)),
+    x2: Math.round(transform.sceneX + (segment.x2 * transform.scaleX)),
+    y2: Math.round(transform.sceneY + (segment.y2 * transform.scaleY)),
+    kind: segment.kind
+  };
 }
 
 function loadHtmlImage(src) {
