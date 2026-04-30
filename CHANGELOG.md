@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.7] - 2026-04-30
+
+### Changed
+- **Auto Walls prototype**: Added live detector tuning controls and stricter defaults to reduce short furniture/decor artifacts while previewing wall detection.
+
 ## [2.4.6] - 2026-04-30
 
 ### Fixed

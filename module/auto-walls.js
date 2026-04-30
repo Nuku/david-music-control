@@ -3,10 +3,10 @@ const MODULE_ID = "pf2-david-music-control";
 const DEFAULTS = {
   maxDimension: 1400,
   localRadius: 14,
-  darknessOffset: 20,
-  gradientThreshold: 34,
-  minRunCells: 0.55,
-  mergeGapCells: 0.35,
+  darknessOffset: 24,
+  gradientThreshold: 42,
+  minRunCells: 0.8,
+  mergeGapCells: 0.5,
   snapDivisions: 2,
   doorMeanMin: 60,
   doorMeanMax: 128,
@@ -66,6 +66,22 @@ function showAutoWallsDialog() {
       <div class="form-group">
         <label>Grid size</label>
         <input type="number" name="gridSize" min="16" max="400" step="1" value="${gridSize}">
+      </div>
+      <div class="form-group">
+        <label>Min span</label>
+        <input type="number" name="minRunCells" min="0.3" max="2.5" step="0.05" value="${DEFAULTS.minRunCells}">
+      </div>
+      <div class="form-group">
+        <label>Merge gap</label>
+        <input type="number" name="mergeGapCells" min="0" max="2" step="0.05" value="${DEFAULTS.mergeGapCells}">
+      </div>
+      <div class="form-group">
+        <label>Edge strictness</label>
+        <input type="number" name="gradientThreshold" min="8" max="120" step="1" value="${DEFAULTS.gradientThreshold}">
+      </div>
+      <div class="form-group">
+        <label>Dark strictness</label>
+        <input type="number" name="darknessOffset" min="4" max="80" step="1" value="${DEFAULTS.darknessOffset}">
       </div>
       <p class="notes">Creates a preview first. Use Apply only after reviewing the overlay.</p>
     </form>
@@ -138,8 +154,17 @@ function readDialogOptions(html) {
 function readFormOptions(form) {
   return {
     maxDimension: Number(form?.maxDimension?.value) || DEFAULTS.maxDimension,
-    gridSize: Number(form?.gridSize?.value) || getSceneGridSize(canvas.scene)
+    gridSize: Number(form?.gridSize?.value) || getSceneGridSize(canvas.scene),
+    minRunCells: readNumber(form?.minRunCells?.value, DEFAULTS.minRunCells),
+    mergeGapCells: readNumber(form?.mergeGapCells?.value, DEFAULTS.mergeGapCells),
+    gradientThreshold: readNumber(form?.gradientThreshold?.value, DEFAULTS.gradientThreshold),
+    darknessOffset: readNumber(form?.darknessOffset?.value, DEFAULTS.darknessOffset)
   };
+}
+
+function readNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 async function detectActiveScene(options = {}) {
@@ -156,7 +181,11 @@ async function detectActiveScene(options = {}) {
   const prepared = drawScaledImage(image, maxDimension);
   const detection = detectWallsFromImageData(prepared.imageData, {
     gridSize: (gridSize / imageTransform.averageScale) * prepared.scale,
-    scale: prepared.scale
+    scale: prepared.scale,
+    minRunCells: options.minRunCells,
+    mergeGapCells: options.mergeGapCells,
+    gradientThreshold: options.gradientThreshold,
+    darknessOffset: options.darknessOffset
   });
   const walls = detection.walls.map(segment => imageSegmentToScene(segment, imageTransform));
   const doors = detection.doors.map(segment => imageSegmentToScene(segment, imageTransform));
@@ -240,10 +269,12 @@ function detectWallsFromImageData(imageData, options) {
   }
 
   const localMean = boxBlurGray(gray, width, height, DEFAULTS.localRadius);
-  const mask = buildStructureMask(gray, localMean, width, height);
+  const mask = buildStructureMask(gray, localMean, width, height, options);
   const grid = Math.max(8, options.gridSize);
-  const minRun = Math.max(16, Math.round(grid * DEFAULTS.minRunCells));
-  const mergeGap = Math.max(6, Math.round(grid * DEFAULTS.mergeGapCells));
+  const minRunCells = readNumber(options.minRunCells, DEFAULTS.minRunCells);
+  const mergeGapCells = readNumber(options.mergeGapCells, DEFAULTS.mergeGapCells);
+  const minRun = Math.max(16, Math.round(grid * minRunCells));
+  const mergeGap = Math.max(6, Math.round(grid * mergeGapCells));
 
   const rawSegments = [
     ...scanRuns(mask, width, height, "h", minRun),
@@ -252,7 +283,7 @@ function detectWallsFromImageData(imageData, options) {
   const snapped = rawSegments
     .map(segment => snapSegment(segment, grid, DEFAULTS.snapDivisions))
     .filter(segment => segmentLength(segment) >= minRun);
-  const merged = mergeCollinear(snapped, mergeGap);
+  const merged = suppressIsolatedShortSegments(mergeCollinear(snapped, mergeGap), grid);
   const cut = addDoorCuts(merged, gray, width, height, grid);
   return {
     walls: cut.filter(segment => segment.kind === "wall").map(segment => unscaleSegment(segment, options.scale)),
@@ -288,15 +319,17 @@ function boxBlurGray(gray, width, height, radius) {
   return output;
 }
 
-function buildStructureMask(gray, localMean, width, height) {
+function buildStructureMask(gray, localMean, width, height, options = {}) {
+  const darknessOffset = readNumber(options.darknessOffset, DEFAULTS.darknessOffset);
+  const gradientThreshold = readNumber(options.gradientThreshold, DEFAULTS.gradientThreshold);
   const mask = new Uint8Array(width * height);
   for (let y = 1; y < height - 1; y += 1) {
     for (let x = 1; x < width - 1; x += 1) {
       const index = y * width + x;
       const gx = Math.abs(gray[index + 1] - gray[index - 1]);
       const gy = Math.abs(gray[index + width] - gray[index - width]);
-      const darkLocal = gray[index] < localMean[index] - DEFAULTS.darknessOffset;
-      const edge = Math.max(gx, gy) >= DEFAULTS.gradientThreshold;
+      const darkLocal = gray[index] < localMean[index] - darknessOffset;
+      const edge = Math.max(gx, gy) >= gradientThreshold;
       if (darkLocal || edge) mask[index] = 1;
     }
   }
@@ -371,6 +404,31 @@ function mergeCollinear(segments, mergeGap) {
     }
   }
   return merged;
+}
+
+function suppressIsolatedShortSegments(segments, grid) {
+  const shortLength = grid * 1.15;
+  return segments.filter(segment => {
+    if (segment.kind !== "wall" || segmentLength(segment) >= shortLength) return true;
+    return segments.some(other => other !== segment && segmentsTouch(segment, other, grid * 0.35));
+  });
+}
+
+function segmentsTouch(first, second, tolerance) {
+  const points = [
+    [first.x1, first.y1],
+    [first.x2, first.y2]
+  ];
+  const otherPoints = [
+    [second.x1, second.y1],
+    [second.x2, second.y2]
+  ];
+  for (const [x1, y1] of points) {
+    for (const [x2, y2] of otherPoints) {
+      if (Math.hypot(x1 - x2, y1 - y2) <= tolerance) return true;
+    }
+  }
+  return false;
 }
 
 function addDoorCuts(segments, gray, width, height, grid) {
