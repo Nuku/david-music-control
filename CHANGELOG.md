@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.18] - 2026-04-30
+
+### Added
+- **PF2e cult system**: Added Cult Activity buttons that players or GMs can click to share the selected activity and its description to chat.
+
 ## [2.4.17] - 2026-04-30
 
 ### Fixed

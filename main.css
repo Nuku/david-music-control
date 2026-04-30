@@ -239,6 +239,12 @@
     background: rgba(255, 255, 255, 0.35);
 }
 
+.dmc-cult-event-section + .dmc-cult-activities {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.16);
+}
+
 .dmc-cult-mantles {
     margin-top: 0.75rem;
 }
@@ -313,6 +319,16 @@
 
 .dmc-cult-event-buttons button {
     flex: 1 1 10rem;
+}
+
+.dmc-cult-activity-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.dmc-cult-activity-list button {
+    width: 100%;
+    text-align: left;
 }
 
 .dmc-cult-rivalry-dc {

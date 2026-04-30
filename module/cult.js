@@ -70,6 +70,33 @@ const MANTLES = {
 		miracles: 'Stand strong against a terrible foe, accept a dangerous challenge, exceed your limits to overcome a daunting obstacle.',
 	},
 };
+const CULT_ACTIVITIES = [
+	{
+		key: 'assist-pantheon',
+		name: 'Assist Pantheon',
+		description: 'The cult helps the pantheon with a defined task at the edges of the adventure, such as gathering leads, preparing ground, distracting foes, or leaving useful resources where the PCs can use them. Usually requires the cult Fervor to not be apathetic.',
+	},
+	{
+		key: 'create-wonders',
+		name: 'Create Wonders',
+		description: 'The cult works on up to three projects, such as manuscripts, items, or buildings. The cult makes Crafting progress during the cult phase, and the PCs decide how to divide that work and whether to finish or continue the projects later. Usually requires the cult Fervor to not be apathetic.',
+	},
+	{
+		key: 'oversee-rites',
+		name: 'Oversee Rites',
+		description: 'The cult performs special rites, prayers, fasting, or magical rituals to empower the pantheon. The result can generate Mythic Points and sometimes Fervor Points, while a bad failure can cost Fervor and Recruitment.',
+	},
+	{
+		key: 'recruit-adherents',
+		name: 'Recruit Adherents',
+		description: 'The cult focuses on evangelism, reputation, and outreach to draw in new followers. The result changes Recruitment Points based on how well the recruiting effort lands.',
+	},
+	{
+		key: 'teach-doctrine',
+		name: 'Teach Doctrine',
+		description: 'The pantheon reinforces, revises, or teaches its edicts and anathema. Choose whether the effort is meant to raise or lower Fervor Points, then resolve the activity to determine how much the total can change.',
+	},
+];
 const CULT_EVENTS = [
 	{
 		name: 'False Gods',
@@ -370,7 +397,7 @@ function buildCultTab(actor, data, stats, members, isGM, previewAsPlayer) {
 				</div>
 				${buildMantlesPanel(members, data, canEdit)}
 			</div>
-			${isGM && !previewAsPlayer ? buildEventsPanel(data, stats, canEdit) : ''}
+			${buildEventsPanel(data, stats, canEdit, isGM && !previewAsPlayer)}
 		</div>
 		${stats.inCrisis ? '<p class="dmc-cult-warning"><i class="fas fa-triangle-exclamation"></i> Cult in crisis: FP or RP is 0.</p>' : ''}
 	`;
@@ -446,26 +473,40 @@ function buildMantleRow(member, mantleKey, canEdit) {
 	`;
 }
 
-function buildEventsPanel(data, stats, canEdit) {
+function buildEventsPanel(data, stats, canEdit, showEventControls) {
 	const event = data.currentEvent?.name ? data.currentEvent : null;
 	return `
 		<aside class="dmc-cult-events">
-			<header>
-				<h3>Events</h3>
-				<button type="button" data-action="roll-cult-event" ${canEdit ? '' : 'disabled'}>
-					<i class="fas fa-dice"></i> Roll Event
-				</button>
-			</header>
-			<p class="dmc-cult-event-mod">Event modifier: ${formatModifier(stats.fervor.bonus)} from ${stats.fervor.rank} fervor.</p>
-			${event
-				? `<div class="dmc-cult-event-current">
-					<strong>${escapeHtml(event.name)}</strong>
-					<span>Result ${event.total} (${event.roll} ${formatModifier(event.modifier)})</span>
-					<p>${escapeHtml(event.summary)}</p>
-					<div class="dmc-cult-event-buttons">${buildEventButtons(event, canEdit, data)}</div>
-				</div>`
-				: '<p>No cult event rolled for this phase.</p>'
-			}
+			${showEventControls ? `<section class="dmc-cult-event-section">
+				<header>
+					<h3>Events</h3>
+					<button type="button" data-action="roll-cult-event" ${canEdit ? '' : 'disabled'}>
+						<i class="fas fa-dice"></i> Roll Event
+					</button>
+				</header>
+				<p class="dmc-cult-event-mod">Event modifier: ${formatModifier(stats.fervor.bonus)} from ${stats.fervor.rank} fervor.</p>
+				${event
+					? `<div class="dmc-cult-event-current">
+						<strong>${escapeHtml(event.name)}</strong>
+						<span>Result ${event.total} (${event.roll} ${formatModifier(event.modifier)})</span>
+						<p>${escapeHtml(event.summary)}</p>
+						<div class="dmc-cult-event-buttons">${buildEventButtons(event, canEdit, data)}</div>
+					</div>`
+					: '<p>No cult event rolled for this phase.</p>'
+				}
+			</section>` : ''}
+			<section class="dmc-cult-activities">
+				<header>
+					<h3>Activities</h3>
+				</header>
+				<div class="dmc-cult-activity-list">
+					${CULT_ACTIVITIES.map((activity) => `
+						<button type="button" data-action="share-cult-activity" data-activity="${activity.key}" title="${escapeHtml(activity.description)}">
+							${escapeHtml(activity.name)}
+						</button>
+					`).join('')}
+				</div>
+			</section>
 		</aside>
 	`;
 }
@@ -535,6 +576,9 @@ function activateCultControls(app, root, actor, isGM) {
 	});
 	root.querySelectorAll('[data-action="select-mantle"]').forEach((select) => {
 		select.addEventListener('change', () => updateMantleAssignment(app, actor, select));
+	});
+	root.querySelectorAll('[data-action="share-cult-activity"]').forEach((button) => {
+		button.addEventListener('click', () => shareCultActivity(actor, button.dataset.activity));
 	});
 
 	if (!isGM) return;
@@ -608,6 +652,22 @@ async function rollCultEvent(app, actor) {
 		flavor: `${data.name} Cult Event: ${event.name} (${diceTotal} ${formatModifier(stats.fervor.bonus)} = ${total})`,
 	});
 	await applyCultData(app, actor, { currentEvent });
+}
+
+async function shareCultActivity(actor, activityKey) {
+	const activity = CULT_ACTIVITIES.find((candidate) => candidate.key === activityKey);
+	if (!activity) return;
+
+	const data = getCultData(actor);
+	const cultName = data.name?.trim() || actor.name;
+	await ChatMessage.create({
+		speaker: ChatMessage.getSpeaker({ actor }),
+		flavor: `${cultName}: ${activity.name}`,
+		content: `
+			<h3>${escapeHtml(activity.name)}</h3>
+			<p>${escapeHtml(activity.description)}</p>
+		`,
+	});
 }
 
 async function rollAndApplyLoss(app, actor, formula, field, label) {
