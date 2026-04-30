@@ -103,6 +103,15 @@ function showAutoWallsDialog() {
           }
         },
         {
+          action: "autoTune",
+          icon: "fa-solid fa-wand-magic-sparkles",
+          label: "Auto Tune",
+          callback: (event, button) => {
+            const options = readFormOptions(button.form);
+            autoTuneActiveScene(options).catch(error => reportError(error));
+          }
+        },
+        {
           action: "apply",
           icon: "fa-solid fa-check",
           label: "Apply Last",
@@ -136,6 +145,14 @@ function showAutoWallsDialog() {
         label: "Apply Last",
         callback: () => applyLastDetection().catch(error => reportError(error))
       },
+      autoTune: {
+        icon: '<i class="fas fa-wand-magic-sparkles"></i>',
+        label: "Auto Tune",
+        callback: html => {
+          const options = readDialogOptions(html);
+          autoTuneActiveScene(options).catch(error => reportError(error));
+        }
+      },
       clear: {
         icon: '<i class="fas fa-trash"></i>',
         label: "Clear Preview",
@@ -168,36 +185,79 @@ function readNumber(value, fallback) {
 }
 
 async function detectActiveScene(options = {}) {
-  if (!canvas?.scene) throw new Error("No active scene.");
-  const imageSource = getSceneImageSource(canvas.scene);
-  if (!imageSource) throw new Error("The active scene does not have a background image.");
-
-  const maxDimension = Number(options.maxDimension) || game.settings.get(MODULE_ID, "maxDimension") || DEFAULTS.maxDimension;
-  const gridSize = Number(options.gridSize) || getSceneGridSize(canvas.scene);
-  const image = await loadHtmlImage(imageSource);
-  const imageWidth = image.naturalWidth || image.width;
-  const imageHeight = image.naturalHeight || image.height;
-  const imageTransform = getSceneImageTransform(imageWidth, imageHeight);
-  const prepared = drawScaledImage(image, maxDimension);
-  const detection = detectWallsFromImageData(prepared.imageData, {
-    gridSize: (gridSize / imageTransform.averageScale) * prepared.scale,
-    scale: prepared.scale,
-    minRunCells: options.minRunCells,
-    mergeGapCells: options.mergeGapCells,
-    gradientThreshold: options.gradientThreshold,
-    darknessOffset: options.darknessOffset
-  });
-  const walls = detection.walls.map(segment => imageSegmentToScene(segment, imageTransform));
-  const doors = detection.doors.map(segment => imageSegmentToScene(segment, imageTransform));
+  const context = await prepareSceneDetection(options);
+  const detection = runSceneDetection(context, options);
+  const walls = detection.walls;
+  const doors = detection.doors;
 
   lastDetection = {
     sceneId: canvas.scene.id,
     walls,
     doors,
-    source: imageSource
+    source: context.imageSource,
+    options
   };
   renderPreview(lastDetection);
   ui.notifications.info(`Auto Walls preview: ${detection.walls.length} walls, ${detection.doors.length} doors.`);
+  return lastDetection;
+}
+
+async function prepareSceneDetection(options = {}) {
+  if (!canvas?.scene) throw new Error("No active scene.");
+  const imageSource = getSceneImageSource(canvas.scene);
+  if (!imageSource) throw new Error("The active scene does not have a background image.");
+
+  const maxDimension = Number(options.maxDimension) || game.settings.get(MODULE_ID, "maxDimension") || DEFAULTS.maxDimension;
+  const image = await loadHtmlImage(imageSource);
+  const imageWidth = image.naturalWidth || image.width;
+  const imageHeight = image.naturalHeight || image.height;
+  return {
+    imageSource,
+    prepared: drawScaledImage(image, maxDimension),
+    imageTransform: getSceneImageTransform(imageWidth, imageHeight)
+  };
+}
+
+function runSceneDetection(context, options = {}) {
+  const gridSize = Number(options.gridSize) || getSceneGridSize(canvas.scene);
+  const detection = detectWallsFromImageData(context.prepared.imageData, {
+    gridSize: (gridSize / context.imageTransform.averageScale) * context.prepared.scale,
+    scale: context.prepared.scale,
+    minRunCells: options.minRunCells,
+    mergeGapCells: options.mergeGapCells,
+    gradientThreshold: options.gradientThreshold,
+    darknessOffset: options.darknessOffset
+  });
+  return {
+    walls: detection.walls.map(segment => imageSegmentToScene(segment, context.imageTransform)),
+    doors: detection.doors.map(segment => imageSegmentToScene(segment, context.imageTransform))
+  };
+}
+
+async function autoTuneActiveScene(options = {}) {
+  const context = await prepareSceneDetection(options);
+  const presets = buildAutoTunePresets(options);
+  let best = null;
+  for (const preset of presets) {
+    const detection = runSceneDetection(context, preset);
+    const score = scoreDetection(detection, Number(options.gridSize) || getSceneGridSize(canvas.scene));
+    if (!best || score.total > best.score.total) {
+      best = { detection, score, options: preset };
+    }
+  }
+  if (!best) throw new Error("Auto Tune did not produce any candidates.");
+  lastDetection = {
+    sceneId: canvas.scene.id,
+    walls: best.detection.walls,
+    doors: best.detection.doors,
+    source: context.imageSource,
+    options: best.options,
+    score: best.score
+  };
+  renderPreview(lastDetection);
+  ui.notifications.info(
+    `Auto Tune selected ${best.detection.walls.length} walls, ${best.detection.doors.length} doors; score ${Math.round(best.score.total)}; min span ${best.options.minRunCells}, edge ${best.options.gradientThreshold}.`
+  );
   return lastDetection;
 }
 
@@ -207,6 +267,106 @@ function getSceneImageSource(scene) {
 
 function getSceneGridSize(scene) {
   return Number(scene.grid?.size || scene.grid?.distance || 72);
+}
+
+function buildAutoTunePresets(baseOptions = {}) {
+  const base = {
+    maxDimension: Number(baseOptions.maxDimension) || DEFAULTS.maxDimension,
+    gridSize: Number(baseOptions.gridSize) || getSceneGridSize(canvas.scene)
+  };
+  const minRunCells = [0.8, 1.05, 1.3];
+  const mergeGapCells = [0.35, 0.6, 0.9];
+  const gradientThresholds = [36, 48, 62];
+  const darknessOffsets = [20, 28, 38];
+  const presets = [];
+  for (const minRunCell of minRunCells) {
+    for (const mergeGapCell of mergeGapCells) {
+      for (const gradientThreshold of gradientThresholds) {
+        for (const darknessOffset of darknessOffsets) {
+          presets.push({
+            ...base,
+            minRunCells: minRunCell,
+            mergeGapCells: mergeGapCell,
+            gradientThreshold,
+            darknessOffset
+          });
+        }
+      }
+    }
+  }
+  return presets;
+}
+
+function scoreDetection(detection, gridSize) {
+  const walls = detection.walls ?? [];
+  const doors = detection.doors ?? [];
+  const all = [...walls, ...doors];
+  const grid = Math.max(16, gridSize || 72);
+  let totalLength = 0;
+  let longSegments = 0;
+  let shortSegments = 0;
+  let isolatedShort = 0;
+  let connectedEndpoints = 0;
+  let horizontal = 0;
+  let vertical = 0;
+
+  for (const segment of all) {
+    const length = segmentLength(segment);
+    totalLength += length;
+    if (orientation(segment) === "h") horizontal += 1;
+    else vertical += 1;
+    if (length >= grid * 1.5) longSegments += 1;
+    if (length < grid * 0.9) shortSegments += 1;
+    const connections = endpointConnectionCount(segment, all, grid * 0.35);
+    connectedEndpoints += connections;
+    if (length < grid * 1.15 && connections === 0) isolatedShort += 1;
+  }
+
+  const supportedDoors = doors.filter(door => endpointConnectionCount(door, walls, grid * 0.45) >= 2).length;
+  const balancePenalty = Math.abs(horizontal - vertical) * 8;
+  const segmentPenalty = Math.max(0, all.length - 240) * 18;
+  const sparsePenalty = all.length < 20 ? 1000 : 0;
+  const total =
+    (totalLength * 0.08) +
+    (longSegments * 180) +
+    (connectedEndpoints * 90) +
+    (supportedDoors * 140) -
+    (shortSegments * 50) -
+    (isolatedShort * 300) -
+    segmentPenalty -
+    balancePenalty -
+    sparsePenalty;
+  return {
+    total,
+    totalLength,
+    longSegments,
+    shortSegments,
+    isolatedShort,
+    connectedEndpoints,
+    supportedDoors,
+    segmentCount: all.length
+  };
+}
+
+function endpointConnectionCount(segment, others, tolerance) {
+  const endpoints = [
+    [segment.x1, segment.y1],
+    [segment.x2, segment.y2]
+  ];
+  let connected = 0;
+  for (const [x, y] of endpoints) {
+    if (others.some(other => other !== segment && pointTouchesSegmentEndpoint(x, y, other, tolerance))) {
+      connected += 1;
+    }
+  }
+  return connected;
+}
+
+function pointTouchesSegmentEndpoint(x, y, segment, tolerance) {
+  return (
+    Math.hypot(x - segment.x1, y - segment.y1) <= tolerance ||
+    Math.hypot(x - segment.x2, y - segment.y2) <= tolerance
+  );
 }
 
 function getSceneImageTransform(imageWidth, imageHeight) {

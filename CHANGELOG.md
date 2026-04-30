@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.8] - 2026-04-30
+
+### Added
+- **Auto Walls prototype**: Added Auto Tune, which sweeps detector presets in-browser, scores wall-like structure, and previews the best candidate automatically.
+
 ## [2.4.7] - 2026-04-30
 
 ### Changed
