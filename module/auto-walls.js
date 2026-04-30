@@ -438,7 +438,8 @@ function detectWallsFromImageData(imageData, options) {
 
   const rawSegments = [
     ...scanRuns(mask, width, height, "h", minRun),
-    ...scanRuns(mask, width, height, "v", minRun)
+    ...scanRuns(mask, width, height, "v", minRun),
+    ...scanGridContinuity(mask, width, height, grid, minRun, buildIntegralMask(mask, width, height))
   ];
   const snapped = rawSegments
     .map(segment => snapSegment(segment, grid, DEFAULTS.snapDivisions))
@@ -524,6 +525,106 @@ function scanRuns(mask, width, height, orientation, minRun) {
     }
   }
   return segments;
+}
+
+function scanGridContinuity(mask, width, height, grid, minRun, integralMask) {
+  const segments = [];
+  const step = Math.max(8, Math.round(grid / 2));
+  const bandRadius = Math.max(2, Math.round(grid * 0.045));
+  const cell = Math.max(12, Math.round(grid / 3));
+  const threshold = 0.18;
+  const minCells = Math.max(3, Math.ceil(minRun / cell));
+
+  for (let y = 0; y < height; y += step) {
+    let startCell = null;
+    let activeCells = 0;
+    const cellCount = Math.ceil(width / cell);
+    for (let cellIndex = 0; cellIndex <= cellCount; cellIndex += 1) {
+      const x1 = cellIndex * cell;
+      const x2 = Math.min(width - 1, x1 + cell - 1);
+      const active = cellIndex < cellCount && maskDensity(integralMask, width, height, x1, y - bandRadius, x2, y + bandRadius) >= threshold;
+      if (active && startCell === null) {
+        startCell = cellIndex;
+        activeCells = 0;
+      }
+      if (active) activeCells += 1;
+      if ((!active || cellIndex === cellCount) && startCell !== null) {
+        if (activeCells >= minCells) {
+          segments.push({
+            x1: startCell * cell,
+            y1: y,
+            x2: Math.min(width - 1, cellIndex * cell),
+            y2: y,
+            kind: "wall"
+          });
+        }
+        startCell = null;
+        activeCells = 0;
+      }
+    }
+  }
+
+  for (let x = 0; x < width; x += step) {
+    let startCell = null;
+    let activeCells = 0;
+    const cellCount = Math.ceil(height / cell);
+    for (let cellIndex = 0; cellIndex <= cellCount; cellIndex += 1) {
+      const y1 = cellIndex * cell;
+      const y2 = Math.min(height - 1, y1 + cell - 1);
+      const active = cellIndex < cellCount && maskDensity(integralMask, width, height, x - bandRadius, y1, x + bandRadius, y2) >= threshold;
+      if (active && startCell === null) {
+        startCell = cellIndex;
+        activeCells = 0;
+      }
+      if (active) activeCells += 1;
+      if ((!active || cellIndex === cellCount) && startCell !== null) {
+        if (activeCells >= minCells) {
+          segments.push({
+            x1: x,
+            y1: startCell * cell,
+            x2: x,
+            y2: Math.min(height - 1, cellIndex * cell),
+            kind: "wall"
+          });
+        }
+        startCell = null;
+        activeCells = 0;
+      }
+    }
+  }
+
+  return segments;
+}
+
+function buildIntegralMask(mask, width, height) {
+  const integral = new Uint32Array((width + 1) * (height + 1));
+  for (let y = 1; y <= height; y += 1) {
+    let rowSum = 0;
+    for (let x = 1; x <= width; x += 1) {
+      rowSum += mask[(y - 1) * width + (x - 1)] ? 1 : 0;
+      integral[y * (width + 1) + x] = integral[(y - 1) * (width + 1) + x] + rowSum;
+    }
+  }
+  return integral;
+}
+
+function maskDensity(integralMask, width, height, x1, y1, x2, y2) {
+  const minX = clamp(Math.round(Math.min(x1, x2)), 0, width - 1);
+  const maxX = clamp(Math.round(Math.max(x1, x2)), 0, width - 1);
+  const minY = clamp(Math.round(Math.min(y1, y2)), 0, height - 1);
+  const maxY = clamp(Math.round(Math.max(y1, y2)), 0, height - 1);
+  const stride = width + 1;
+  const left = minX;
+  const right = maxX + 1;
+  const top = minY;
+  const bottom = maxY + 1;
+  const active =
+    integralMask[bottom * stride + right] -
+    integralMask[top * stride + right] -
+    integralMask[bottom * stride + left] +
+    integralMask[top * stride + left];
+  const total = (right - left) * (bottom - top);
+  return total ? active / total : 0;
 }
 
 function snapSegment(segment, grid, divisions) {

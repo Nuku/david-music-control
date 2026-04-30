@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.9] - 2026-04-30
+
+### Added
+- **Auto Walls prototype**: Added a grid-continuity wall candidate pass to recover longer grid-aligned wall spans that are too subtle or broken for the direct edge-run detector.
+
 ## [2.4.8] - 2026-04-30
 
 ### Added
