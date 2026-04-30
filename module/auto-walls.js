@@ -444,7 +444,7 @@ function detectWallsFromImageData(imageData, options) {
   const snapped = rawSegments
     .map(segment => snapSegment(segment, grid, DEFAULTS.snapDivisions))
     .filter(segment => segmentLength(segment) >= minRun);
-  const merged = suppressIsolatedShortSegments(mergeCollinear(snapped, mergeGap), grid);
+  const merged = suppressTinyLCorners(suppressIsolatedShortSegments(mergeCollinear(snapped, mergeGap), grid), grid);
   const cut = addDoorCuts(merged, gray, width, height, grid);
   return {
     walls: cut.filter(segment => segment.kind === "wall").map(segment => unscaleSegment(segment, options.scale)),
@@ -532,8 +532,8 @@ function scanGridContinuity(mask, width, height, grid, minRun, integralMask) {
   const step = Math.max(8, Math.round(grid / 2));
   const bandRadius = Math.max(2, Math.round(grid * 0.045));
   const cell = Math.max(12, Math.round(grid / 3));
-  const threshold = 0.18;
-  const minCells = Math.max(3, Math.ceil(minRun / cell));
+  const threshold = 0.26;
+  const minCells = Math.max(5, Math.ceil((grid * 1.75) / cell), Math.ceil(minRun / cell));
 
   for (let y = 0; y < height; y += step) {
     let startCell = null;
@@ -555,7 +555,8 @@ function scanGridContinuity(mask, width, height, grid, minRun, integralMask) {
             y1: y,
             x2: Math.min(width - 1, cellIndex * cell),
             y2: y,
-            kind: "wall"
+            kind: "wall",
+            source: "grid-continuity"
           });
         }
         startCell = null;
@@ -584,7 +585,8 @@ function scanGridContinuity(mask, width, height, grid, minRun, integralMask) {
             y1: startCell * cell,
             x2: x,
             y2: Math.min(height - 1, cellIndex * cell),
-            kind: "wall"
+            kind: "wall",
+            source: "grid-continuity"
           });
         }
         startCell = null;
@@ -653,6 +655,7 @@ function mergeCollinear(segments, mergeGap) {
       Math.abs(axis(segment) - axis(last)) <= 1 &&
       spanStart(segment) <= spanEnd(last) + mergeGap
     ) {
+      last.source = last.source === segment.source ? last.source : "merged";
       if (orientation(segment) === "h") {
         last.x1 = Math.min(last.x1, segment.x1, segment.x2);
         last.x2 = Math.max(last.x1, last.x2, segment.x1, segment.x2);
@@ -670,9 +673,38 @@ function mergeCollinear(segments, mergeGap) {
 function suppressIsolatedShortSegments(segments, grid) {
   const shortLength = grid * 1.15;
   return segments.filter(segment => {
+    if (segment.source === "grid-continuity" && segmentLength(segment) < grid * 1.75) return false;
     if (segment.kind !== "wall" || segmentLength(segment) >= shortLength) return true;
     return segments.some(other => other !== segment && segmentsTouch(segment, other, grid * 0.35));
   });
+}
+
+function suppressTinyLCorners(segments, grid) {
+  const remove = new Set();
+  for (let index = 0; index < segments.length; index += 1) {
+    const first = segments[index];
+    if (first.kind !== "wall" || segmentLength(first) >= grid * 1.25) continue;
+    const neighbors = [];
+    for (let otherIndex = 0; otherIndex < segments.length; otherIndex += 1) {
+      if (otherIndex === index) continue;
+      const second = segments[otherIndex];
+      if (second.kind !== "wall") continue;
+      if (orientation(first) === orientation(second)) continue;
+      if (segmentLength(second) >= grid * 1.25) continue;
+      if (segmentsTouch(first, second, grid * 0.25)) neighbors.push(otherIndex);
+    }
+    if (neighbors.length === 1) {
+      const otherIndex = neighbors[0];
+      const second = segments[otherIndex];
+      const firstConnections = endpointConnectionCount(first, segments, grid * 0.25);
+      const secondConnections = endpointConnectionCount(second, segments, grid * 0.25);
+      if (firstConnections <= 1 && secondConnections <= 1 && segmentLength(first) + segmentLength(second) < grid * 2.2) {
+        remove.add(index);
+        remove.add(otherIndex);
+      }
+    }
+  }
+  return segments.filter((_, index) => !remove.has(index));
 }
 
 function segmentsTouch(first, second, tolerance) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.10] - 2026-04-30
+
+### Fixed
+- **Auto Walls prototype**: Tightened grid-continuity detection and suppressed tiny isolated L-corners that could be mistaken for wall structure.
+
 ## [2.4.9] - 2026-04-30
 
 ### Added
