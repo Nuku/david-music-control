@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.13] - 2026-04-30
+
+### Changed
+- **PF2e cult system**: Improved the party sheet Cult tab layout, preserved the active Cult tab while GMs edit values, added a GM player-view preview, and added cult event rolling with effect buttons for simple event outcomes.
+
 ## [2.4.12] - 2026-04-30
 
 ### Added

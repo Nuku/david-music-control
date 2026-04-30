@@ -123,17 +123,29 @@
 
 .dmc-cult-header {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(240px, 1fr) auto;
     gap: 0.75rem;
-    align-items: end;
-    margin-bottom: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
 }
 
-.dmc-cult-header label,
+.dmc-cult-name-edit,
+.dmc-cult-name-display,
 .dmc-cult-text {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+.dmc-cult-name-display strong {
+    font-size: 1.5rem;
+    line-height: 1.1;
+}
+
+.dmc-cult-actions {
+    display: flex;
+    gap: 0.35rem;
+    justify-content: flex-end;
 }
 
 .dmc-cult-header button,
@@ -141,9 +153,16 @@
     white-space: nowrap;
 }
 
+.dmc-cult-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.38fr);
+    gap: 1rem;
+    align-items: start;
+}
+
 .dmc-cult-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 0.5rem;
     margin-bottom: 0.75rem;
 }
@@ -158,7 +177,8 @@
 .dmc-cult-stat span,
 .dmc-cult-text span,
 .dmc-cult-header span,
-.dmc-cult-edit-grid span {
+.dmc-cult-edit-grid span,
+.dmc-cult-event-mod {
     font-size: 0.75rem;
     font-weight: 600;
     opacity: 0.78;
@@ -180,7 +200,7 @@
 
 .dmc-cult-edit-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.5rem;
     margin-bottom: 0.75rem;
 }
@@ -197,16 +217,73 @@
     gap: 0.25rem;
 }
 
+.dmc-cult-notes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
 .dmc-cult-text {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
 }
 
 .dmc-cult-text textarea {
+    min-height: 5rem;
     resize: vertical;
+}
+
+.dmc-cult-events {
+    border: 1px solid rgba(0, 0, 0, 0.22);
+    border-radius: 4px;
+    padding: 0.65rem;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.dmc-cult-events header {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.dmc-cult-events h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.dmc-cult-event-current {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.dmc-cult-event-current p {
+    margin: 0;
+    line-height: 1.35;
+}
+
+.dmc-cult-event-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
 }
 
 .dmc-cult-warning {
     margin: 0.75rem 0 0;
     color: #8a3b00;
     font-weight: 600;
+}
+
+@media (max-width: 760px) {
+    .dmc-cult-header,
+    .dmc-cult-layout,
+    .dmc-cult-notes {
+        grid-template-columns: 1fr;
+    }
+
+    .dmc-cult-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
 }
