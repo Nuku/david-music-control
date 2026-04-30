@@ -26,6 +26,15 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enableCultSystem: {
+		name: 'Enable PF2e Cult System',
+		hint: 'Adds a Cult tab to PF2e party sheets for tracking cult statistics, phase notes, and level checks.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+		requiresReload: true,
+	},
 	pauseTrack: {
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',

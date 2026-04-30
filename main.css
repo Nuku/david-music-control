@@ -115,3 +115,98 @@
     align-items: center;
     justify-content: flex-end;
 }
+
+.dmc-cult-tab {
+    padding: 0.75rem;
+    overflow-y: auto;
+}
+
+.dmc-cult-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 0.75rem;
+}
+
+.dmc-cult-header label,
+.dmc-cult-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.dmc-cult-header button,
+.dmc-cult-level button {
+    white-space: nowrap;
+}
+
+.dmc-cult-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.dmc-cult-stat {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.dmc-cult-stat span,
+.dmc-cult-text span,
+.dmc-cult-header span,
+.dmc-cult-edit-grid span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.78;
+    text-transform: uppercase;
+}
+
+.dmc-cult-stat strong {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 1rem;
+}
+
+.dmc-cult-stat small {
+    font-size: 0.75rem;
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+.dmc-cult-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.dmc-cult-edit-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.dmc-cult-level {
+    display: grid;
+    grid-template-columns: 1fr 2rem;
+    gap: 0.25rem;
+}
+
+.dmc-cult-text {
+    margin-bottom: 0.5rem;
+}
+
+.dmc-cult-text textarea {
+    resize: vertical;
+}
+
+.dmc-cult-warning {
+    margin: 0.75rem 0 0;
+    color: #8a3b00;
+    font-weight: 600;
+}

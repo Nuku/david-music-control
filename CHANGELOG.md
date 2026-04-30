@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **PF2e cult system**: Added an optional GM-enabled Cult tab for PF2e party sheets, with editable cult statistics, derived Fervor and Size summaries, Mythic Point tracking, phase notes, and a cult level check roll.
+
 ## [2.4.11] - 2026-04-30
 
 ### Removed

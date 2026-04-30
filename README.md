@@ -28,3 +28,5 @@ There is a new button in the encounter tracker for overring the battle music for
 In the **Token Configuration** application there is a new button on the header called **Combat Music**, using that application you can configure specific music configurations related to that specific token.
 
 For PF2e party actors, the **Token Configuration** application also has a **Cluster Party** button. It builds a single crowd-style image from the party members' token images, saves it in the world folder, and sets it as the party actor and token image.
+
+GMs can enable the **PF2e Cult System** module setting to add a **Cult** tab to PF2e party sheets. The tab tracks the cult's level, Fervor Points, Recruitment Points, Mythic Points, mantles, activities, and phase notes. Players can view the cult and roll its level check from the tab; GMs can edit the stored values directly.
