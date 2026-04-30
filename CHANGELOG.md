@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.11] - 2026-04-30
+
+### Removed
+- **Auto Walls prototype**: Removed the scene auto-walling tool and all related browser-side detector code.
+
 ## [2.4.10] - 2026-04-30
 
 ### Fixed

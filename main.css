@@ -115,15 +115,3 @@
     align-items: center;
     justify-content: flex-end;
 }
-
-.foundry-auto-walls-dialog .form-group {
-    align-items: center;
-}
-
-.foundry-auto-walls-dialog input[type="number"] {
-    width: 6rem;
-}
-
-.foundry-auto-walls-dialog .notes {
-    margin: 0.35rem 0 0;
-}
