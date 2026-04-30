@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.17] - 2026-04-30
+
+### Fixed
+- **PF2e cult system**: Cult name editing now saves only to cult data and no longer changes the party actor name.
+
 ## [2.4.16] - 2026-04-30
 
 ### Fixed

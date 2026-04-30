@@ -307,7 +307,7 @@ function buildCultTab(actor, data, stats, members, isGM, previewAsPlayer) {
 			${canEdit
 				? `<label class="dmc-cult-name-edit">
 					<span>Cult Name</span>
-					<input type="text" name="name" value="${escapeHtml(data.name)}">
+					<input type="text" data-action="cult-name" value="${escapeHtml(data.name)}">
 				</label>`
 				: `<div class="dmc-cult-name-display">
 					<span>Cult Name</span>
@@ -529,6 +529,9 @@ function activateCultControls(app, root, actor, isGM) {
 		app._dmcCultActive = true;
 		app._dmcCultPreviewAsPlayer = !app._dmcCultPreviewAsPlayer;
 		app.render(true);
+	});
+	root.querySelector('[data-action="cult-name"]')?.addEventListener('change', (event) => {
+		return applyCultData(app, actor, { name: event.currentTarget.value });
 	});
 	root.querySelectorAll('[data-action="select-mantle"]').forEach((select) => {
 		select.addEventListener('change', () => updateMantleAssignment(app, actor, select));
