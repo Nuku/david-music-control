@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.15] - 2026-04-30
+
+### Added
+- **PF2e cult system**: Added structured per-PC mantle selection on the Cult tab, including each mantle's cult benefit and miracle examples. Players can select mantles for characters they own; GMs can edit all mantle assignments.
+
 ## [2.4.14] - 2026-04-30
 
 ### Changed

@@ -38,6 +38,38 @@ const SIZE_RANKS = [
 	{ rank: 'Huge', membership: 'thousands', modifier: 4, min: 60, max: 99 },
 	{ rank: 'Gargantuan', membership: 'tens of thousands', modifier: 5, min: 100, max: Infinity },
 ];
+const MANTLES = {
+	creator: {
+		name: 'Creator',
+		benefit: 'When Creating Wonders, the cult\'s proficiency when calculating progress becomes expert at 1st level, master at 7th level, and legendary at 15th level.',
+		miracles: 'Create a permanent item, stage an extraordinary performance, invent something precious to future generations.',
+	},
+	leader: {
+		name: 'Leader',
+		benefit: 'The cult can reroll any die result of 1 on a d4 when calculating Recruitment Points gained from Recruit Adherents. The cult must use the second result.',
+		miracles: 'Ally with a powerful being, inspire others through courage, achieve a political marvel.',
+	},
+	mentor: {
+		name: 'Mentor',
+		benefit: 'The cult can reroll any one die, using either result, to randomly determine Fervor Points gained or lost by Teach Doctrine.',
+		miracles: 'Adopt an unlikely student whose legendary potential you help unlock, lead others in a cunning plan, share knowledge that changes the odds or perspective.',
+	},
+	mystic: {
+		name: 'Mystic',
+		benefit: 'Once per phase, a mystic can increase the die result of one d4 roll by 1, maximum 4, when calculating Mythic Points gained by Overseeing Rites.',
+		miracles: 'Perform a potent ritual, unravel an enigma, create a way to tap into an esoteric source of power.',
+	},
+	rebel: {
+		name: 'Rebel',
+		benefit: 'When rolling for a random event, roll twice, choose one event, and ignore the other. If the pantheon cannot agree, the rebel chooses. If both rolls are the same event, roll a third event; both the original and third events occur.',
+		miracles: 'Challenge tradition, subvert expected heroic tropes, complicate a situation in a way that still ends in your success.',
+	},
+	warrior: {
+		name: 'Warrior',
+		benefit: 'The cult can Assist the Pantheon one additional time per cult phase. In addition, the cult loses the minimum FP on a critical failure to Assist the Pantheon.',
+		miracles: 'Stand strong against a terrible foe, accept a dangerous challenge, exceed your limits to overcome a daunting obstacle.',
+	},
+};
 const CULT_EVENTS = [
 	{
 		name: 'False Gods',
@@ -134,6 +166,7 @@ function getDefaultCultData(actor) {
 		activities: '',
 		notes: '',
 		gmNotes: '',
+		mantleAssignments: {},
 		activityBonus: 0,
 		pendingPrayers: 0,
 		rivalryAssistSuccesses: 0,
@@ -190,9 +223,10 @@ function renderCultSheet(app, html) {
 
 	const data = getCultData(actor);
 	const stats = getCultStats(data);
+	const members = getPartyMembers(actor);
 	const isGM = game.user.isGM;
 	const previewAsPlayer = !!app._dmcCultPreviewAsPlayer;
-	const tab = buildCultTab(actor, data, stats, isGM, previewAsPlayer);
+	const tab = buildCultTab(actor, data, stats, members, isGM, previewAsPlayer);
 
 	injectCultTab(app, root, tab);
 	activateCultControls(app, root, actor, isGM);
@@ -254,7 +288,7 @@ function activateTab(root, navItem, content) {
 	});
 }
 
-function buildCultTab(actor, data, stats, isGM, previewAsPlayer) {
+function buildCultTab(actor, data, stats, members, isGM, previewAsPlayer) {
 	const canEdit = isGM && !previewAsPlayer;
 	const disabled = canEdit ? '' : 'disabled';
 	const readonly = canEdit ? '' : 'readonly';
@@ -330,11 +364,11 @@ function buildCultTab(actor, data, stats, isGM, previewAsPlayer) {
 				</div>
 				<div class="dmc-cult-notes">
 					${textArea('Agenda', 'agenda', data.agenda, readonly)}
-					${textArea('Mantles', 'mantles', data.mantles, readonly)}
 					${textArea('Activities', 'activities', data.activities, readonly)}
 					${textArea('Notes', 'notes', data.notes, readonly)}
 					${canEdit ? textArea('GM Notes', 'gmNotes', data.gmNotes, '') : ''}
 				</div>
+				${buildMantlesPanel(members, data, canEdit)}
 			</div>
 			${isGM && !previewAsPlayer ? buildEventsPanel(data, stats, canEdit) : ''}
 		</div>
@@ -342,6 +376,74 @@ function buildCultTab(actor, data, stats, isGM, previewAsPlayer) {
 	`;
 	content.dataset.actorId = actor.id;
 	return { nav, content };
+}
+
+function getPartyMembers(party) {
+	const members = party.members?.contents ?? party.members;
+	if (Array.isArray(members) && members.length) {
+		return members.filter((member) => member?.type === 'character');
+	}
+
+	const memberRefs = [
+		party.system?.details?.members,
+		party.system?.members,
+		party.flags?.pf2e?.members,
+	].flatMap((refs) => (Array.isArray(refs) ? refs : []));
+	const resolved = memberRefs
+		.map((ref) => {
+			if (ref instanceof Actor) return ref;
+			if (typeof ref === 'string' && !ref.includes('.')) return game.actors.get(ref);
+			if (typeof ref?.id === 'string') return game.actors.get(ref.id);
+			if (typeof ref?.actor === 'string') return game.actors.get(ref.actor);
+			return null;
+		})
+		.filter((member) => member?.type === 'character');
+	if (resolved.length) return resolved;
+
+	const worldParty = game.actors.party ?? game.actors.find?.((actor) => actor.type === 'party');
+	return worldParty?.id === party.id
+		? game.actors.contents.filter((actor) => actor.type === 'character' && actor.hasPlayerOwner)
+		: [];
+}
+
+function buildMantlesPanel(members, data, canEdit) {
+	const assignments = data.mantleAssignments ?? {};
+	const rows = members.map((member) => buildMantleRow(member, assignments[member.id], canEdit)).join('');
+	return `
+		<section class="dmc-cult-mantles">
+			<header>
+				<h3>Mantles</h3>
+				<small>Each PC chooses one mantle. More than one PC can choose the same mantle.</small>
+			</header>
+			${rows || '<p>No party PCs found.</p>'}
+		</section>
+	`;
+}
+
+function buildMantleRow(member, mantleKey, canEdit) {
+	const mantle = MANTLES[mantleKey];
+	const canChoose = canEdit || member.isOwner;
+	return `
+		<article class="dmc-cult-mantle-row" data-member-id="${member.id}">
+			<div class="dmc-cult-mantle-pc">
+				<strong>${escapeHtml(member.name)}</strong>
+				<select name="mantle-${member.id}" data-action="select-mantle" data-member-id="${member.id}" ${canChoose ? '' : 'disabled'}>
+					<option value="">Choose Mantle</option>
+					${Object.entries(MANTLES).map(([key, option]) => `
+						<option value="${key}" ${key === mantleKey ? 'selected' : ''}>${option.name}</option>
+					`).join('')}
+				</select>
+			</div>
+			<div class="dmc-cult-mantle-details">
+				${mantle
+					? `<strong>${mantle.name}</strong>
+						<p><b>Cult Benefit:</b> ${escapeHtml(mantle.benefit)}</p>
+						<p><b>Miracles:</b> ${escapeHtml(mantle.miracles)}</p>`
+					: '<p>No mantle selected.</p>'
+				}
+			</div>
+		</article>
+	`;
 }
 
 function buildEventsPanel(data, stats, canEdit) {
@@ -428,6 +530,9 @@ function activateCultControls(app, root, actor, isGM) {
 		app._dmcCultPreviewAsPlayer = !app._dmcCultPreviewAsPlayer;
 		app.render(true);
 	});
+	root.querySelectorAll('[data-action="select-mantle"]').forEach((select) => {
+		select.addEventListener('change', () => updateMantleAssignment(app, actor, select));
+	});
 
 	if (!isGM) return;
 	root.querySelectorAll('[data-dmc-cult-root] input, [data-dmc-cult-root] textarea').forEach((input) => {
@@ -446,6 +551,18 @@ function activateCultControls(app, root, actor, isGM) {
 	root.querySelector('[data-action="apply-rivalry-critical-success"]')?.addEventListener('click', () => applyRivalryLoss(app, actor, '2d4+1', 'Cult Rivalry Critical Success Loss'));
 	root.querySelector('[data-action="apply-rivalry-success"]')?.addEventListener('click', () => applyRivalryLoss(app, actor, '1d4+1', 'Cult Rivalry Success Loss'));
 	root.querySelector('[data-action="apply-rivalry-critical-failure"]')?.addEventListener('click', () => applyRivalryCriticalFailure(app, actor));
+}
+
+async function updateMantleAssignment(app, actor, select) {
+	const member = game.actors.get(select.dataset.memberId);
+	if (!game.user.isGM && !member?.isOwner) return;
+
+	const data = getCultData(actor);
+	const assignments = { ...(data.mantleAssignments ?? {}) };
+	if (select.value) assignments[select.dataset.memberId] = select.value;
+	else delete assignments[select.dataset.memberId];
+
+	await applyCultData(app, actor, { mantleAssignments: assignments });
 }
 
 async function updateCultData(app, actor, root) {

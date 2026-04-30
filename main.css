@@ -239,6 +239,48 @@
     background: rgba(255, 255, 255, 0.35);
 }
 
+.dmc-cult-mantles {
+    margin-top: 0.75rem;
+}
+
+.dmc-cult-mantles header {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+}
+
+.dmc-cult-mantles h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.dmc-cult-mantle-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 0.32fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.16);
+}
+
+.dmc-cult-mantle-pc {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.dmc-cult-mantle-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.dmc-cult-mantle-details p {
+    margin: 0;
+    line-height: 1.35;
+}
+
 .dmc-cult-events header {
     display: flex;
     gap: 0.5rem;
@@ -286,7 +328,8 @@
 @media (max-width: 760px) {
     .dmc-cult-header,
     .dmc-cult-layout,
-    .dmc-cult-notes {
+    .dmc-cult-notes,
+    .dmc-cult-mantle-row {
         grid-template-columns: 1fr;
     }
 
