@@ -269,6 +269,14 @@
     gap: 0.35rem;
 }
 
+.dmc-cult-event-buttons button {
+    flex: 1 1 10rem;
+}
+
+.dmc-cult-rivalry-dc {
+    flex: 1 0 100%;
+}
+
 .dmc-cult-warning {
     margin: 0.75rem 0 0;
     color: #8a3b00;

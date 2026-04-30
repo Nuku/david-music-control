@@ -44,7 +44,7 @@ const CULT_EVENTS = [
 		range: '0 or less',
 		min: -Infinity,
 		max: 0,
-		summary: 'Followers conclude the pantheon consists of charlatans. A moderate combat encounter occurs this phase; afterward, the cult loses 1d10 RP.',
+		summary: 'Discouraged adherents have come to a terrible conclusion: their pantheon consists of charlatans! Several followers arm themselves and hone their skills before launching an attack at some point during this cult phase. This is a moderate combat encounter, and the followers wait to strike until the PCs have expended some of their daily resources. Whatever the result, the cult loses 1d10 RP to reflect the followers who perish in the fight or flee in the aftermath.',
 		actions: [{ action: 'roll-rp-loss', label: 'Roll 1d10 RP Loss', formula: '1d10', field: 'recruitmentPoints' }],
 	},
 	{
@@ -52,14 +52,14 @@ const CULT_EVENTS = [
 		range: '1',
 		min: 1,
 		max: 1,
-		summary: 'During this phase, flat-check failures are treated as critical failures.',
+		summary: 'Uninspired adherents spend more time complaining among themselves than working toward the cult\'s ends. During this cult phase, any flat check that results in a failure is treated as a critical failure instead.',
 	},
 	{
 		name: 'Empty Pews',
 		range: '2-3',
 		min: 2,
 		max: 3,
-		summary: 'When the cult earns FP or RP this phase, it earns 1 extra. At phase end, it loses 1d6 FP and 1d6 RP.',
+		summary: 'Followers lose interest and stop attending services. However, the right miracle or attention might reinvigorate the cult like never before. During this cult phase, any time the cult earns 1 or more RP, it earns 1 additional RP. Likewise, any time the cult earns 1 or more FP, it earns 1 additional FP. At the end of the phase, the cult loses 1d6 FP and 1d6 RP.',
 		actions: [{ action: 'roll-empty-pews', label: 'Roll Phase-End Losses' }],
 	},
 	{
@@ -67,7 +67,7 @@ const CULT_EVENTS = [
 		range: '4-5',
 		min: 4,
 		max: 5,
-		summary: 'A random PC hears prayers equal to the cult Size modifier. Each unanswered prayer costs 1d4 FP at phase end.',
+		summary: 'Followers bombard the pantheon with prayers and requests for small miracles, doubting their patrons\' power the more these prayers go unanswered. During this cult phase, a PC chosen at random hears a number of their followers\' prayers equal to the cult\'s Size modifier. They can fulfill one prayer by spending 3 actions and expending 1 Mythic Point within the next hour. At the end of the cult phase, the cult loses 1d4 FP for each prayer that went unanswered.',
 		actions: [{ action: 'set-prayers', label: 'Set Prayer Count' }],
 	},
 	{
@@ -82,35 +82,42 @@ const CULT_EVENTS = [
 		range: '8-9',
 		min: 8,
 		max: 9,
-		summary: 'A rival cult interferes. At phase end, it attempts a DC 9 flat check, modified by Assist the Pantheon results.',
+		summary: 'The growth and miraculous claims of the PCs\' cult have drawn the attention of another cult, jealous of their new rival. At the end of this phase, the rival cult attempts a DC 9 flat check to steal an important relic, lure away followers, or inflict other kinds of damage against the PCs\' cult. The PCs\' cult can Assist the Pantheon one or more times during this phase, dedicating the effort toward fending off the rival cult rather than granting the PCs Aid on checks. For each success, increase the flat check DC by 2. For each critical success, increase the flat check DC by 1d4+1. Critical Success: as success, but the cult loses 2d4+1 FP and 2d4+1 RP. Success: the cult loses 1d4+1 FP and 1d4+1 RP. Failure: the rival cult\'s plot fails. Critical Failure: the rivals are thwarted so decisively that the PCs\' cult gains 1d4+1 FP.',
+		actions: [
+			{ action: 'roll-rivalry-dc-bonus', label: 'Roll Crit Success DC Bonus' },
+			{ action: 'roll-rivalry-check', label: 'Roll Rival Flat Check' },
+			{ action: 'apply-rivalry-critical-success', label: 'Apply Critical Success' },
+			{ action: 'apply-rivalry-success', label: 'Apply Success' },
+			{ action: 'apply-rivalry-critical-failure', label: 'Apply Critical Failure' },
+		],
 	},
 	{
 		name: 'Wave of Evangelism',
 		range: '10-11',
 		min: 10,
 		max: 11,
-		summary: 'During this phase, success when Recruiting Adherents is treated as a critical success.',
+		summary: 'Adherents can\'t help but spread word of their patrons\' wonders. During this phase, treat any success when Recruiting Adherents as a critical success.',
 	},
 	{
 		name: 'Zealous Schism',
 		range: '12',
 		min: 12,
 		max: 12,
-		summary: 'Teach Doctrine DCs increase by 2. Any d4 rolled for maximum FP change is treated as 4. A critical failure costs half the cult RP at phase end.',
+		summary: 'A topic captures the congregation\'s imagination yet exposes a doctrinal flaw that fuels intense disagreement and debate for the duration of the cult phase. During this phase, increase the DC of all checks to Teach Doctrine by 2, and treat any d4 rolled to determine the maximum FP change as a 4. However, a critical failure has devastating variant results: the cult loses half of its Recruitment Points at the end of the cult phase, representing a splinter faith that departs the cult in outrage.',
 	},
 	{
 		name: 'Cult Collaboration',
 		range: '13',
 		min: 13,
 		max: 13,
-		summary: 'During this phase, success when Creating Wonders is treated as a critical success.',
+		summary: 'Impressed by the cult\'s zeal, another faith proposes collaboration toward a common goal. During this cult phase, treat any success when Creating Wonders as a critical success.',
 	},
 	{
 		name: 'Divine Renaissance',
 		range: '14 or more',
 		min: 14,
 		max: Infinity,
-		summary: 'Increase the number of cult activities the cult can perform during this phase by 2.',
+		summary: 'The figurative stars align, and the cult overflows with energy, enthusiasm, and focus. Increase the number of cult activities the cult can perform during this phase by 2.',
 		actions: [{ action: 'add-activity-bonus', label: 'Apply +2 Activities' }],
 	},
 ];
@@ -129,6 +136,9 @@ function getDefaultCultData(actor) {
 		gmNotes: '',
 		activityBonus: 0,
 		pendingPrayers: 0,
+		rivalryAssistSuccesses: 0,
+		rivalryAssistCriticalSuccesses: 0,
+		rivalryDcBonus: 0,
 		currentEvent: null,
 	};
 }
@@ -309,6 +319,14 @@ function buildCultTab(actor, data, stats, isGM, previewAsPlayer) {
 						<span>Pending Prayers</span>
 						<input type="number" name="pendingPrayers" min="0" value="${Number(data.pendingPrayers) || 0}" ${disabled}>
 					</label>
+					<label>
+						<span>Rivalry Successes</span>
+						<input type="number" name="rivalryAssistSuccesses" min="0" value="${Number(data.rivalryAssistSuccesses) || 0}" ${disabled}>
+					</label>
+					<label>
+						<span>Rivalry Crits</span>
+						<input type="number" name="rivalryAssistCriticalSuccesses" min="0" value="${Number(data.rivalryAssistCriticalSuccesses) || 0}" ${disabled}>
+					</label>
 				</div>
 				<div class="dmc-cult-notes">
 					${textArea('Agenda', 'agenda', data.agenda, readonly)}
@@ -342,7 +360,7 @@ function buildEventsPanel(data, stats, canEdit) {
 					<strong>${escapeHtml(event.name)}</strong>
 					<span>Result ${event.total} (${event.roll} ${formatModifier(event.modifier)})</span>
 					<p>${escapeHtml(event.summary)}</p>
-					<div class="dmc-cult-event-buttons">${buildEventButtons(event, canEdit)}</div>
+					<div class="dmc-cult-event-buttons">${buildEventButtons(event, canEdit, data)}</div>
 				</div>`
 				: '<p>No cult event rolled for this phase.</p>'
 			}
@@ -350,15 +368,21 @@ function buildEventsPanel(data, stats, canEdit) {
 	`;
 }
 
-function buildEventButtons(event, canEdit) {
+function buildEventButtons(event, canEdit, data) {
 	const definition = CULT_EVENTS.find((candidate) => candidate.name === event.name);
 	const buttons = definition?.actions ?? [];
 	if (!buttons.length) return '<small>No automatic effect buttons for this event.</small>';
+	const rivalryDc = 9 + (Number(data.rivalryAssistSuccesses) || 0) * 2 + (Number(data.rivalryDcBonus) || 0);
+	const rivalryControls = event.name === 'Cult Rivalry' ? `
+		<div class="dmc-cult-rivalry-dc">
+			<small>Rival flat check DC: ${rivalryDc}</small>
+		</div>
+	` : '';
 	return buttons.map((button) => `
 		<button type="button" data-action="${button.action}" ${canEdit ? '' : 'disabled'}>
 			${escapeHtml(button.label)}
 		</button>
-	`).join('');
+	`).join('') + rivalryControls;
 }
 
 function statCard(label, value) {
@@ -417,6 +441,11 @@ function activateCultControls(app, root, actor, isGM) {
 	});
 	root.querySelector('[data-action="roll-rp-loss"]')?.addEventListener('click', () => rollAndApplyLoss(app, actor, '1d10', 'recruitmentPoints', 'False Gods RP Loss'));
 	root.querySelector('[data-action="roll-empty-pews"]')?.addEventListener('click', () => rollEmptyPewsLoss(app, actor));
+	root.querySelector('[data-action="roll-rivalry-dc-bonus"]')?.addEventListener('click', () => rollRivalryDcBonus(app, actor));
+	root.querySelector('[data-action="roll-rivalry-check"]')?.addEventListener('click', () => rollRivalryFlatCheck(actor));
+	root.querySelector('[data-action="apply-rivalry-critical-success"]')?.addEventListener('click', () => applyRivalryLoss(app, actor, '2d4+1', 'Cult Rivalry Critical Success Loss'));
+	root.querySelector('[data-action="apply-rivalry-success"]')?.addEventListener('click', () => applyRivalryLoss(app, actor, '1d4+1', 'Cult Rivalry Success Loss'));
+	root.querySelector('[data-action="apply-rivalry-critical-failure"]')?.addEventListener('click', () => applyRivalryCriticalFailure(app, actor));
 }
 
 async function updateCultData(app, actor, root) {
@@ -451,6 +480,7 @@ async function rollCultEvent(app, actor) {
 		modifier: stats.fervor.bonus,
 		total,
 		summary: event.summary,
+		rivalryDcBonus: Number(data.rivalryDcBonus) || 0,
 	};
 
 	await roll.toMessage({
@@ -469,6 +499,75 @@ async function rollAndApplyLoss(app, actor, formula, field, label) {
 		flavor: `${data.name}: ${label}`,
 	});
 	await applyCultData(app, actor, { [field]: nextValue });
+}
+
+async function rollRivalryDcBonus(app, actor) {
+	const data = getCultData(actor);
+	const critCount = Number(data.rivalryAssistCriticalSuccesses) || 0;
+	if (!critCount) {
+		ui.notifications.warn('Enter at least one Rivalry Crit before rolling the DC bonus.');
+		return;
+	}
+
+	const roll = await new Roll(`${critCount}d4 + ${critCount}`).evaluate({ async: true });
+	const bonus = (Number(data.rivalryAssistSuccesses) || 0) * 2 + roll.total;
+	await roll.toMessage({
+		speaker: ChatMessage.getSpeaker({ actor }),
+		flavor: `${data.name}: Cult Rivalry critical-success DC bonus`,
+	});
+	await applyCultData(app, actor, {
+		rivalryDcBonus: bonus,
+		currentEvent: data.currentEvent ? { ...data.currentEvent, rivalryDcBonus: bonus } : data.currentEvent,
+	});
+}
+
+async function rollRivalryFlatCheck(actor) {
+	const data = getCultData(actor);
+	const dc = 9 + (Number(data.rivalryAssistSuccesses) || 0) * 2 + (Number(data.rivalryDcBonus) || 0);
+	const roll = await new Roll('1d20').evaluate({ async: true });
+	const total = roll.total;
+	const degree =
+		total === 20 && total >= dc ? 'Critical Success'
+			: total === 1 && total < dc ? 'Critical Failure'
+				: total >= dc + 10 ? 'Critical Success'
+					: total >= dc ? 'Success'
+						: total <= dc - 10 ? 'Critical Failure'
+							: 'Failure';
+
+	await roll.toMessage({
+		speaker: ChatMessage.getSpeaker({ actor }),
+		flavor: `${data.name}: Rival Cult Flat Check vs DC ${dc} (${degree})`,
+	});
+}
+
+async function applyRivalryLoss(app, actor, formula, label) {
+	const fpRoll = await new Roll(formula).evaluate({ async: true });
+	const rpRoll = await new Roll(formula).evaluate({ async: true });
+	const data = getCultData(actor);
+	await fpRoll.toMessage({
+		speaker: ChatMessage.getSpeaker({ actor }),
+		flavor: `${data.name}: ${label} FP`,
+	});
+	await rpRoll.toMessage({
+		speaker: ChatMessage.getSpeaker({ actor }),
+		flavor: `${data.name}: ${label} RP`,
+	});
+	await applyCultData(app, actor, {
+		fervorPoints: Math.max(0, (Number(data.fervorPoints) || 0) - fpRoll.total),
+		recruitmentPoints: Math.max(0, (Number(data.recruitmentPoints) || 0) - rpRoll.total),
+	});
+}
+
+async function applyRivalryCriticalFailure(app, actor) {
+	const roll = await new Roll('1d4+1').evaluate({ async: true });
+	const data = getCultData(actor);
+	await roll.toMessage({
+		speaker: ChatMessage.getSpeaker({ actor }),
+		flavor: `${data.name}: Cult Rivalry Critical Failure FP Gain`,
+	});
+	await applyCultData(app, actor, {
+		fervorPoints: (Number(data.fervorPoints) || 0) + roll.total,
+	});
 }
 
 async function rollEmptyPewsLoss(app, actor) {

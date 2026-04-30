@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.14] - 2026-04-30
+
+### Changed
+- **PF2e cult system**: Expanded cult event text and added Cult Rivalry controls for Assist bonuses, the rival flat check, and applying FP/RP outcomes.
+
 ## [2.4.13] - 2026-04-30
 
 ### Changed
