@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.16] - 2026-04-30
+
+### Fixed
+- **PF2e cult system**: Cult names now default blank instead of using the party name, and mantle selections can be cleared back to no mantle.
+
 ## [2.4.15] - 2026-04-30
 
 ### Added

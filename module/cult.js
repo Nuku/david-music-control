@@ -156,7 +156,7 @@ const CULT_EVENTS = [
 
 function getDefaultCultData(actor) {
 	return {
-		name: `${actor.name} Cult`,
+		name: '',
 		level: actor.level ?? 1,
 		fervorPoints: 5,
 		recruitmentPoints: 1,
@@ -427,7 +427,7 @@ function buildMantleRow(member, mantleKey, canEdit) {
 		<article class="dmc-cult-mantle-row" data-member-id="${member.id}">
 			<div class="dmc-cult-mantle-pc">
 				<strong>${escapeHtml(member.name)}</strong>
-				<select name="mantle-${member.id}" data-action="select-mantle" data-member-id="${member.id}" ${canChoose ? '' : 'disabled'}>
+				<select data-action="select-mantle" data-member-id="${member.id}" ${canChoose ? '' : 'disabled'}>
 					<option value="">Choose Mantle</option>
 					${Object.entries(MANTLES).map(([key, option]) => `
 						<option value="${key}" ${key === mantleKey ? 'selected' : ''}>${option.name}</option>
