@@ -28,3 +28,9 @@ There is a new button in the encounter tracker for overring the battle music for
 In the **Token Configuration** application there is a new button on the header called **Combat Music**, using that application you can configure specific music configurations related to that specific token.
 
 For PF2e party actors, the **Token Configuration** application also has a **Cluster Party** button. It builds a single crowd-style image from the party members' token images, saves it in the world folder, and sets it as the party actor and token image.
+
+## Auto Walls Prototype
+
+The scene controls include an **Auto Wall Scene** tool for GMs. It reads the active scene background in the browser, previews detected walls and doors on the canvas, and can apply the preview as Foundry Wall documents.
+
+This is currently a prototype. Preview before applying; it is intended to create an editable first draft, not a finished wall layout.

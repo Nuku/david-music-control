@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.5] - 2026-04-30
+
+### Added
+- **Auto Walls prototype**: Added a GM scene-control tool that previews browser-native wall and door detection for the active scene background and can apply the preview as Foundry Wall documents.
+
 ## [2.4.4] - 2026-04-29
 
 ### Fixed
