@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.19] - 2026-05-01
+
+### Changed
+- **PF2e cult system**: Cult Activity chat cards now include the full activity text and an estimated standard DC for the cult's level.
+
 ## [2.4.18] - 2026-04-30
 
 ### Added

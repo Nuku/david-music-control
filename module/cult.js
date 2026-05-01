@@ -24,6 +24,28 @@ const LEVEL_MODIFIERS = {
 	19: 29,
 	20: 30,
 };
+const STANDARD_DCS_BY_LEVEL = {
+	1: 15,
+	2: 16,
+	3: 18,
+	4: 19,
+	5: 20,
+	6: 22,
+	7: 23,
+	8: 24,
+	9: 26,
+	10: 27,
+	11: 28,
+	12: 30,
+	13: 31,
+	14: 32,
+	15: 34,
+	16: 35,
+	17: 36,
+	18: 38,
+	19: 39,
+	20: 40,
+};
 const FERVOR_RANKS = [
 	{ rank: 'Apathetic', min: 0, max: 2, checkDc: 1, bonus: -2 },
 	{ rank: 'Observant', min: 3, max: 4, checkDc: 0, bonus: -1 },
@@ -74,27 +96,65 @@ const CULT_ACTIVITIES = [
 	{
 		key: 'assist-pantheon',
 		name: 'Assist Pantheon',
-		description: 'The cult helps the pantheon with a defined task at the edges of the adventure, such as gathering leads, preparing ground, distracting foes, or leaving useful resources where the PCs can use them. Usually requires the cult Fervor to not be apathetic.',
+		description: 'The cult helps the pantheon with a defined task at the edges of the adventure.',
+		text: [
+			'Requirements: The cult\'s Fervor isn\'t apathetic.',
+			'The cult is tasked with directly helping the pantheon with a task, such as investigating an organization, recovering a rare book, exploring a region, or thwarting a specific foe. This usually doesn\'t involve the adherents fighting alongside the PCs or following them in a massive pack; instead, adherents might report to the PCs with useful leads, prepare potential battlefields in a way that favors their patrons, fire arrows that distract a beast, leave a pilfered key where the PCs can find it, or provide similar assistance at the adventure\'s periphery.',
+			'The pantheon defines the task, working with the GM to refine it if need be. The cult attempts a check against a standard DC of the PCs\' level.',
+			'Critical Success: As success, but the cult grants a +2 circumstance bonus to the triggering checks. This increases to +3 if the cult\'s level is 7 or higher, and it increases to +4 if the cult\'s level is 15 or higher.',
+			'Success: Adherents disperse to assist the pantheon in its upcoming endeavors. The PCs can invoke the cult up to three times while pursuing the task; the cult Aids the PC, granting the PC a +1 circumstance bonus to the triggering check before rolling. The number of times the PCs can gain this Aid increases to four times if the cult is Medium or Large, and it increases to five times if the cult is Huge or Gargantuan.',
+			'Failure: As success, but the cult can Aid the PCs only once.',
+			'Critical Failure: Tragedy befalls some of the adherents as they provide support, such as being captured by foes, stepped on by a giant, or shipwrecked. The cult loses 1d4 Fervor Points and 1d4 Recruitment Points.',
+			'Special: At the GM\'s discretion, the cult might cache a useful tool where the PCs will find it rather than granting a circumstance bonus to a check. This might be a fistful of arrows made of a special material, a coiled rope stowed near where the PCs have to make a hasty escape down a cliffside, or a similar boon. The item\'s level shouldn\'t exceed half the cult\'s level.',
+		],
 	},
 	{
 		key: 'create-wonders',
 		name: 'Create Wonders',
-		description: 'The cult works on up to three projects, such as manuscripts, items, or buildings. The cult makes Crafting progress during the cult phase, and the PCs decide how to divide that work and whether to finish or continue the projects later. Usually requires the cult Fervor to not be apathetic.',
+		description: 'The cult works on manuscripts, magic items, buildings, or other projects.',
+		text: [
+			'Requirements: The cult\'s Fervor isn\'t apathetic.',
+			'The cult is directed to create anything from manuscripts to magic items to buildings. When scheduling this activity, identify up to three projects the cult works on; any items they create must either have common rarity or be items for which the PCs have access or a formula. During the cult phase, the cult attempts a number of checks to Craft equal to twice the cult\'s Size modifier. The PCs decide at the beginning of the phase how to divide these checks between multiple projects.',
+			'Each check represents the initial 2 days of work plus 18 additional days of labor. For the purposes of tracking progress, the cult\'s proficiency is trained, which increases to expert at 7th level and increases to master at 15th level. At the end of the phase, the PCs can choose to conclude the cult\'s Crafting and pay the projects\' remaining costs to finish the project, or they can leave the project unfinished - likely continuing work during subsequent cult phases.',
+			'Recommended prices for real estate appear in the Housing Costs table of Pathfinder Lost Omens Travel Guide, ranging from 100 gp for a thatch hut to 15,000 gp for a fine villa.',
+		],
 	},
 	{
 		key: 'oversee-rites',
 		name: 'Oversee Rites',
-		description: 'The cult performs special rites, prayers, fasting, or magical rituals to empower the pantheon. The result can generate Mythic Points and sometimes Fervor Points, while a bad failure can cost Fervor and Recruitment.',
+		description: 'The cult performs special rites to empower the pantheon.',
+		text: [
+			'Requirements: The cult\'s Fervor isn\'t apathetic.',
+			'The cult performs special rites to empower their pantheon - anything from prayers to fasting to magical rituals that channel the world\'s energies into their hero-gods. The cult attempts a check against the standard DC of the PCs\' level.',
+			'Critical Success: The cult gains 1d4 Mythic Points (minimum 2), and the cult gains 1d4 Fervor Points.',
+			'Success: The cult gains 1d4-1 Mythic Points (minimum 1).',
+			'Failure: The cult\'s rites have minimal effect, earning the cult only 1d4-2 Mythic Points (minimum 0).',
+			'Critical Failure: The rites backfire horribly, such as causing a magical explosion, invoking spirits that possess ritualists, or accidentally conjuring a hostile fiend. The cult loses 1d4 FP and 1d4 RP.',
+		],
 	},
 	{
 		key: 'recruit-adherents',
 		name: 'Recruit Adherents',
-		description: 'The cult focuses on evangelism, reputation, and outreach to draw in new followers. The result changes Recruitment Points based on how well the recruiting effort lands.',
+		description: 'The cult focuses on evangelism and attracting new members.',
+		text: [
+			'Under your direction, the cult focuses on evangelism and developing its reputation to attract new members. The cult attempts a check against a standard DC of the cult\'s level.',
+			'Critical Success: The cult\'s messaging resonates spectacularly! The cult gains 2d4+4 Recruitment Points.',
+			'Success: The cult\'s efforts result in a steady stream of new recruits. The cult gains 2d4 Recruitment Points.',
+			'Failure: The evangelism changes few minds, earning the cult only 1d4 Recruitment Points.',
+			'Critical Failure: Whether due to pushy apostles, poor messaging, or unintended scandals, recent evangelism disillusions followers. The cult loses 1d4 Recruitment Points.',
+		],
 	},
 	{
 		key: 'teach-doctrine',
 		name: 'Teach Doctrine',
-		description: 'The pantheon reinforces, revises, or teaches its edicts and anathema. Choose whether the effort is meant to raise or lower Fervor Points, then resolve the activity to determine how much the total can change.',
+		description: 'The pantheon reinforces, revises, or teaches its edicts and anathema.',
+		text: [
+			'You reinforce the pantheon\'s edicts and anathema. This might involve directly teaching disciples or training higher-rank adherents in how to instruct their disciples. You might also create sacred literature to guide the cult, introducing new lore or revising troublesome canon. Choose whether to increase or decrease the cult\'s Fervor Points, then the cult attempts a check against a standard DC of the cult\'s level. The result determines the maximum amount by which you can change the cult\'s Fervor Point total, though you can choose to change the FP total by a lesser amount after rolling.',
+			'Critical Success: The cult embraces your teachings. Roll 2d4+2. You add or subtract a number of FP from the cult that doesn\'t exceed the roll\'s result.',
+			'Success: As critical success, but roll 1d4+1.',
+			'Failure: As critical success, but roll 1d4-1.',
+			'Critical Failure: The teachings inadvertently introduce contradictions and spark arguments that will fuel arguments for months to come. Roll 1d10 and either add or subtract the result (determined randomly) from the cult\'s FP total.',
+		],
 	},
 ];
 const CULT_EVENTS = [
@@ -659,13 +719,17 @@ async function shareCultActivity(actor, activityKey) {
 	if (!activity) return;
 
 	const data = getCultData(actor);
+	const stats = getCultStats(data);
 	const cultName = data.name?.trim() || actor.name;
+	const standardDc = STANDARD_DCS_BY_LEVEL[stats.level] ?? STANDARD_DCS_BY_LEVEL[1];
 	await ChatMessage.create({
 		speaker: ChatMessage.getSpeaker({ actor }),
 		flavor: `${cultName}: ${activity.name}`,
 		content: `
 			<h3>${escapeHtml(activity.name)}</h3>
-			<p>${escapeHtml(activity.description)}</p>
+			${activity.text.map((line) => `<p>${formatActivityLine(line)}</p>`).join('')}
+			<hr>
+			<p><strong>Estimated standard DC:</strong> DC ${standardDc} for cult level ${stats.level}.</p>
 		`,
 	});
 }
@@ -787,6 +851,11 @@ function escapeHtml(value) {
 	const element = document.createElement('textarea');
 	element.textContent = String(value ?? '');
 	return element.innerHTML;
+}
+
+function formatActivityLine(line) {
+	const escaped = escapeHtml(line);
+	return escaped.replace(/^([^:]+):/, '<strong>$1:</strong>');
 }
 
 Hooks.on('renderActorSheet', renderCultSheet);
