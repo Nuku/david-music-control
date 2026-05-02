@@ -152,13 +152,11 @@ export async function handleSceneChange(scene, { ignoreSettingCheck = false } = 
 	if (!scene) return;
 	if (game.combat?.started) return;
 
-	// Stop any non-combat music currently playing.
-	stopNonCombatMusic();
-
 	// Step 1: Look for a playlist matching the scene name.
 	const playlist = findScenePlaylist(scene);
 	if (playlist) {
 		console.log(`David Music Control | Starting scene music: ${playlist.name}`);
+		stopNonCombatMusic();
 		await playlist.playAll();
 		return;
 	}
@@ -170,6 +168,7 @@ export async function handleSceneChange(scene, { ignoreSettingCheck = false } = 
 	// If only one playlist in the folder, just play it.
 	if (folderMatch.playlists.length === 1) {
 		console.log(`David Music Control | Starting scene music from folder: ${folderMatch.playlists[0].name}`);
+		stopNonCombatMusic();
 		await folderMatch.playlists[0].playAll();
 		return;
 	}
@@ -178,6 +177,7 @@ export async function handleSceneChange(scene, { ignoreSettingCheck = false } = 
 	const chosen = await promptPlaylistSelection(scene, folderMatch.playlists);
 	if (chosen) {
 		console.log(`David Music Control | Starting scene music (chosen): ${chosen.name}`);
+		stopNonCombatMusic();
 		await chosen.playAll();
 	}
 }
@@ -211,9 +211,12 @@ Hooks.on('renderPlaylistDirectory', (app, html) => {
 		const icon = btn.querySelector('i');
 		icon.className = 'fas fa-spinner fa-spin';
 		btn.disabled = true;
-		await handleSceneChange(game.scenes.active, { ignoreSettingCheck: true });
-		icon.className = 'fas fa-music';
-		btn.disabled = false;
+		try {
+			await handleSceneChange(game.scenes.active, { ignoreSettingCheck: true });
+		} finally {
+			icon.className = 'fas fa-music';
+			btn.disabled = false;
+		}
 	});
 
 	// Try various known locations in v13's playlist sidebar.

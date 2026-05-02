@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.20] - 2026-05-02
+
+### Fixed
+- **Scene music**: Scene music lookup no longer stops currently playing music when no matching scene playlist or folder is found.
+
 ## [2.4.19] - 2026-05-01
 
 ### Changed
