@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.21] - 2026-05-03
+
+### Changed
+- **Scene music**: Direct playlist matches now stay available while folder matches are also gathered, so GMs can choose from all matching scene music options when more than one is found.
+
 ## [2.4.20] - 2026-05-02
 
 ### Fixed

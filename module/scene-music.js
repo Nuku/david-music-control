@@ -93,6 +93,11 @@ function stopNonCombatMusic() {
 	}
 }
 
+function addPlaylistChoice(playlists, playlist) {
+	if (!playlist || playlists.some((p) => p.id === playlist.id)) return playlists;
+	return [playlist, ...playlists];
+}
+
 async function promptPlaylistSelection(scene, playlists) {
 	// Use DialogV2 if available (v14+), fall back to Dialog (v13).
 	if (foundry.applications?.api?.DialogV2) {
@@ -152,29 +157,24 @@ export async function handleSceneChange(scene, { ignoreSettingCheck = false } = 
 	if (!scene) return;
 	if (game.combat?.started) return;
 
-	// Step 1: Look for a playlist matching the scene name.
+	// Step 1: Hold the first direct playlist match, then keep looking for folder choices.
 	const playlist = findScenePlaylist(scene);
-	if (playlist) {
-		console.log(`David Music Control | Starting scene music: ${playlist.name}`);
-		stopNonCombatMusic();
-		await playlist.playAll();
-		return;
-	}
 
 	// Step 2: Look for a folder matching the scene name.
 	const folderMatch = findSceneFolder(scene);
-	if (!folderMatch) return;
+	const choices = addPlaylistChoice(folderMatch?.playlists ?? [], playlist);
+	if (!choices.length) return;
 
-	// If only one playlist in the folder, just play it.
-	if (folderMatch.playlists.length === 1) {
-		console.log(`David Music Control | Starting scene music from folder: ${folderMatch.playlists[0].name}`);
+	// If there is only one playlist, just play it.
+	if (choices.length === 1) {
+		console.log(`David Music Control | Starting scene music: ${choices[0].name}`);
 		stopNonCombatMusic();
-		await folderMatch.playlists[0].playAll();
+		await choices[0].playAll();
 		return;
 	}
 
 	// Multiple playlists — ask the GM.
-	const chosen = await promptPlaylistSelection(scene, folderMatch.playlists);
+	const chosen = await promptPlaylistSelection(scene, choices);
 	if (chosen) {
 		console.log(`David Music Control | Starting scene music (chosen): ${chosen.name}`);
 		stopNonCombatMusic();
