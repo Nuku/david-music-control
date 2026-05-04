@@ -30,3 +30,5 @@ In the **Token Configuration** application there is a new button on the header c
 For PF2e party actors, the **Token Configuration** application also has a **Cluster Party** button. It builds a single crowd-style image from the party members' token images, saves it in the world folder, and sets it as the party actor and token image.
 
 GMs can enable the **PF2e Cult System** module setting to add a **Cult** tab to PF2e party sheets. The tab tracks the cult's level, Fervor Points, Recruitment Points, Mythic Points, mantles, activities, and phase notes. Players can view the cult and roll its level check from the tab; GMs can edit the stored values directly.
+
+The module also includes **End Credits** tools. GMs can configure credits music and an optional background image or video in Module Settings, then start, stop, or prompt for scrolling campaign credits for all connected players. Macros and other integrations can call `game.modules.get("pf2-david-music-control").api.endCredits.prompt()` when they want the GM to confirm rolling credits.

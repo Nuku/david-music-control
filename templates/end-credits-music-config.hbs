@@ -1,0 +1,45 @@
+<form class="ec-music-form" autocomplete="off">
+
+  <div class="form-group">
+    <label for="ec-playlist-select">Playlist</label>
+    <div class="form-fields">
+      <select id="ec-playlist-select" name="playlistId">
+        <option value="">No music</option>
+        {{#each playlists}}
+          <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
+        {{/each}}
+      </select>
+    </div>
+    <p class="notes">Pick a playlist from your world's playlist library.</p>
+  </div>
+
+  <div class="form-group">
+    <label for="ec-sound-select">Track</label>
+    <div class="form-fields">
+      <select id="ec-sound-select" name="soundId">
+        {{#if sounds.length}}
+          <option value="">Pick a track</option>
+          {{#each sounds}}
+            <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
+          {{/each}}
+        {{else}}
+          <option value="">Select a playlist first</option>
+        {{/if}}
+      </select>
+    </div>
+    <p class="notes">This track will play when the credits start and stop when they end.</p>
+  </div>
+
+  <p class="notes" style="font-style:italic;margin-top:0.5em;">
+    Music is handled through Foundry's playlist system and will play for all
+    connected players, including anyone who joins while the credits are rolling.
+  </p>
+
+  <footer class="sheet-footer flexrow" style="margin-top:1em;">
+    <button type="submit" name="submit">
+      <i class="fas fa-save"></i> Save
+    </button>
+  </footer>
+
+</form>
+

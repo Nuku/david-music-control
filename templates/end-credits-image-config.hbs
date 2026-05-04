@@ -1,0 +1,41 @@
+<form class="ec-image-form" autocomplete="off">
+
+  <div class="form-group">
+    <label>Background Image or Video</label>
+    <div class="form-fields" style="display:flex;gap:4px;align-items:center;">
+      <input type="text" name="backgroundImage" value="{{backgroundImage}}"
+             placeholder="No background - leave blank for default" style="flex:1;" />
+      <button type="button" id="ec-bg-browse" title="Browse files">
+        <i class="fas fa-folder-open"></i>
+      </button>
+      <button type="button" id="ec-bg-clear" title="Clear">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <p class="notes">
+      Supported formats: <strong>PNG, JPG, WEBP, GIF</strong> and video files:
+      <strong>MP4, WEBM, OGG</strong>.<br>Leave blank for the default transparent overlay.
+    </p>
+  </div>
+
+  <div class="form-group">
+    <label>Background Opacity</label>
+    <div class="form-fields" style="display:flex;gap:8px;align-items:center;">
+      <input type="range" name="bgOpacity" min="0" max="100" step="1"
+             value="{{bgOpacity}}" style="flex:1;"
+             oninput="this.nextElementSibling.textContent = this.value + '%'" />
+      <span style="min-width:3em;text-align:right;">{{bgOpacity}}%</span>
+    </div>
+    <p class="notes">
+      How opaque the background image or video is (0 = invisible, 100 = fully opaque).
+    </p>
+  </div>
+
+  <footer class="sheet-footer flexrow" style="margin-top:1em;">
+    <button type="submit" name="submit">
+      <i class="fas fa-save"></i> Save
+    </button>
+  </footer>
+
+</form>
+
