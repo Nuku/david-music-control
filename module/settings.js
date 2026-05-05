@@ -56,13 +56,6 @@ const settings = {
 		name: 'Trait Music Rules',
 		scope: 'world',
 		config: false,
-		type: Array,
-		default: [],
-	},
-	traitMappings: {
-		name: 'Trait Music Mappings',
-		scope: 'world',
-		config: false,
 		type: String,
 		default: '[]',
 	},
@@ -97,10 +90,22 @@ const settings = {
 };
 
 export function getSetting(name) {
-	return game.settings.get(MODULE_ID, name);
+	const value = game.settings.get(MODULE_ID, name);
+	if (name !== 'traitRules') return value;
+	if (Array.isArray(value)) return value;
+	if (typeof value !== 'string' || !value) return [];
+	try {
+		const parsed = JSON.parse(value);
+		return Array.isArray(parsed) ? parsed : [];
+	} catch (_error) {
+		return [];
+	}
 }
 
 export function setSetting(name, value) {
+	if (name === 'traitRules') {
+		return game.settings.set(MODULE_ID, name, JSON.stringify(value ?? []));
+	}
 	return game.settings.set(MODULE_ID, name, value);
 }
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.25] - 2026-05-05
+
+### Fixed
+- **Settings registration**: Stored hidden trait rule data as JSON text instead of a raw array so Module Settings continue to register correctly on Foundry V14.
+
 ## [2.4.24] - 2026-05-05
 
 ### Added
