@@ -1,6 +1,9 @@
 import { getSetting, MODULE_ID } from './settings.js';
 import { getTokenMusic } from './token.js';
 
+const MODULE_SOCKET_EVENT = `module.${MODULE_ID}`;
+const VICTORY_FIREWORKS_SOCKET_TYPE = 'victoryFireworks';
+
 /* -------------------------------------------- */
 /*  State                                       */
 /* -------------------------------------------- */
@@ -263,6 +266,7 @@ async function playCombatMusic(combat) {
 async function resumePlaylists(combat) {
 	const victoryMusic = pendingVictoryMusic;
 	pendingVictoryMusic = null;
+	triggerVictoryFireworks(combat);
 
 	// Stop combat music.
 	const currentMusic = getCurrentMusic(combat);
@@ -297,7 +301,7 @@ function xpFromLevelDiff(diff) {
 	return 160; // +4 or more
 }
 
-function getVictoryMusic(combat) {
+function getVictoryXpPerPlayer(combat) {
 	const playerCombatants = combat.combatants.contents.filter((c) => c.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY);
 	const playerCount = Math.max(playerCombatants.length, 1);
 	const partyLevel = playerCombatants.length > 0
@@ -313,8 +317,13 @@ function getVictoryMusic(combat) {
 		const level = enemy.actor?.level ?? partyLevel;
 		totalXP += xpFromLevelDiff(level - partyLevel);
 	}
+
 	// The level-diff table gives XP per person for a 4-player party. Scale for other party sizes.
-	const xpPerPlayer = totalXP * (4 / playerCount);
+	return totalXP * (4 / playerCount);
+}
+
+function getVictoryMusic(combat) {
+	const xpPerPlayer = getVictoryXpPerPlayer(combat);
 
 	const generic = getSetting('victoryMusicGeneric');
 	const trivial = getSetting('victoryMusicTrivial');
@@ -323,6 +332,65 @@ function getVictoryMusic(combat) {
 	if (xpPerPlayer >= 120) return boss || generic || null;
 	if (xpPerPlayer < 40) return trivial || generic || null;
 	return generic || null;
+}
+
+function getVictoryFireworksIntensity(combat) {
+	return Math.max(0, Math.min(100, getVictoryXpPerPlayer(combat)));
+}
+
+function triggerVictoryFireworks(combat) {
+	if (!getSetting('fireworksOnVictory')) return;
+
+	const intensity = getVictoryFireworksIntensity(combat);
+	if (intensity <= 0) return;
+
+	game.socket?.emit(MODULE_SOCKET_EVENT, { type: VICTORY_FIREWORKS_SOCKET_TYPE, intensity });
+	playVictoryFireworks(intensity);
+}
+
+function playVictoryFireworks(intensity) {
+	if (!canvas?.ready) return;
+
+	const ParticleGenerator = foundry.canvas?.animation?.ParticleGenerator;
+	if (!ParticleGenerator) return;
+	const colors = [0xff5f6d, 0xffc371, 0x7bed9f, 0x70a1ff, 0xe056fd, 0xf9ca24];
+
+	const burstCount = Math.max(2, Math.ceil(intensity / 20));
+	const particlesPerBurst = Math.max(30, Math.round(30 + intensity * 1.6));
+	const burstDelay = 180;
+	const sceneRect = canvas.dimensions?.sceneRect;
+	if (!sceneRect) return;
+
+	const generator = new ParticleGenerator({
+		mode: 'effect',
+		manual: true,
+		container: canvas.primary,
+		bounds: sceneRect,
+		textures: [PIXI.Texture.WHITE],
+		blend: PIXI.BLEND_MODES.SCREEN,
+		lifetime: [900, 1700],
+		fade: { in: 0.06, out: 0.45 },
+		velocity: { speed: [120, 420], angle: [0, 360] },
+		alpha: [0.55, 0.95],
+		scale: [0.03, 0.09],
+		rotation: { speed: [-180, 180], spread: Math.PI },
+		onSpawn: (particle) => {
+			particle.tint = colors[Math.floor(Math.random() * colors.length)];
+		},
+	});
+
+	generator.start();
+
+	for (let i = 0; i < burstCount; i++) {
+		window.setTimeout(() => {
+			const x = sceneRect.x + sceneRect.width * (0.15 + Math.random() * 0.7);
+			const y = sceneRect.y + sceneRect.height * (0.08 + Math.random() * 0.42);
+			generator.spawnParticles(particlesPerBurst, { position: { x, y } });
+		}, i * burstDelay);
+	}
+
+	const totalDuration = burstCount * burstDelay + 2200;
+	window.setTimeout(() => generator.stop(), totalDuration);
 }
 
 /* -------------------------------------------- */
@@ -386,4 +454,11 @@ Hooks.once('setup', () => {
 		});
 		Hooks.on('deleteCombat', resumePlaylists);
 	}
+});
+
+Hooks.once('ready', () => {
+	game.socket?.on(MODULE_SOCKET_EVENT, (data) => {
+		if (data?.type !== VICTORY_FIREWORKS_SOCKET_TYPE) return;
+		playVictoryFireworks(Number(data.intensity) || 0);
+	});
 });

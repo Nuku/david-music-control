@@ -44,6 +44,14 @@ const settings = {
 		default: true,
 		requiresReload: true,
 	},
+	fireworksOnVictory: {
+		name: 'Fireworks on Victory',
+		hint: 'On Foundry V14+, show colorful victory fireworks based on encounter XP when combat ends.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	traitRules: {
 		name: 'Trait Music Rules',
 		scope: 'world',

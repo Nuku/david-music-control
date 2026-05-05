@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.24] - 2026-05-05
+
+### Added
+- **Victory fireworks**: Added a `Fireworks on Victory` setting that uses Foundry V14 particle generators to show colorful celebratory bursts based on encounter XP when combat ends.
+
+### Changed
+- **Compatibility**: Updated `module.json` to mark Foundry V14 as the verified compatibility target.
+
 ## [2.4.23] - 2026-05-05
 
 ### Fixed
