@@ -29,6 +29,21 @@ let posY          = 0;
  */
 let pausedSnapshot = [];
 
+function refreshSettingsToggleButton() {
+  const btn = document.querySelector(`button[data-key="${MODULE_ID}.endCreditsToggle"]`);
+  if (!btn) return;
+
+  btn.innerHTML = creditsActive
+    ? `<i class="fas fa-stop-circle"></i> Stop Credits`
+    : `<i class="fas fa-film"></i> Start Credits`;
+  btn.style.color = creditsActive ? "var(--color-level-error, #aa2222)" : "";
+}
+
+function setCreditsActive(active) {
+  creditsActive = active;
+  refreshSettingsToggleButton();
+}
+
 // ── Silly content ──────────────────────────────────────────────────────────
 
 const SILLY_ROLES = [
@@ -789,7 +804,7 @@ function buildBackgroundHTML() {
 
 function startCredits() {
   if (creditsActive) return;
-  creditsActive = true;
+  setCreditsActive(true);
 
   // Leave the Foundry sidebar uncovered so players can still use chat,
   // compendiums, etc. while the credits roll. Read the sidebar width at
@@ -833,7 +848,7 @@ function startCredits() {
 
 function stopCredits() {
   if (!creditsActive) return;
-  creditsActive = false;
+  setCreditsActive(false);
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
   document.getElementById("ec-overlay")?.remove();
 }
@@ -855,7 +870,7 @@ async function apiToggle() {
     return;
   }
 
-  const starting = !creditsActive;
+  const starting = !(creditsActive || game.settings.get(MODULE_ID, "endCreditsActive"));
   const action   = starting ? "start" : "stop";
 
   // Persist state so late-joining clients can catch up on their `ready` hook
@@ -996,6 +1011,8 @@ Hooks.once("ready", () => {
   if (game.settings.get(MODULE_ID, "endCreditsActive")) {
     console.log("[End Credits] Credits already active — starting overlay for late joiner.");
     startCredits();
+  } else {
+    refreshSettingsToggleButton();
   }
 
   // Expose public API
@@ -1018,17 +1035,9 @@ Hooks.on("renderSettingsConfig", (_app, html) => {
   const btn = root?.querySelector(`button[data-key="${MODULE_ID}.endCreditsToggle"]`);
   if (!btn) return;
 
-  function refreshLabel() {
-    const running = creditsActive;
-    btn.innerHTML = running
-      ? `<i class="fas fa-stop-circle"></i> Stop Credits`
-      : `<i class="fas fa-film"></i> Start Credits`;
-    btn.style.color = running ? "var(--color-level-error, #aa2222)" : "";
-  }
-
-  refreshLabel();
+  refreshSettingsToggleButton();
 
   // Re-check label after the click fires (apiToggle is async, so wait a tick)
-  btn.addEventListener("click", () => setTimeout(refreshLabel, 50));
+  btn.addEventListener("click", () => setTimeout(refreshSettingsToggleButton, 50));
 });
 

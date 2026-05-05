@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.23] - 2026-05-05
+
+### Fixed
+- **End credits**: Stopping credits from the overlay now refreshes the Module Settings toggle correctly so credits can be started again without using the macro.
+
+### Added
+- **End credits**: Added a one-time migration that imports legacy `end-credits` module settings into this module's end credits settings when present.
+
 ## [2.4.22] - 2026-05-04
 
 ### Added

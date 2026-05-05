@@ -1,6 +1,15 @@
 import { MODULE_ID } from './settings.js';
 
 const OLD_IDS = ['combat-music-master', 'david-music-control'];
+const MIGRATION_VERSION = '2.4.23';
+const END_CREDITS_OLD_ID = 'end-credits';
+const END_CREDITS_SETTING_MAP = [
+	['creditsActive', 'endCreditsActive', false],
+	['playlistId', 'endCreditsPlaylistId', ''],
+	['soundId', 'endCreditsSoundId', ''],
+	['backgroundImage', 'endCreditsBackgroundImage', ''],
+	['bgOpacity', 'endCreditsBgOpacity', 1.0],
+];
 
 async function migrateFlags(doc) {
 	for (const oldId of OLD_IDS) {
@@ -21,12 +30,39 @@ async function migrateFlags(doc) {
 	}
 }
 
+async function migrateEndCreditsSettings() {
+	const oldStorage = game.settings.storage.get('world');
+	if (!oldStorage) return;
+
+	let migratedAny = false;
+
+	for (const [oldKey, newKey, defaultValue] of END_CREDITS_SETTING_MAP) {
+		const oldSetting = oldStorage.get(`${END_CREDITS_OLD_ID}.${oldKey}`);
+		if (!oldSetting) continue;
+
+		const oldValue = oldSetting.value;
+		if (oldValue === undefined) continue;
+
+		const newValue = game.settings.get(MODULE_ID, newKey);
+		if (newValue !== defaultValue) continue;
+		if (oldValue === defaultValue) continue;
+
+		await game.settings.set(MODULE_ID, newKey, oldValue);
+		migratedAny = true;
+		console.log(`David Music Control | Migrated end credits setting ${oldKey} -> ${newKey}`);
+	}
+
+	if (migratedAny) {
+		console.log('David Music Control | End credits settings migrated from end-credits.');
+	}
+}
+
 export async function migrate() {
 	if (!game.user.isGM) return;
 
 	// Check if this migration version has already run.
 	const migratedVersion = game.settings.get(MODULE_ID, 'migrated');
-	if (migratedVersion === '2.3.0') return;
+	if (migratedVersion === MIGRATION_VERSION) return;
 
 	console.log('David Music Control | Checking for flag migration...');
 
@@ -60,7 +96,9 @@ export async function migrate() {
 		await migrateFlags(combat);
 	}
 
+	await migrateEndCreditsSettings();
+
 	// Mark migration as done so it never runs again.
-	await game.settings.set(MODULE_ID, 'migrated', '2.3.0');
+	await game.settings.set(MODULE_ID, 'migrated', MIGRATION_VERSION);
 	console.log('David Music Control | Migration complete.');
 }
