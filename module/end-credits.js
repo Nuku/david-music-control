@@ -959,11 +959,11 @@ Hooks.once("init", () => {
   // World settings — persisted so late-joiners know the current state
   const worldHidden = { scope: "world", config: false };
   const hiddenSettings = [
-    ["endCreditsActive", { ...worldHidden, type: Boolean, default: false }],
-    ["endCreditsPlaylistId", { ...worldHidden, type: String, default: "" }],
-    ["endCreditsSoundId", { ...worldHidden, type: String, default: "" }],
-    ["endCreditsBackgroundImage", { ...worldHidden, type: String, default: "" }],
-    ["endCreditsBgOpacity", { ...worldHidden, type: Number, default: 1.0 }],
+    ["endCreditsActive", { ...worldHidden, name: "End Credits Active", hint: "Internal end credits active state.", type: Boolean, default: false }],
+    ["endCreditsPlaylistId", { ...worldHidden, name: "End Credits Playlist", hint: "Stored end credits playlist id.", type: String, default: "" }],
+    ["endCreditsSoundId", { ...worldHidden, name: "End Credits Sound", hint: "Stored end credits sound id.", type: String, default: "" }],
+    ["endCreditsBackgroundImage", { ...worldHidden, name: "End Credits Background", hint: "Stored end credits background image or video.", type: String, default: "" }],
+    ["endCreditsBgOpacity", { ...worldHidden, name: "End Credits Background Opacity", hint: "Stored end credits background opacity.", type: Number, default: 1.0 }],
   ];
   for (const [key, data] of hiddenSettings) {
     try {

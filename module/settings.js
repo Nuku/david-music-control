@@ -60,6 +60,7 @@ const settings = {
 	},
 	traitRules: {
 		name: 'Trait Music Rules',
+		hint: 'Stored PF2e trait-based music rules.',
 		scope: 'world',
 		config: false,
 		type: String,
@@ -67,6 +68,7 @@ const settings = {
 	},
 	migrated: {
 		name: 'Migrated',
+		hint: 'Internal migration marker.',
 		scope: 'world',
 		config: false,
 		type: String,
@@ -74,6 +76,7 @@ const settings = {
 	},
 	victoryMusicGeneric: {
 		name: 'Victory Music (Generic)',
+		hint: 'Stored generic victory music selection.',
 		scope: 'world',
 		config: false,
 		type: String,
@@ -81,6 +84,7 @@ const settings = {
 	},
 	victoryMusicTrivial: {
 		name: 'Victory Music (Trivial)',
+		hint: 'Stored trivial victory music selection.',
 		scope: 'world',
 		config: false,
 		type: String,
@@ -88,6 +92,7 @@ const settings = {
 	},
 	victoryMusicBoss: {
 		name: 'Victory Music (Boss)',
+		hint: 'Stored boss victory music selection.',
 		scope: 'world',
 		config: false,
 		type: String,
