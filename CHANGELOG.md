@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.30] - 2026-05-07
+
+### Fixed
+- **Settings**: Removed an unsupported settings field from the victory fireworks image setting that could cause the module's settings section to disappear.
+
 ## [2.4.29] - 2026-05-07
 
 ### Changed

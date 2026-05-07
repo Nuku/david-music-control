@@ -58,7 +58,6 @@ const settings = {
 		scope: 'world',
 		config: true,
 		type: String,
-		filePicker: 'imagevideo',
 		default: '',
 	},
 	traitRules: {
