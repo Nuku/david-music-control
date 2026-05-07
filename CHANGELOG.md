@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.28] - 2026-05-07
+
+### Changed
+- **Victory music**: When a victory cue is configured, pre-combat ambience now resumes automatically after the victory music finishes.
+
 ## [2.4.27] - 2026-05-07
 
 ### Changed

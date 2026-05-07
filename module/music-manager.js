@@ -12,6 +12,8 @@ function getModuleSocketEvent() {
 /* -------------------------------------------- */
 
 let ambiencePaused = []; // kept for safety, no longer used for ambience
+let pendingPostVictoryMusic = [];
+let pendingVictoryResumeTimer = null;
 
 function getCurrentMusic(combat) {
 	return combat._combatMusic || combat.getFlag(MODULE_ID, 'currentMusic') || '';
@@ -266,6 +268,32 @@ async function playCombatMusic(combat) {
 	await updateTurnMusic(combat);
 }
 
+async function resumeSavedMusic(flags = []) {
+	for (const flag of flags) {
+		const sound = parseMusic(flag);
+		if (!('error' in sound)) await playSound(sound);
+	}
+}
+
+function clearPendingVictoryResume() {
+	if (pendingVictoryResumeTimer) {
+		window.clearInterval(pendingVictoryResumeTimer);
+		pendingVictoryResumeTimer = null;
+	}
+	pendingPostVictoryMusic = [];
+}
+
+function watchVictoryMusic(sound, preCombatMusic) {
+	clearPendingVictoryResume();
+	pendingPostVictoryMusic = [...preCombatMusic];
+
+	pendingVictoryResumeTimer = window.setInterval(async () => {
+		if (isPlaying(sound)) return;
+		clearPendingVictoryResume();
+		await resumeSavedMusic(preCombatMusic);
+	}, 1000);
+}
+
 async function resumePlaylists(combat) {
 	const victoryMusic = pendingVictoryMusic;
 	pendingVictoryMusic = null;
@@ -283,12 +311,14 @@ async function resumePlaylists(combat) {
 	const preCombatMusic = combat.getFlag(MODULE_ID, 'preCombatMusic') ?? [];
 	if (victoryMusic) {
 		const sound = parseMusic(victoryMusic);
-		if (!('error' in sound)) await playSound(sound);
-	} else {
-		for (const flag of preCombatMusic) {
-			const sound = parseMusic(flag);
-			if (!('error' in sound)) await playSound(sound);
+		if (!('error' in sound)) {
+			await playSound(sound);
+			watchVictoryMusic(sound, preCombatMusic);
+		} else {
+			await resumeSavedMusic(preCombatMusic);
 		}
+	} else {
+		await resumeSavedMusic(preCombatMusic);
 	}
 }
 
