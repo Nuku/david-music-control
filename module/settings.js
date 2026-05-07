@@ -1,6 +1,37 @@
 export const MODULE_ID = 'pf2-david-music-control';
 import { exportMusicConfig, importMusicConfig } from './transfer.js';
 
+class VictoryFireworksImageConfig extends FormApplication {
+	static get defaultOptions() {
+		return foundry.utils.mergeObject(super.defaultOptions, {
+			id: 'dmc-victory-fireworks-image-config',
+			title: 'Victory Fireworks Image',
+			template: 'modules/pf2-david-music-control/templates/victory-fireworks-image-config.hbs',
+			width: 520,
+			height: 'auto',
+			closeOnSubmit: true,
+		});
+	}
+
+	getData() {
+		return {
+			victoryFireworksTexture: game.settings.get(MODULE_ID, 'victoryFireworksTexture') ?? '',
+		};
+	}
+
+	activateListeners(html) {
+		super.activateListeners(html);
+		html.find('[data-action="clear-image"]').on('click', () => {
+			html.find('[name="victoryFireworksTexture"]').val('');
+		});
+	}
+
+	async _updateObject(_event, formData) {
+		await game.settings.set(MODULE_ID, 'victoryFireworksTexture', formData.victoryFireworksTexture ?? '');
+		ui.notifications.info('Victory fireworks image saved.');
+	}
+}
+
 const settings = {
 	defaultPlaylist: {
 		name: 'Default Playlist',
@@ -52,9 +83,9 @@ const settings = {
 	},
 	victoryFireworksTexture: {
 		name: 'Victory Fireworks Image',
-		hint: 'Optional custom particle image for victory fireworks. Leave blank to use the default star. Keep the image small for performance, ideally around 32x32 or 64x64.',
+		hint: 'Stored custom particle image for victory fireworks.',
 		scope: 'world',
-		config: true,
+		config: false,
 		type: String,
 		default: '',
 	},
@@ -127,6 +158,19 @@ Hooks.once('setup', () => {
 		} catch (error) {
 			console.error(`David Music Control | Failed to register setting ${key}`, error);
 		}
+	}
+
+	try {
+		game.settings.registerMenu(MODULE_ID, 'victoryFireworksImageMenu', {
+			name: 'Victory Fireworks Image',
+			label: 'Configure Image',
+			hint: 'Choose an optional custom particle image for victory fireworks. Keep the image small for performance.',
+			icon: 'fas fa-image',
+			type: VictoryFireworksImageConfig,
+			restricted: true,
+		});
+	} catch (error) {
+		console.error('David Music Control | Failed to register menu victoryFireworksImageMenu', error);
 	}
 });
 

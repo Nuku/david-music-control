@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.34] - 2026-05-07
+
+### Changed
+- **Victory fireworks**: Replaced the raw custom image path setting with a dedicated configuration dialog using Foundry's built-in file picker.
+
 ## [2.4.30] - 2026-05-07
 
 ### Fixed
