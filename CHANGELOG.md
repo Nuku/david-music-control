@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.26] - 2026-05-07
+
+### Fixed
+- **Module loading**: Removed a `MODULE_ID` initialization timing issue in the victory fireworks socket setup that could prevent the module from loading.
+- **Settings resilience**: Hardened settings and menu registration so one failing registration no longer hides the entire module settings section.
+- **Victory fireworks**: Switched victory fireworks to a visible particle texture and larger burst parameters so the effect actually shows up on combat end.
+
 ## [2.4.25] - 2026-05-05
 
 ### Fixed

@@ -1,8 +1,11 @@
 import { getSetting, MODULE_ID } from './settings.js';
 import { getTokenMusic } from './token.js';
 
-const MODULE_SOCKET_EVENT = `module.${MODULE_ID}`;
 const VICTORY_FIREWORKS_SOCKET_TYPE = 'victoryFireworks';
+
+function getModuleSocketEvent() {
+	return `module.${MODULE_ID}`;
+}
 
 /* -------------------------------------------- */
 /*  State                                       */
@@ -344,7 +347,7 @@ function triggerVictoryFireworks(combat) {
 	const intensity = getVictoryFireworksIntensity(combat);
 	if (intensity <= 0) return;
 
-	game.socket?.emit(MODULE_SOCKET_EVENT, { type: VICTORY_FIREWORKS_SOCKET_TYPE, intensity });
+	game.socket?.emit(getModuleSocketEvent(), { type: VICTORY_FIREWORKS_SOCKET_TYPE, intensity });
 	playVictoryFireworks(intensity);
 }
 
@@ -354,9 +357,10 @@ function playVictoryFireworks(intensity) {
 	const ParticleGenerator = foundry.canvas?.animation?.ParticleGenerator;
 	if (!ParticleGenerator) return;
 	const colors = [0xff5f6d, 0xffc371, 0x7bed9f, 0x70a1ff, 0xe056fd, 0xf9ca24];
+	const texture = 'ui/particles/snow.png';
 
 	const burstCount = Math.max(2, Math.ceil(intensity / 20));
-	const particlesPerBurst = Math.max(30, Math.round(30 + intensity * 1.6));
+	const particlesPerBurst = Math.max(36, Math.round(36 + intensity * 1.8));
 	const burstDelay = 180;
 	const sceneRect = canvas.dimensions?.sceneRect;
 	if (!sceneRect) return;
@@ -366,13 +370,13 @@ function playVictoryFireworks(intensity) {
 		manual: true,
 		container: canvas.primary,
 		bounds: sceneRect,
-		textures: [PIXI.Texture.WHITE],
+		textures: [texture],
 		blend: PIXI.BLEND_MODES.SCREEN,
-		lifetime: [900, 1700],
-		fade: { in: 0.06, out: 0.45 },
-		velocity: { speed: [120, 420], angle: [0, 360] },
-		alpha: [0.55, 0.95],
-		scale: [0.03, 0.09],
+		lifetime: [1000, 1900],
+		fade: { in: 0.04, out: 0.5 },
+		velocity: { speed: [140, 460], angle: [0, 360] },
+		alpha: [0.75, 1.0],
+		scale: [0.2, 0.65],
 		rotation: { speed: [-180, 180], spread: Math.PI },
 		onSpawn: (particle) => {
 			particle.tint = colors[Math.floor(Math.random() * colors.length)];
@@ -385,7 +389,9 @@ function playVictoryFireworks(intensity) {
 		window.setTimeout(() => {
 			const x = sceneRect.x + sceneRect.width * (0.15 + Math.random() * 0.7);
 			const y = sceneRect.y + sceneRect.height * (0.08 + Math.random() * 0.42);
-			generator.spawnParticles(particlesPerBurst, { position: { x, y } });
+			generator.spawnParticles(particlesPerBurst, {
+				area: { x, y, radius: [12, 36] },
+			});
 		}, i * burstDelay);
 	}
 
@@ -457,7 +463,7 @@ Hooks.once('setup', () => {
 });
 
 Hooks.once('ready', () => {
-	game.socket?.on(MODULE_SOCKET_EVENT, (data) => {
+	game.socket?.on(getModuleSocketEvent(), (data) => {
 		if (data?.type !== VICTORY_FIREWORKS_SOCKET_TYPE) return;
 		playVictoryFireworks(Number(data.intensity) || 0);
 	});

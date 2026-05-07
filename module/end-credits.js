@@ -958,36 +958,54 @@ function registerApi() {
 Hooks.once("init", () => {
   // World settings — persisted so late-joiners know the current state
   const worldHidden = { scope: "world", config: false };
-  game.settings.register(MODULE_ID, "endCreditsActive",          { ...worldHidden, type: Boolean, default: false });
-  game.settings.register(MODULE_ID, "endCreditsPlaylistId",      { ...worldHidden, type: String,  default: "" });
-  game.settings.register(MODULE_ID, "endCreditsSoundId",         { ...worldHidden, type: String,  default: "" });
-  game.settings.register(MODULE_ID, "endCreditsBackgroundImage", { ...worldHidden, type: String,  default: "" });
-  game.settings.register(MODULE_ID, "endCreditsBgOpacity",      { ...worldHidden, type: Number,  default: 1.0 });
+  const hiddenSettings = [
+    ["endCreditsActive", { ...worldHidden, type: Boolean, default: false }],
+    ["endCreditsPlaylistId", { ...worldHidden, type: String, default: "" }],
+    ["endCreditsSoundId", { ...worldHidden, type: String, default: "" }],
+    ["endCreditsBackgroundImage", { ...worldHidden, type: String, default: "" }],
+    ["endCreditsBgOpacity", { ...worldHidden, type: Number, default: 1.0 }],
+  ];
+  for (const [key, data] of hiddenSettings) {
+    try {
+      game.settings.register(MODULE_ID, key, data);
+    } catch (error) {
+      console.error(`David Music Control | Failed to register end credits setting ${key}`, error);
+    }
+  }
 
   // Menu button — Music config (opens form)
-  game.settings.registerMenu(MODULE_ID, "endCreditsMusicConfig", {
-    name:       "End Credits Music",
-    label:      "Configure Music",
-    hint:       "Choose a playlist and track to play when the credits roll.",
-    icon:       "fas fa-music",
-    type:       EcMusicConfig,
-    restricted: true,
-  });
+  try {
+    game.settings.registerMenu(MODULE_ID, "endCreditsMusicConfig", {
+      name:       "End Credits Music",
+      label:      "Configure Music",
+      hint:       "Choose a playlist and track to play when the credits roll.",
+      icon:       "fas fa-music",
+      type:       EcMusicConfig,
+      restricted: true,
+    });
+  } catch (error) {
+    console.error("David Music Control | Failed to register end credits menu endCreditsMusicConfig", error);
+  }
 
   // Menu button — Background image config
-  game.settings.registerMenu(MODULE_ID, "endCreditsImageConfig", {
-    name:       "End Credits Background",
-    label:      "Configure Background",
-    hint:       "Select an image or video to display behind the credits. Leave blank for the default transparent overlay.",
-    icon:       "fas fa-image",
-    type:       EcImageConfig,
-    restricted: true,
-  });
+  try {
+    game.settings.registerMenu(MODULE_ID, "endCreditsImageConfig", {
+      name:       "End Credits Background",
+      label:      "Configure Background",
+      hint:       "Select an image or video to display behind the credits. Leave blank for the default transparent overlay.",
+      icon:       "fas fa-image",
+      type:       EcImageConfig,
+      restricted: true,
+    });
+  } catch (error) {
+    console.error("David Music Control | Failed to register end credits menu endCreditsImageConfig", error);
+  }
 
   // Menu button — Toggle credits (runs immediately, no form)
   // We register a dummy Application subclass; the real work is done in
   // renderSettingsConfig where we swap it for a live toggle button.
-  game.settings.registerMenu(MODULE_ID, "endCreditsToggle", {
+  try {
+    game.settings.registerMenu(MODULE_ID, "endCreditsToggle", {
     name:       "End Credits",
     label:      "Start Credits",
     hint:       "Start or stop the scrolling end credits for all players.",
@@ -997,7 +1015,10 @@ Hooks.once("init", () => {
       async _updateObject() {}
     },
     restricted: true,
-  });
+    });
+  } catch (error) {
+    console.error("David Music Control | Failed to register end credits menu endCreditsToggle", error);
+  }
 
   console.log("[End Credits] Initialized.");
 });

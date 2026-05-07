@@ -317,28 +317,38 @@ class VictoryMusicManager extends HandlebarsApplicationMixin(ApplicationV2) {
 }
 
 Hooks.once('setup', () => {
-	game.settings.registerMenu(MODULE_ID, 'combatMusicMenu', {
-		name: 'David Music Control',
-		label: 'Combat Playlists',
-		hint: 'Select which ones are your combat playlists.',
-		icon: 'fas fa-music',
-		type: PlaylistManager,
-		restricted: true,
-	});
-	game.settings.registerMenu(MODULE_ID, 'traitMusicMenu', {
-		name: 'Trait Music Rules',
-		label: 'Trait Rules',
-		hint: 'Map PF2e traits to tracks that play when those creatures are in combat.',
-		icon: 'fas fa-skull',
-		type: TraitMusicManager,
-		restricted: true,
-	});
-	game.settings.registerMenu(MODULE_ID, 'victoryMusicMenu', {
-		name: 'Victory Music',
-		label: 'Victory Music',
-		hint: 'Set tracks to play when combat ends based on encounter difficulty.',
-		icon: 'fas fa-trophy',
-		type: VictoryMusicManager,
-		restricted: true,
-	});
+	const menus = [
+		['combatMusicMenu', {
+			name: 'David Music Control',
+			label: 'Combat Playlists',
+			hint: 'Select which ones are your combat playlists.',
+			icon: 'fas fa-music',
+			type: PlaylistManager,
+			restricted: true,
+		}],
+		['traitMusicMenu', {
+			name: 'Trait Music Rules',
+			label: 'Trait Rules',
+			hint: 'Map PF2e traits to tracks that play when those creatures are in combat.',
+			icon: 'fas fa-skull',
+			type: TraitMusicManager,
+			restricted: true,
+		}],
+		['victoryMusicMenu', {
+			name: 'Victory Music',
+			label: 'Victory Music',
+			hint: 'Set tracks to play when combat ends based on encounter difficulty.',
+			icon: 'fas fa-trophy',
+			type: VictoryMusicManager,
+			restricted: true,
+		}],
+	];
+
+	for (const [key, data] of menus) {
+		try {
+			game.settings.registerMenu(MODULE_ID, key, data);
+		} catch (error) {
+			console.error(`David Music Control | Failed to register menu ${key}`, error);
+		}
+	}
 });

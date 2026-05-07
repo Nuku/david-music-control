@@ -111,7 +111,11 @@ export function setSetting(name, value) {
 
 Hooks.once('setup', () => {
 	for (const [key, setting] of Object.entries(settings)) {
-		game.settings.register(MODULE_ID, key, setting);
+		try {
+			game.settings.register(MODULE_ID, key, setting);
+		} catch (error) {
+			console.error(`David Music Control | Failed to register setting ${key}`, error);
+		}
 	}
 });
 
