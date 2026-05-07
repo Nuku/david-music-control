@@ -358,10 +358,11 @@ function playVictoryFireworks(intensity) {
 	if (!ParticleGenerator) return;
 	const colors = [0xff5f6d, 0xffc371, 0x7bed9f, 0x70a1ff, 0xe056fd, 0xf9ca24];
 	const texture = 'ui/particles/snow.png';
+	const durationScale = 1 + intensity / 100;
 
 	const burstCount = Math.max(2, Math.ceil(intensity / 20));
 	const particlesPerBurst = Math.max(36, Math.round(36 + intensity * 1.8));
-	const burstDelay = 180;
+	const burstDelay = Math.round(180 + intensity * 4);
 	const sceneRect = canvas.dimensions?.sceneRect;
 	if (!sceneRect) return;
 
@@ -372,7 +373,7 @@ function playVictoryFireworks(intensity) {
 		bounds: sceneRect,
 		textures: [texture],
 		blend: PIXI.BLEND_MODES.SCREEN,
-		lifetime: [1000, 1900],
+		lifetime: [Math.round(1000 * durationScale), Math.round(1900 * durationScale)],
 		fade: { in: 0.04, out: 0.5 },
 		velocity: { speed: [140, 460], angle: [0, 360] },
 		alpha: [0.75, 1.0],
@@ -395,7 +396,7 @@ function playVictoryFireworks(intensity) {
 		}, i * burstDelay);
 	}
 
-	const totalDuration = burstCount * burstDelay + 2200;
+	const totalDuration = burstCount * burstDelay + Math.round(2200 * durationScale);
 	window.setTimeout(() => generator.stop(), totalDuration);
 }
 

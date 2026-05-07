@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.27] - 2026-05-07
+
+### Changed
+- **Victory fireworks**: Extended the celebration duration so higher-XP victories linger longer instead of only increasing particle density.
+
 ## [2.4.26] - 2026-05-07
 
 ### Fixed
