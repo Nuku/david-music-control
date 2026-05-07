@@ -33,7 +33,6 @@ const settings = {
 		config: true,
 		type: Boolean,
 		default: false,
-		requiresReload: true,
 	},
 	pauseTrack: {
 		name: 'Pause Tracks',
@@ -42,7 +41,6 @@ const settings = {
 		config: true,
 		type: Boolean,
 		default: true,
-		requiresReload: true,
 	},
 	fireworksOnVictory: {
 		name: 'Fireworks on Victory',
