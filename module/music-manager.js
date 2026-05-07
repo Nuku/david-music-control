@@ -387,7 +387,8 @@ function playVictoryFireworks(intensity) {
 	const ParticleGenerator = foundry.canvas?.animation?.ParticleGenerator;
 	if (!ParticleGenerator) return;
 	const colors = [0xff5f6d, 0xffc371, 0x7bed9f, 0x70a1ff, 0xe056fd, 0xf9ca24];
-	const texture = 'ui/particles/snow.png';
+	const customTexture = String(getSetting('victoryFireworksTexture') ?? '').trim();
+	const texture = customTexture || 'ui/particles/snow.png';
 	const durationScale = 1 + intensity / 100;
 
 	const burstCount = Math.max(2, Math.ceil(intensity / 20));

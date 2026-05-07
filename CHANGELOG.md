@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.29] - 2026-05-07
+
+### Changed
+- **Victory fireworks**: Added an optional custom particle image setting for victory fireworks, with a Foundry file picker. Leaving it blank keeps the default particle image.
+
 ## [2.4.28] - 2026-05-07
 
 ### Changed

@@ -52,6 +52,15 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	victoryFireworksTexture: {
+		name: 'Victory Fireworks Image',
+		hint: 'Optional custom particle image for victory fireworks. Leave blank to use the default star. Keep the image small for performance, ideally around 32x32 or 64x64.',
+		scope: 'world',
+		config: true,
+		type: String,
+		filePicker: 'imagevideo',
+		default: '',
+	},
 	traitRules: {
 		name: 'Trait Music Rules',
 		scope: 'world',
