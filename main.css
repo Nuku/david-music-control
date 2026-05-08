@@ -354,3 +354,152 @@
         flex-wrap: wrap;
     }
 }
+
+.pf2e-full-rest-btn {
+    background: linear-gradient(135deg, #2d6a4f, #1b4332);
+    border: 1px solid #52b788;
+    border-radius: 4px;
+    color: #d8f3dc;
+    cursor: pointer;
+    font-family: "Signika", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.pf2e-full-rest-btn:hover {
+    background: linear-gradient(135deg, #40916c, #2d6a4f);
+    border-color: #74c69d;
+    box-shadow: 0 0 6px rgba(82, 183, 136, 0.4);
+    color: #ffffff;
+}
+
+.pf2e-full-rest-btn:active {
+    background: linear-gradient(135deg, #1b4332, #081c15);
+    transform: translateY(1px);
+}
+
+.pf2e-full-rest-btn i {
+    margin-right: 4px;
+}
+
+.pf2e-full-rest-report {
+    font-family: "Signika", sans-serif;
+    padding: 4px 0;
+}
+
+.pf2e-full-rest-report h3 {
+    border-bottom: 1px solid #52b788;
+    color: #2d6a4f;
+    font-size: 14px;
+    margin: 10px 0 6px;
+    padding-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pf2e-full-rest-report h3:first-child {
+    margin-top: 0;
+}
+
+.pf2e-full-rest-report .rest-summary-grid {
+    display: grid;
+    gap: 6px;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 10px;
+}
+
+.pf2e-full-rest-report .rest-actor-row {
+    align-items: center;
+    background: rgba(45, 106, 79, 0.08);
+    border: 1px solid rgba(82, 183, 136, 0.25);
+    border-radius: 4px;
+    display: flex;
+    font-size: 12px;
+    justify-content: space-between;
+    padding: 4px 8px;
+}
+
+.pf2e-full-rest-report .rest-actor-name {
+    color: #1b4332;
+    font-weight: 600;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pf2e-full-rest-report .rest-actor-value {
+    color: #40916c;
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 6px;
+    white-space: nowrap;
+}
+
+.pf2e-full-rest-report .rest-actor-value.zero {
+    color: #adb5bd;
+    font-weight: 400;
+}
+
+.pf2e-full-rest-report .rest-mvp-box {
+    align-items: center;
+    background: linear-gradient(135deg, rgba(45, 106, 79, 0.12), rgba(82, 183, 136, 0.08));
+    border: 1px solid rgba(82, 183, 136, 0.4);
+    border-radius: 6px;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+}
+
+.pf2e-full-rest-report .rest-mvp-box i {
+    color: #52b788;
+    flex-shrink: 0;
+    font-size: 18px;
+}
+
+.pf2e-full-rest-report .mvp-label {
+    color: #6c757d;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.pf2e-full-rest-report .mvp-name {
+    color: #1b4332;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.pf2e-full-rest-report .mvp-value {
+    color: #40916c;
+    font-size: 12px;
+}
+
+.pf2e-full-rest-report .rest-no-data {
+    color: #6c757d;
+    font-size: 12px;
+    font-style: italic;
+    padding: 6px 0;
+    text-align: center;
+}
+
+.pf2e-full-rest-report .rest-total-row {
+    align-items: center;
+    background: rgba(45, 106, 79, 0.15);
+    border: 1px solid rgba(82, 183, 136, 0.5);
+    border-radius: 4px;
+    display: flex;
+    font-size: 12px;
+    font-weight: 700;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding: 5px 8px;
+}

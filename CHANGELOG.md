@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.35] - 2026-05-08
+
+### Added
+- **Full Rest**: Added an optional `Enable Full Rest` setting that adds a `Recover` button to PF2e party sheets for fully healing the party, restoring focus points, removing `Wounded`, and showing a summary report.
+
 ## [2.4.34] - 2026-05-07
 
 ### Changed

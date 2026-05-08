@@ -48,6 +48,7 @@ Module Settings include:
 - `Play Scene Music`
 - `Fireworks on Victory`
 - `Enable PF2e Cult System`
+- `Enable Full Rest`
 
 The settings UI also includes:
 
@@ -61,6 +62,15 @@ The settings UI also includes:
 ### Cluster Party
 
 PF2e party actors get a `Cluster Party` button in Token Configuration. It builds a combined crowd-style token image from party member token art, saves it in the world folder, and applies it to the party actor and token.
+
+### Full Rest
+
+When `Enable Full Rest` is on, PF2e party sheets gain a `Recover` button that:
+
+- heals all party members to full HP
+- restores all focus points
+- removes the `Wounded` condition
+- posts a chat summary and opens a rest report dialog
 
 ### Cult System
 

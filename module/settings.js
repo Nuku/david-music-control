@@ -65,6 +65,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enableFullRest: {
+		name: 'Enable Full Rest',
+		hint: 'Adds a Recover button to PF2e party sheets that fully restores party members and removes Wounded.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	pauseTrack: {
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',

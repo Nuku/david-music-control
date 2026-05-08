@@ -3,6 +3,7 @@ import './module/menu.js';
 import './module/token.js';
 import './module/party-cluster.js';
 import './module/cult.js';
+import './module/full-rest.js';
 import './module/scene-music.js';
 import './module/end-credits.js';
 import { migrate } from './module/migrate.js';
