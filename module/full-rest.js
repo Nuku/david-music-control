@@ -166,7 +166,6 @@ async function doFullRest() {
 					Total restored - HP: <strong>${totalHp}</strong> | Focus: <strong>${totalFp}</strong>
 				</p>
 			</div>`,
-		type: CONST.CHAT_MESSAGE_TYPES?.OTHER ?? 0,
 	});
 
 	await showRestReport(results);

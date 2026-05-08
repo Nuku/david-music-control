@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.36] - 2026-05-08
+
+### Fixed
+- **Full Rest**: Removed a legacy chat message `type` field that PF2e 8 rejects, so the `Recover` summary chat post now creates correctly.
+
 ## [2.4.35] - 2026-05-08
 
 ### Added
