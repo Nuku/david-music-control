@@ -108,9 +108,30 @@ function buildReportHtml(results) {
 }
 
 async function showRestReport(results) {
+	const content = buildReportHtml(results);
+
+	if (foundry.applications?.api?.DialogV2) {
+		await foundry.applications.api.DialogV2.prompt({
+			window: {
+				title: 'Full Rest - Party Report',
+				contentClasses: ['pf2e-full-rest-dialog'],
+				resizable: true,
+			},
+			content,
+			ok: {
+				label: 'Close',
+				icon: 'fas fa-check',
+			},
+			position: {
+				width: 460,
+			},
+		}).catch(() => null);
+		return;
+	}
+
 	await Dialog.prompt({
 		title: 'Full Rest - Party Report',
-		content: buildReportHtml(results),
+		content,
 		label: 'Close',
 		rejectClose: false,
 		options: { width: 460, classes: ['dialog', 'pf2e-full-rest-dialog'] },
