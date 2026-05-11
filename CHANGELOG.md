@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.38] - 2026-05-11
+
+### Changed
+- **Full Rest**: The party rest report now uses `DialogV2` on Foundry V14+ and falls back to the legacy dialog API on older versions.
+
 ## [2.4.37] - 2026-05-11
 
 ### Changed
