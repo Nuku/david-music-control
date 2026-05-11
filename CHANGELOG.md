@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.4.39] - 2026-05-11
+
+### Added
+- **End credits**: Added an optional `In Memoriam` actor folder setting so credits can use a named folder or slash-separated folder path such as `Departed` or `NPCs/Departed` instead of relying on the world-wide dead-character scan.
+- **End credits**: Expanded the random cast roles, production credits, special thanks, disclaimers, stingers, and epitaph pools so repeated credits runs vary more.
+
 ## [2.4.38] - 2026-05-11
 
 ### Changed

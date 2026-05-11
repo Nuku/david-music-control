@@ -54,6 +54,50 @@ function getStoredCreditsStartedAt() {
   return Number(game.settings.get(MODULE_ID, "endCreditsStartedAt")) || 0;
 }
 
+function normalizeFolderPath(value) {
+  return String(value ?? "")
+    .split("/")
+    .map(part => part.trim())
+    .filter(Boolean)
+    .join("/");
+}
+
+function getFolderPath(folder) {
+  const names = [];
+  let current = folder;
+  while (current) {
+    if (current.name) names.unshift(current.name.trim());
+    current = current.folder ?? null;
+  }
+  return names.join("/");
+}
+
+function findActorFolderByPath(folderPath) {
+  const target = normalizeFolderPath(folderPath).toLowerCase();
+  if (!target) return null;
+
+  const actorFolders = game.folders?.filter(f => f.type === "Actor") ?? [];
+  return actorFolders.find(folder => {
+    const path = normalizeFolderPath(getFolderPath(folder)).toLowerCase();
+    return path === target || folder.name?.trim().toLowerCase() === target;
+  }) ?? null;
+}
+
+function getActorsInFolderTree(folder) {
+  if (!folder) return [];
+
+  const folderIds = new Set();
+  const stack = [folder];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || folderIds.has(current.id)) continue;
+    folderIds.add(current.id);
+    for (const child of current.children ?? []) stack.push(child);
+  }
+
+  return game.actors?.filter(actor => folderIds.has(actor.folder?.id) && actor.type === "character") ?? [];
+}
+
 // ── Silly content ──────────────────────────────────────────────────────────
 
 const SILLY_ROLES = [
@@ -223,6 +267,16 @@ const SILLY_ROLES = [
   "Lead 'Should I Have Read the Module?' Self-Assessor",
   "Executive 'My Character Has Changed Since Session One' Revisionist",
   "Head of Forgetting What Level They Are",
+  "Director of Re-Reading the Same Ability Three Times",
+  "Chief 'I Swear It Was on My Other Sheet' Officer",
+  "Senior Initiative Tracker Doubter",
+  "Lead 'Can I Retcon That?' Negotiator",
+  "Executive Dice Tower Misfire Specialist",
+  "Head of Forgetting the Plan Mid-Sentence",
+  "Chief 'Wait, I'm Still Hidden, Right?' Auditor",
+  "Senior Cooldown of Tablewide Side-Eyes",
+  "Director of Loudly Counting Squares Incorrectly",
+  "Lead Last-Minute Spell Substitution Theorist",
 ];
 
 // Crew pool — a large list we pick a random subset from each time
@@ -278,6 +332,26 @@ const CREW_POOL = [
   ["Arcane Special Effects",             "The Wizard, Who Did Not Ask"],
   ["Character Arc Consultant",           "Growth Was Attempted"],
   ["Miscellaneous Betrayals",            "You Know Who You Are"],
+  ["Scheduling Coordinator",             "A Shared Calendar in Crisis"],
+  ["Last-Minute Recap Services",         "The One Player Who Was Paying Attention"],
+  ["Secret Villain Monologue Editor",    "Trimmed for Time, Sadly"],
+  ["Potion Labeling Department",         "Optimism and Vibes"],
+  ["Bridge Structural Integrity",        "Not Independently Verified"],
+  ["Accent Continuity",                  "Ambitious, but Fluid"],
+  ["Disguise Quality Control",           "A Hat and Confidence"],
+  ["Torchlight Philosophy",              "Dim, but Committed"],
+  ["Rumor Distribution",                 "The Tavern Staff Union"],
+  ["Map Legend Translation",             "Interpretive at Best"],
+  ["Difficult Choice Facilitation",      "Panic Under Pressure Ltd."],
+  ["Emergency Resurrection Liaison",     "On Retainer, Regretfully"],
+  ["Dungeon Moisture Management",        "Persistent Dripping"],
+  ["Moral Support",                      "One Extremely Brave Snack"],
+  ["Travel Montage Coordination",        "Three Roads and a Fade-Out"],
+  ["Unpaid Emotional Labor",             "The Party Face"],
+  ["Cursed Object Placement",            "Within Easy Reach"],
+  ["Battlefield Debris",                 "Generously Distributed"],
+  ["Ancient Evil Containment",           "Holding for Now"],
+  ["Administrative Oversight",           "A Seal Nobody Read"],
 ];
 
 // Executive Producers — pick a few random ones
@@ -297,6 +371,14 @@ const EXEC_PRODUCERS = [
   "Unearned Confidence and Favourable Dice",
   "A GM Who Loves You All and Is Very Tired",
   "Nobody's Second Character Option, Somehow",
+  "A Dice Bag of Dubious Intent",
+  "One Overprepared Notes Document",
+  "Whoever Remembered the Session Summary",
+  "The Last Health Potion Nobody Wanted to Use",
+  "A Tablewide Agreement to Blame the Dice",
+  "Two Emergency Bathroom Breaks and a Cliffhanger",
+  "The Person Who Quietly Fixed the Math",
+  "Someone Saying 'This Will Be Fine' Right Before It Wasn't",
 ];
 
 // Filmed on location entries
@@ -311,6 +393,14 @@ const FILMED_ON_LOCATION = [
   "A Map That Was Definitely to Scale",
   "Somewhere Dark and Slightly Damp",
   "A Location That Looked Better in the GM's Head",
+  "A Folder Full of Maps Named Final-Final-UseThisOne",
+  "The Exact Center of the Encounter Template",
+  "One Tavern Reused Four Different Ways",
+  "An Alleyway Full of Suspiciously Repositioned Crates",
+  "The Part of the Dungeon Behind the GM Screen",
+  "A Wilderness Hex Nobody Expected to Matter",
+  "A Perfectly Ordinary Basement That Was Not Ordinary",
+  "The Stretch of Road Where Bad Decisions Flourish",
 ];
 
 const SPECIAL_THANKS = [
@@ -344,6 +434,18 @@ const SPECIAL_THANKS = [
   "Tea, coffee, and whatever that third thing was",
   "The critical hit that changed everything",
   "The critical failure that changed everything else",
+  "Every spell slot spent on the wrong problem",
+  "The boss mechanic everyone understood one round too late",
+  "The tactical map ping that explained absolutely nothing",
+  "Whoever said 'don't worry, I can tank this'",
+  "The enemy whose save bonus turned out to be deeply offensive",
+  "The shopping trip that somehow took longer than the dungeon",
+  "All the notes labeled IMPORTANT and never revisited",
+  "The one door that really did need checking",
+  "Everyone who prepared a speech instead of an escape route",
+  "The rule clarification that arrived four sessions later",
+  "The backup character waiting patiently in the wings",
+  "Every villain voice that drifted into pirate unexpectedly",
 ];
 
 const DISCLAIMERS = [
@@ -356,6 +458,12 @@ const DISCLAIMERS = [
   "Any similarity to actual historical events is either coincidental\nor the result of someone having read half a Wikipedia article.",
   "The management is not responsible for emotional attachment to NPCs\nwho were introduced as comic relief and then killed off.",
   "All traps were tested by professionals.\nThe professionals were not consulted about the results.",
+  "No narrative foreshadowing was wasted in the making of this campaign.\nIt was, however, frequently ignored.",
+  "All strategic plans were performed by trained adventurers.\nPlease do not attempt them at your own table without supervision.",
+  "No kings, liches, or tavern owners endorsed the actions depicted herein.\nTheir legal positions remain ongoing.",
+  "All maps were shown by a professional game master on a closed course.\nVisibility conditions may not reflect actual torchlight.",
+  "Viewer discretion is advised for strong language, reckless heroism,\nand scenes of sustained tactical overconfidence.",
+  "No promises made by suspicious NPCs should be considered binding.\nOffer void where prophecy applies.",
 ];
 
 const STINGERS = [
@@ -379,6 +487,16 @@ const STINGERS = [
   "The cursed item was never officially identified.",
   "The exit was to the left. It was always to the left.",
   "The shopkeeper is still waiting for payment.",
+  "The wizard wrote a 14-page rebuttal to the ruling and lost it.",
+  "The goblin you spared now runs a thriving roadside business.",
+  "Someone eventually opened the letter marked 'Do Not Open Yet.'",
+  "The backup plan became the main plan and then also failed.",
+  "The horse remembers who suggested crossing the bridge.",
+  "One of those statues was absolutely watching you leave.",
+  "The dungeon boss updated their security procedures.",
+  "The bard's song about this was legally actionable.",
+  "The local inn now has a surcharge named after the party.",
+  "Somewhere, an unopened chest is still being smug about it.",
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -709,13 +827,28 @@ function buildCreditsHTML() {
     "May their resurrection be swift and affordable",
     "Fell so that others could make the same mistake",
     "Remembered every session, learned from never",
+    "Briefly alive, permanently iconic",
+    "Last seen making a very confident decision",
+    "They asked if it looked trapped. It did.",
+    "Their sacrifice will be honored, summarized, and probably misremembered",
+    "Taken before their time, but not before initiative",
+    "They died doing what they loved: overcommitting",
+    "The afterlife was not prepared for this amount of backstory",
+    "Their legend lives on in increasingly inaccurate retellings",
+    "Gone to that great holding cell in the sky",
+    "They left us as they found us: under severe pressure",
   ];
 
   const isDead  = a => a.system?.attributes?.hp?.value === 0 || a.system?.attributes?.dying?.value > 0;
   const deadParty = partyMembers.filter(isDead);
+  const memoriamFolderName = game.settings.get(MODULE_ID, "endCreditsMemoriamFolder")?.trim();
+  const memoriamFolder = findActorFolderByPath(memoriamFolderName);
+  const deadFolderActors = memoriamFolder ? getActorsInFolderTree(memoriamFolder) : [];
   const deadActors = deadParty.length > 0
     ? deadParty
-    : (game.actors?.filter(a => a.type === "character" && isDead(a)) ?? []);
+    : deadFolderActors.length > 0
+      ? deadFolderActors
+      : (game.actors?.filter(a => a.type === "character" && isDead(a)) ?? []);
 
   if (deadActors.length > 0) {
     html += divider();
@@ -1023,6 +1156,19 @@ Hooks.once("init", () => {
     });
   } catch (error) {
     console.error("David Music Control | Failed to register end credits menu endCreditsImageConfig", error);
+  }
+
+  try {
+    game.settings.register(MODULE_ID, "endCreditsMemoriamFolder", {
+      name: "End Credits In Memoriam Folder",
+      hint: "Optional actor folder name or slash-separated folder path to use for In Memoriam entries, for example Departed or NPCs/Departed.",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "",
+    });
+  } catch (error) {
+    console.error("David Music Control | Failed to register end credits setting endCreditsMemoriamFolder", error);
   }
 
   // Menu button — Toggle credits (runs immediately, no form)

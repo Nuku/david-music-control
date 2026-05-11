@@ -55,6 +55,7 @@ The settings UI also includes:
 - Export / Import for music configuration and trait rules
 - End credits music configuration
 - End credits background image or video configuration
+- End credits In Memoriam folder override
 - End credits start / stop control
 
 ## PF2e Party Tools
