@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.4.37] - 2026-05-11
+
+### Changed
+- **End credits**: The GM now generates one shared credits payload so every viewer sees the same credits content.
+- **End credits**: Credits scroll progress now syncs from a shared GM start timestamp so connected players and late joiners stay aligned on roughly the same point.
+
 ## [2.4.36] - 2026-05-08
 
 ### Fixed

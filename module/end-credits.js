@@ -21,6 +21,8 @@ const SOCKET_EVENT = `module.${MODULE_ID}`;
 let creditsActive = false;
 let rafId         = null;
 let posY          = 0;
+let currentCreditsHtml = "";
+let currentCreditsStartedAt = 0;
 
 /**
  * Snapshot of sounds that were playing before credits started.
@@ -42,6 +44,14 @@ function refreshSettingsToggleButton() {
 function setCreditsActive(active) {
   creditsActive = active;
   refreshSettingsToggleButton();
+}
+
+function getStoredCreditsHtml() {
+  return game.settings.get(MODULE_ID, "endCreditsHtml") || "";
+}
+
+function getStoredCreditsStartedAt() {
+  return Number(game.settings.get(MODULE_ID, "endCreditsStartedAt")) || 0;
 }
 
 // ── Silly content ──────────────────────────────────────────────────────────
@@ -802,9 +812,14 @@ function buildBackgroundHTML() {
 
 // ── Overlay lifecycle ──────────────────────────────────────────────────────
 
-function startCredits() {
+function startCredits(
+  creditsHtml = currentCreditsHtml || getStoredCreditsHtml() || buildCreditsHTML(),
+  startedAt = currentCreditsStartedAt || getStoredCreditsStartedAt() || Date.now(),
+) {
   if (creditsActive) return;
   setCreditsActive(true);
+  currentCreditsHtml = creditsHtml;
+  currentCreditsStartedAt = startedAt;
 
   // Leave the Foundry sidebar uncovered so players can still use chat,
   // compendiums, etc. while the credits roll. Read the sidebar width at
@@ -819,7 +834,7 @@ function startCredits() {
     ${buildBackgroundHTML()}
     <div id="ec-bg-dim"></div>
     <div id="ec-fade-top"></div>
-    <div id="ec-inner">${buildCreditsHTML()}</div>
+    <div id="ec-inner">${creditsHtml}</div>
     <div id="ec-fade-bottom"></div>
     ${game.user.isGM ? `<button id="ec-stop-btn" title="Stop Credits">
       <i class="fas fa-stop-circle"></i> Stop Credits
@@ -830,14 +845,15 @@ function startCredits() {
   document.getElementById("ec-stop-btn")?.addEventListener("click", () => apiToggle());
 
   const inner = document.getElementById("ec-inner");
-  posY = window.innerHeight;
+  posY = window.innerHeight - (((Date.now() - startedAt) * SCROLL_SPEED) / 16.6666666667);
   inner.style.transform = `translateX(-50%) translateY(${posY}px)`;
 
   function tick() {
     if (!creditsActive) return;
-    posY -= SCROLL_SPEED;
     const el = document.getElementById("ec-inner");
     if (!el) return;
+    const elapsed = Math.max(0, Date.now() - startedAt);
+    posY = window.innerHeight - ((elapsed * SCROLL_SPEED) / 16.6666666667);
     if (posY < -(el.offsetHeight + 40)) posY = window.innerHeight + 40;
     el.style.transform = `translateX(-50%) translateY(${posY}px)`;
     rafId = requestAnimationFrame(tick);
@@ -849,6 +865,8 @@ function startCredits() {
 function stopCredits() {
   if (!creditsActive) return;
   setCreditsActive(false);
+  currentCreditsHtml = "";
+  currentCreditsStartedAt = 0;
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
   document.getElementById("ec-overlay")?.remove();
 }
@@ -856,8 +874,8 @@ function stopCredits() {
 // ── Socket ─────────────────────────────────────────────────────────────────
 
 function initSocket() {
-  game.socket.on(SOCKET_EVENT, ({ action }) => {
-    if (action === "start") startCredits();
+  game.socket.on(SOCKET_EVENT, ({ action, creditsHtml, startedAt }) => {
+    if (action === "start") startCredits(creditsHtml, startedAt);
     if (action === "stop")  stopCredits();
   });
 }
@@ -872,15 +890,19 @@ async function apiToggle() {
 
   const starting = !(creditsActive || game.settings.get(MODULE_ID, "endCreditsActive"));
   const action   = starting ? "start" : "stop";
+  const creditsHtml = starting ? buildCreditsHTML() : "";
+  const startedAt = starting ? Date.now() : 0;
 
   // Persist state so late-joining clients can catch up on their `ready` hook
+  await game.settings.set(MODULE_ID, "endCreditsHtml", creditsHtml);
+  await game.settings.set(MODULE_ID, "endCreditsStartedAt", startedAt);
   await game.settings.set(MODULE_ID, "endCreditsActive", starting);
 
   // Broadcast to all currently connected clients (they handle their own overlay)
-  game.socket.emit(SOCKET_EVENT, { action });
+  game.socket.emit(SOCKET_EVENT, { action, creditsHtml, startedAt });
 
   // GM handles their own overlay
-  if (starting) startCredits();
+  if (starting) startCredits(creditsHtml, startedAt);
   else          stopCredits();
 
   // GM handles music (Foundry syncs to everyone else automatically)
@@ -962,6 +984,8 @@ Hooks.once("init", () => {
     ["endCreditsActive", { ...worldHidden, name: "End Credits Active", hint: "Internal end credits active state.", type: Boolean, default: false }],
     ["endCreditsPlaylistId", { ...worldHidden, name: "End Credits Playlist", hint: "Stored end credits playlist id.", type: String, default: "" }],
     ["endCreditsSoundId", { ...worldHidden, name: "End Credits Sound", hint: "Stored end credits sound id.", type: String, default: "" }],
+    ["endCreditsHtml", { ...worldHidden, name: "End Credits HTML", hint: "Stored GM-generated end credits payload.", type: String, default: "" }],
+    ["endCreditsStartedAt", { ...worldHidden, name: "End Credits Started At", hint: "Stored GM-generated end credits start timestamp.", type: Number, default: 0 }],
     ["endCreditsBackgroundImage", { ...worldHidden, name: "End Credits Background", hint: "Stored end credits background image or video.", type: String, default: "" }],
     ["endCreditsBgOpacity", { ...worldHidden, name: "End Credits Background Opacity", hint: "Stored end credits background opacity.", type: Number, default: 1.0 }],
   ];
@@ -1031,7 +1055,7 @@ Hooks.once("ready", () => {
   // overlay now. Music is already playing server-side via Foundry's sync.
   if (game.settings.get(MODULE_ID, "endCreditsActive")) {
     console.log("[End Credits] Credits already active — starting overlay for late joiner.");
-    startCredits();
+    startCredits(getStoredCreditsHtml(), getStoredCreditsStartedAt());
   } else {
     refreshSettingsToggleButton();
   }
