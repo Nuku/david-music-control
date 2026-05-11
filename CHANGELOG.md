@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.41] - 2026-05-11
+
+### Fixed
+- **Combat Theme**: Theme tokens now update only the encounter-wide music layer, so HP threshold changes no longer cut in over another token's active personal turn track.
+
 ## [2.4.40] - 2026-05-11
 
 ### Added

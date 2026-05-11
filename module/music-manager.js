@@ -258,6 +258,10 @@ function getEncounterMusic(combat) {
 	return pick(highest).music || null;
 }
 
+export function resolveEncounterMusic(combat) {
+	return getEncounterMusic(combat);
+}
+
 /* -------------------------------------------- */
 /*  Combat start / end                          */
 /* -------------------------------------------- */

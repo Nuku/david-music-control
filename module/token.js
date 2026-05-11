@@ -1,5 +1,6 @@
 import {
 	parseMusic,
+	resolveEncounterMusic,
 	updateCombatMusic,
 	setTokenConfig,
 	stringifyMusic,
@@ -292,11 +293,19 @@ function resourceTracker(actor) {
 	// If this token is a Combat Theme token, re-evaluate which theme track should
 	// be playing whenever their resource (e.g. HP) changes — even mid-turn.
 	if (token.getFlag(MODULE_ID, 'combatTheme') && !combat.getFlag(MODULE_ID, 'overrideMusic')) {
-		const music = getTokenMusic(token);
-		if (music) {
-			const currentMusic = combat._combatMusic || combat.getFlag(MODULE_ID, 'currentMusic');
-			if (music !== currentMusic) updateCombatMusic(combat, music, '');
+		const encounterMusic = resolveEncounterMusic(combat);
+		if (!encounterMusic) return;
+
+		if (combat.getFlag(MODULE_ID, 'encounterInterrupted')) {
+			const pausedEncounterMusic = combat.getFlag(MODULE_ID, 'pausedEncounterMusic');
+			if (encounterMusic !== pausedEncounterMusic) {
+				combat.setFlag(MODULE_ID, 'pausedEncounterMusic', encounterMusic);
+			}
+			return;
 		}
+
+		const currentMusic = combat._combatMusic || combat.getFlag(MODULE_ID, 'currentMusic');
+		if (encounterMusic !== currentMusic) updateCombatMusic(combat, encounterMusic, '');
 		return;
 	}
 
