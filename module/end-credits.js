@@ -499,6 +499,17 @@ const STINGERS = [
   "Somewhere, an unopened chest is still being smug about it.",
 ];
 
+const OPENING_TAGLINES = [
+  "A Campaign in Several Parts,\nMost of Which Were Not Originally Planned",
+  "An Adventure in Multiple Acts,\nOnly Some of Which Survived First Contact with the Players",
+  "A Story of Heroism, Questionable Decisions,\nand Administrative Oversight",
+  "A Tabletop Epic in Uneven Chapters,\nHeld Together by Vibes and Initiative Rolls",
+  "A Grand Tale of Courage, Chaos,\nand Notes the GM Can No Longer Fully Interpret",
+  "A Production in Many Scenes,\nSeveral of Which Escaped Containment",
+  "A Narrative Experience in Repeated Course Correction",
+  "A Campaign of Bold Choices,\nMost of Them Made Under Time Pressure",
+];
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function pick(arr) {
@@ -753,7 +764,7 @@ function buildCreditsHTML() {
   html += sp(1.5);
   html += `<div class="ec-world-title">${worldName}</div>`;
   html += sp(0.5);
-  html += `<div class="ec-tagline">A Campaign in Several Parts,\nMost of Which Were Not Originally Planned</div>`;
+  html += `<div class="ec-tagline">${pick(OPENING_TAGLINES)}</div>`;
   html += sp(2);
 
   if (gm) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.40] - 2026-05-11
+
+### Added
+- **End credits**: Randomized the opening title-card subtitle so the campaign tagline varies between credits runs.
+
 ## [2.4.39] - 2026-05-11
 
 ### Added
