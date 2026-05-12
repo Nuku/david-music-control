@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.43] - 2026-05-12
+
+### Changed
+- **End credits**: Reduced how many random credits entries appear in a single run, including fewer executive producers, two roles per character, and smaller production, thanks, and disclaimer slices so later rerolls stay fresher.
+
 ## [2.4.42] - 2026-05-11
 
 ### Fixed

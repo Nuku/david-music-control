@@ -781,7 +781,7 @@ function buildCreditsHTML() {
   html += divider();
   html += sectionHeader("Executive Producers");
   html += sp(0.5);
-  for (const ep of shuffle(EXEC_PRODUCERS).slice(0, 4)) {
+  for (const ep of shuffle(EXEC_PRODUCERS).slice(0, 2)) {
     html += `<div class="ec-role">${ep}</div>`;
     html += sp(0.3);
   }
@@ -795,7 +795,7 @@ function buildCreditsHTML() {
 
   if (castEntries.length > 0) {
     for (const { character, player } of shuffle(castEntries)) {
-      const rolesForPlayer = 2 + Math.floor(Math.random() * 2);
+      const rolesForPlayer = 2;
       html += sp(1);
       html += `<div class="ec-player-name">${character.name}</div>`;
       if (player) {
@@ -811,7 +811,7 @@ function buildCreditsHTML() {
     }
   } else if (fallbackPlayers.length > 0) {
     for (const player of shuffle(fallbackPlayers)) {
-      const rolesForPlayer = 2 + Math.floor(Math.random() * 2);
+      const rolesForPlayer = 2;
       html += sp(1);
       html += `<div class="ec-player-name">${player.name}</div>`;
       html += sp(0.25);
@@ -882,7 +882,7 @@ function buildCreditsHTML() {
   html += sectionHeader("Production");
   html += sp(0.5);
   // Pick a random 14–18 entries from the full crew pool each time
-  const crewCount = 14 + Math.floor(Math.random() * 5);
+  const crewCount = 6 + Math.floor(Math.random() * 3);
   for (const [role, name] of shuffle(CREW_POOL).slice(0, crewCount)) {
     html += creditRow(role, name);
     html += sp(0.15);
@@ -901,7 +901,7 @@ function buildCreditsHTML() {
   html += sectionHeader("Special Thanks");
   html += sp(0.5);
   // Pick 10–14 at random so it's different each time
-  const thanksCount = 10 + Math.floor(Math.random() * 5);
+  const thanksCount = 4 + Math.floor(Math.random() * 2);
   for (const line of shuffle(SPECIAL_THANKS).slice(0, thanksCount)) {
     html += `<div class="ec-fine-print">${line}</div>`;
     html += sp(0.4);
@@ -910,7 +910,7 @@ function buildCreditsHTML() {
   // ── Disclaimers ───────────────────────────────────────────────────────────
   html += divider();
   // Pick 2–3 disclaimers
-  const disclaimerCount = 2 + Math.floor(Math.random() * 2);
+  const disclaimerCount = 1 + Math.floor(Math.random() * 2);
   for (const d of shuffle(DISCLAIMERS).slice(0, disclaimerCount)) {
     html += `<div class="ec-fine-print">${d}</div>`;
     html += sp(1);
