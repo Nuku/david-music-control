@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.42] - 2026-05-11
+
+### Fixed
+- **End credits**: Synced credits now loop back to the start correctly after reaching the end, without regenerating the randomized content.
+
 ## [2.4.41] - 2026-05-11
 
 ### Fixed

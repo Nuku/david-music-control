@@ -989,16 +989,24 @@ function startCredits(
   document.getElementById("ec-stop-btn")?.addEventListener("click", () => apiToggle());
 
   const inner = document.getElementById("ec-inner");
-  posY = window.innerHeight - (((Date.now() - startedAt) * SCROLL_SPEED) / 16.6666666667);
+  const topOffset = window.innerHeight + 40;
+  const pixelsPerMs = SCROLL_SPEED / 16.6666666667;
+
+  function getScrollPosition(el) {
+    const elapsed = Math.max(0, Date.now() - startedAt);
+    const travel = elapsed * pixelsPerMs;
+    const cycleDistance = topOffset + el.offsetHeight + 40;
+    return topOffset - (travel % cycleDistance);
+  }
+
+  posY = getScrollPosition(inner);
   inner.style.transform = `translateX(-50%) translateY(${posY}px)`;
 
   function tick() {
     if (!creditsActive) return;
     const el = document.getElementById("ec-inner");
     if (!el) return;
-    const elapsed = Math.max(0, Date.now() - startedAt);
-    posY = window.innerHeight - ((elapsed * SCROLL_SPEED) / 16.6666666667);
-    if (posY < -(el.offsetHeight + 40)) posY = window.innerHeight + 40;
+    posY = getScrollPosition(el);
     el.style.transform = `translateX(-50%) translateY(${posY}px)`;
     rafId = requestAnimationFrame(tick);
   }
