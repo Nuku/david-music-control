@@ -49,6 +49,7 @@ Module Settings include:
 - `Fireworks on Victory`
 - `Enable PF2e Cult System`
 - `Enable Full Rest`
+- `Enable At-Will Recharge`
 
 The settings UI also includes:
 
@@ -72,6 +73,10 @@ When `Enable Full Rest` is on, PF2e party sheets gain a `Recover` button that:
 - restores all focus points
 - removes the `Wounded` condition
 - posts a chat summary and opens a rest report dialog
+
+### At-Will Recharge
+
+When `Enable At-Will Recharge` is on, PF2e items with `(at will)` in their name automatically restore their expended use immediately after activation. This applies to both innate spell uses and frequency-based actions.
 
 ### Cult System
 

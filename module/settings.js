@@ -73,6 +73,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enableAtWillRecharge: {
+		name: 'Enable At-Will Recharge',
+		hint: 'Automatically restores uses for PF2e items named with "(at will)" immediately after they are used.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: true,
+	},
 	pauseTrack: {
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.44] - 2026-05-13
+
+### Added
+- **At-Will Recharge**: Added an `Enable At-Will Recharge` setting, enabled by default, that automatically restores uses for PF2e items named with `(at will)` after activation.
+
 ## [2.4.43] - 2026-05-12
 
 ### Changed
