@@ -111,6 +111,15 @@ game.modules.get("pf2-david-music-control").api.endCredits.prompt();
 game.modules.get("pf2-david-music-control").api.endCredits.toggle();
 ```
 
+Victory fireworks macro / API entry points:
+
+```js
+game.modules.get("pf2-david-music-control").api.victoryFireworks.trigger();
+game.modules.get("pf2-david-music-control").api.victoryFireworks.trigger({ intensity: 100 });
+```
+
+Calling `trigger()` with no arguments uses the current combat to derive intensity and party-centered burst anchors. If no combat is active, it falls back to intensity `60`.
+
 If the legacy `end-credits` module was previously used, this module migrates its saved settings into the integrated end credits feature.
 
 ## How Combat Selection Works

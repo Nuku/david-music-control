@@ -375,17 +375,71 @@ function getVictoryFireworksIntensity(combat) {
 	return Math.max(0, Math.min(100, getVictoryXpPerPlayer(combat)));
 }
 
+function clampVictoryFireworksIntensity(intensity) {
+	return Math.max(0, Math.min(100, Number(intensity) || 0));
+}
+
+function getTokenCenter(tokenDocument) {
+	const tokenObject = tokenDocument?.object;
+	if (tokenObject?.center) return tokenObject.center;
+	if (typeof tokenDocument?.x !== 'number' || typeof tokenDocument?.y !== 'number') return null;
+
+	const size = canvas.dimensions?.size ?? 100;
+	const width = (tokenDocument.width ?? 1) * size;
+	const height = (tokenDocument.height ?? 1) * size;
+	return {
+		x: tokenDocument.x + width / 2,
+		y: tokenDocument.y + height / 2,
+	};
+}
+
+function getVictoryFireworksAnchors(combat) {
+	const friendlyCenters = combat.combatants.contents
+		.filter((combatant) => combatant.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY)
+		.map((combatant) => getTokenCenter(combatant.token))
+		.filter((center) => center && Number.isFinite(center.x) && Number.isFinite(center.y));
+
+	if (friendlyCenters.length === 0) return [];
+
+	const anchorCount = Math.max(3, Math.min(8, friendlyCenters.length * 2));
+	const anchors = [];
+	for (let i = 0; i < anchorCount; i++) {
+		const base = pick(friendlyCenters);
+		const spread = 40 + Math.random() * 70;
+		const angle = Math.random() * Math.PI * 2;
+		anchors.push({
+			x: base.x + Math.cos(angle) * spread,
+			y: base.y + Math.sin(angle) * spread,
+		});
+	}
+
+	return anchors;
+}
+
 function triggerVictoryFireworks(combat) {
 	if (!getSetting('fireworksOnVictory')) return;
 
 	const intensity = getVictoryFireworksIntensity(combat);
 	if (intensity <= 0) return;
 
-	game.socket?.emit(getModuleSocketEvent(), { type: VICTORY_FIREWORKS_SOCKET_TYPE, intensity });
-	playVictoryFireworks(intensity);
+	const anchors = getVictoryFireworksAnchors(combat);
+	game.socket?.emit(getModuleSocketEvent(), { type: VICTORY_FIREWORKS_SOCKET_TYPE, intensity, anchors });
+	playVictoryFireworks(intensity, anchors);
 }
 
-function playVictoryFireworks(intensity) {
+async function triggerManualVictoryFireworks({ intensity, combat = game.combat } = {}) {
+	const resolvedIntensity = intensity == null
+		? (combat ? getVictoryFireworksIntensity(combat) : 60)
+		: clampVictoryFireworksIntensity(intensity);
+	if (resolvedIntensity <= 0) return false;
+
+	const anchors = combat ? getVictoryFireworksAnchors(combat) : [];
+	game.socket?.emit(getModuleSocketEvent(), { type: VICTORY_FIREWORKS_SOCKET_TYPE, intensity: resolvedIntensity, anchors });
+	playVictoryFireworks(resolvedIntensity, anchors);
+	return true;
+}
+
+function playVictoryFireworks(intensity, anchors = []) {
 	if (!canvas?.ready) return;
 
 	const ParticleGenerator = foundry.canvas?.animation?.ParticleGenerator;
@@ -423,8 +477,9 @@ function playVictoryFireworks(intensity) {
 
 	for (let i = 0; i < burstCount; i++) {
 		window.setTimeout(() => {
-			const x = sceneRect.x + sceneRect.width * (0.15 + Math.random() * 0.7);
-			const y = sceneRect.y + sceneRect.height * (0.08 + Math.random() * 0.42);
+			const anchor = anchors.length > 0 ? pick(anchors) : null;
+			const x = anchor?.x ?? (sceneRect.x + sceneRect.width * (0.15 + Math.random() * 0.7));
+			const y = anchor?.y ?? (sceneRect.y + sceneRect.height * (0.08 + Math.random() * 0.42));
 			generator.spawnParticles(particlesPerBurst, {
 				area: { x, y, radius: [12, 36] },
 			});
@@ -499,8 +554,18 @@ Hooks.once('setup', () => {
 });
 
 Hooks.once('ready', () => {
+	const module = game.modules.get(MODULE_ID);
+	if (module) {
+		module.api = {
+			...(module.api ?? {}),
+			victoryFireworks: {
+				trigger: triggerManualVictoryFireworks,
+			},
+		};
+	}
+
 	game.socket?.on(getModuleSocketEvent(), (data) => {
 		if (data?.type !== VICTORY_FIREWORKS_SOCKET_TYPE) return;
-		playVictoryFireworks(Number(data.intensity) || 0);
+		playVictoryFireworks(Number(data.intensity) || 0, Array.isArray(data.anchors) ? data.anchors : []);
 	});
 });

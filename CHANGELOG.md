@@ -1,9 +1,13 @@
 # Changelog
 
-## [2.4.44] - 2026-05-13
+## [2.4.45] - 2026-05-13
 
 ### Added
 - **At-Will Recharge**: Added an `Enable At-Will Recharge` setting, enabled by default, that automatically restores uses for PF2e items named with `(at will)` after activation.
+- **Victory fireworks**: Added a `game.modules.get("pf2-david-music-control").api.victoryFireworks.trigger()` API so GMs can fire the effect from a macro, with optional custom intensity.
+
+### Changed
+- **Victory fireworks**: Celebration bursts now bias strongly toward friendly party token positions so the effect lands where players are already looking.
 
 ## [2.4.43] - 2026-05-12
 
