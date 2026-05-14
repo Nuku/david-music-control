@@ -81,6 +81,14 @@ const settings = {
 		type: Boolean,
 		default: true,
 	},
+	enableUntypedRollRetyping: {
+		name: 'Enable Roll Retyping',
+		hint: 'Allows GMs and eligible players to reinterpret non-d20 roll chat cards as typed damage or healing and create a derived follow-up card.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	pauseTrack: {
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',

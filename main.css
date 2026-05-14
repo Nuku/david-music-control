@@ -503,3 +503,93 @@
     margin-top: 4px;
     padding: 5px 8px;
 }
+
+.dmc-roll-retag-controls {
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+}
+
+.dmc-roll-retag-row {
+    align-items: center;
+    display: grid;
+    gap: 0.35rem;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+}
+
+.dmc-roll-retag-controls label,
+.dmc-derived-roll-card .dmc-derived-roll-meta {
+    color: rgba(0, 0, 0, 0.72);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.dmc-roll-retag-controls select {
+    min-width: 0;
+}
+
+.dmc-roll-retag-status {
+    color: #1b4332;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.dmc-roll-retag-status a {
+    font-weight: 600;
+}
+
+.dmc-derived-roll-card {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.dmc-derived-roll-header {
+    align-items: baseline;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.dmc-derived-roll-title {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.dmc-derived-roll-badge {
+    background: rgba(45, 106, 79, 0.12);
+    border: 1px solid rgba(45, 106, 79, 0.25);
+    border-radius: 999px;
+    color: #1b4332;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    text-transform: uppercase;
+}
+
+.dmc-derived-roll-total {
+    color: #111;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.dmc-derived-roll-subtitle,
+.dmc-derived-roll-targets,
+.dmc-derived-roll-source {
+    color: rgba(0, 0, 0, 0.8);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.dmc-derived-roll-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.dmc-derived-roll-actions button {
+    flex: 1 1 9rem;
+}

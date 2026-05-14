@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.46] - 2026-05-14
+
+### Added
+- **Roll Retyping**: Added an optional `Enable Roll Retyping` setting that injects a control onto non-d20 roll chat cards so GMs, message authors, and owners of the source actor can derive a typed damage or healing follow-up card while carrying forward speaker, source, and captured target context.
+
 ## [2.4.45] - 2026-05-13
 
 ### Added
