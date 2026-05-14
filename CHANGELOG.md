@@ -1,9 +1,9 @@
 # Changelog
 
-## [2.4.46] - 2026-05-14
+## [2.4.47] - 2026-05-14
 
-### Added
-- **Roll Retyping**: Added an optional `Enable Roll Retyping` setting that injects a control onto non-d20 roll chat cards so GMs, message authors, and owners of the source actor can derive a typed damage or healing follow-up card while carrying forward speaker, source, and captured target context.
+### Changed
+- **Roll Retyping**: The follow-up card now emits a standard PF2e damage or healing roll message instead of a custom module-owned chat card, so it works more naturally with existing damage-card workflows.
 
 ## [2.4.45] - 2026-05-13
 

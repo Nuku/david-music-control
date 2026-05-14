@@ -26,6 +26,8 @@ const DAMAGE_TYPES = [
 	'void',
 ];
 
+const HEALING_TYPES = ['healing', 'vitality', 'void'];
+
 function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableUntypedRollRetyping');
 }
@@ -165,6 +167,19 @@ function injectRetypingControls(message, root) {
 		</div>
 	`;
 
+	const modeSelect = wrapper.querySelector('[name="dmc-roll-mode"]');
+	const typeSelect = wrapper.querySelector('[name="dmc-roll-type"]');
+	const syncTypes = () => {
+		if (!typeSelect) return;
+		const mode = modeSelect?.value || 'damage';
+		const options = mode === 'healing' ? HEALING_TYPES : DAMAGE_TYPES;
+		const preferred = mode === 'healing' ? 'healing' : 'fire';
+		typeSelect.innerHTML = options
+			.map((type) => `<option value="${type}"${type === preferred ? ' selected' : ''}>${type}</option>`)
+			.join('');
+	};
+	modeSelect?.addEventListener('change', syncTypes);
+
 	wrapper.querySelector('[data-action="dmc-create-derived-roll"]')?.addEventListener('click', async (event) => {
 		event.preventDefault();
 		event.stopPropagation();
@@ -176,31 +191,51 @@ function injectRetypingControls(message, root) {
 	root.appendChild(wrapper);
 }
 
-function formatTargets(targets = []) {
-	if (!Array.isArray(targets) || targets.length === 0) return 'No targets captured';
-	return targets.map((target) => target.name ?? target.actorId ?? target.tokenId ?? 'Unknown').join(', ');
+function getDamageRollClass() {
+	return game.pf2e?.DamageRoll
+		?? CONFIG?.PF2E?.DamageRoll
+		?? CONFIG?.Dice?.rolls?.find?.((rollClass) => rollClass?.name === 'DamageRoll')
+		?? Roll;
 }
 
-function buildDerivedCardContent(context, { mode, damageType }) {
-	const verb = mode === 'healing' ? 'healing' : 'damage';
-	const sourceName = context.source?.name ?? context.speaker?.alias ?? 'Unknown Source';
-	const flavor = context.flavor ? `<p class="dmc-derived-roll-subtitle">${foundry.utils.escapeHTML(String(context.flavor))}</p>` : '';
-	return `
-		<div class="dmc-derived-roll-card" data-dmc-derived-card="true">
-			<div class="dmc-derived-roll-header">
-				<div class="dmc-derived-roll-title">Reinterpreted Roll</div>
-				<div class="dmc-derived-roll-badge">${damageType} ${verb}</div>
-			</div>
-			<div class="dmc-derived-roll-total">${context.rollTotal}</div>
-			<p class="dmc-derived-roll-meta">${context.rollFormula ?? 'Flat total'}</p>
-			${flavor}
-			<p class="dmc-derived-roll-source"><strong>Source:</strong> ${sourceName}</p>
-			<p class="dmc-derived-roll-targets"><strong>Targets:</strong> ${formatTargets(context.targets)}</p>
-			<div class="dmc-derived-roll-actions">
-				<button type="button" data-action="dmc-apply-derived-roll">Apply to Captured Targets</button>
-			</div>
-		</div>
-	`;
+function getStandardDamageFormula(total, mode, damageType) {
+	const numericTotal = Math.abs(Number(total) || 0);
+	if (mode === 'healing') {
+		if (damageType === 'vitality' || damageType === 'void') return `(${numericTotal})[${damageType}]`;
+		return `(${numericTotal})[healing]`;
+	}
+	return damageType ? `(${numericTotal})[${damageType}]` : `${numericTotal}`;
+}
+
+async function createStandardDamageMessage(context, { mode, damageType }) {
+	const DamageRollClass = getDamageRollClass();
+	const formula = getStandardDamageFormula(context.rollTotal, mode, damageType);
+	const roll = await new DamageRollClass(formula).evaluate({ async: true });
+	const flavor = `Reinterpreted ${context.rollFormula ?? context.rollTotal} as ${damageType} ${mode}`;
+	const flags = {
+		[FLAG_SCOPE]: {
+			[RETYPE_FLAG]: {
+				derivedFromMessageId: context.originalMessageId,
+				mode,
+				damageType,
+				source: context.source,
+				targets: context.targets,
+				rollFormula: context.rollFormula,
+				rollTotal: context.rollTotal,
+				rollJson: context.rollJson,
+				pf2eContext: context.pf2eContext,
+				createdBy: game.user.id,
+			},
+		},
+	};
+
+	return await roll.toMessage({
+		speaker: context.speaker,
+		whisper: context.whisper,
+		blind: context.blind,
+		flavor,
+		flags,
+	});
 }
 
 async function createDerivedRollMessage(message, { mode, damageType }) {
@@ -215,33 +250,7 @@ async function createDerivedRollMessage(message, { mode, damageType }) {
 		return null;
 	}
 
-	const content = buildDerivedCardContent(context, { mode, damageType });
-	const chatData = {
-		user: game.user.id,
-		speaker: context.speaker,
-		whisper: context.whisper,
-		blind: context.blind,
-		content,
-		flavor: `Reinterpreted as ${damageType} ${mode}`,
-		flags: {
-			[FLAG_SCOPE]: {
-				[RETYPE_FLAG]: {
-					derivedFromMessageId: message.id,
-					mode,
-					damageType,
-					source: context.source,
-					targets: context.targets,
-					rollFormula: context.rollFormula,
-					rollTotal: context.rollTotal,
-					rollJson: context.rollJson,
-					pf2eContext: context.pf2eContext,
-					createdBy: game.user.id,
-				},
-			},
-		},
-	};
-
-	const derived = await ChatMessage.create(chatData);
+	const derived = await createStandardDamageMessage(context, { mode, damageType });
 	await message.setFlag(FLAG_SCOPE, RETYPE_FLAG, {
 		derivedMessageId: derived.id,
 		mode,
@@ -253,78 +262,9 @@ async function createDerivedRollMessage(message, { mode, damageType }) {
 	return derived;
 }
 
-function getDerivedData(message) {
-	return message.getFlag(FLAG_SCOPE, RETYPE_FLAG);
-}
-
-function resolveTargets(targets = []) {
-	return targets
-		.map((target) => {
-			const scene = target.sceneId ? game.scenes?.get(target.sceneId) : canvas?.scene;
-			const token = scene?.tokens?.get?.(target.tokenId) ?? null;
-			const actor = token?.actor ?? (target.actorId ? game.actors?.get(target.actorId) : null);
-			return { actor, token, target };
-		})
-		.filter((entry) => entry.actor);
-}
-
-async function applyDerivedToActor(actor, amount, mode, damageType) {
-	if (!actor) return;
-	if (typeof actor.applyDamage === 'function') {
-		const signed = mode === 'healing' ? -Math.abs(amount) : Math.abs(amount);
-		await actor.applyDamage({ value: signed, damageType, token: actor.getActiveTokens?.()[0] ?? null });
-		return;
-	}
-
-	const hp = actor.system?.attributes?.hp;
-	if (!hp) return;
-	const max = Number(hp.max ?? 0);
-	const current = Number(hp.value ?? 0);
-	const next = mode === 'healing'
-		? Math.min(max, current + Math.abs(amount))
-		: Math.max(0, current - Math.abs(amount));
-	await actor.update({ 'system.attributes.hp.value': next });
-}
-
-async function applyDerivedRoll(message) {
-	const data = getDerivedData(message);
-	if (!data?.targets?.length) {
-		ui.notifications.warn('No captured targets are available on this derived roll.');
-		return;
-	}
-
-	const resolved = resolveTargets(data.targets);
-	if (!resolved.length) {
-		ui.notifications.warn('None of the captured targets could be resolved.');
-		return;
-	}
-
-	for (const entry of resolved) {
-		await applyDerivedToActor(entry.actor, Number(data.rollTotal) || 0, data.mode || 'damage', data.damageType || '');
-	}
-
-	await message.setFlag(FLAG_SCOPE, RETYPE_FLAG, {
-		...data,
-		appliedAt: Date.now(),
-		appliedBy: game.user.id,
-	});
-
-	ui.notifications.info(`Applied ${data.rollTotal} ${data.damageType ?? ''} ${data.mode ?? 'damage'} to ${resolved.length} target(s).`);
-}
-
 Hooks.on('renderChatMessage', (message, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
-
-	const derivedData = getDerivedData(message);
-	if (derivedData?.derivedFromMessageId) {
-		root.querySelector('[data-action="dmc-apply-derived-roll"]')?.addEventListener('click', async (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			await applyDerivedRoll(message);
-		});
-		return;
-	}
 
 	if (!isEligibleMessage(message)) return;
 	injectRetypingControls(message, root.querySelector('.message-content') ?? root);
