@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.48] - 2026-05-15
+
+### Fixed
+- **End credits**: When an `In Memoriam` folder is configured, credits now treat that folder as authoritative instead of falling back to dead actors from elsewhere in the world.
+
 ## [2.4.47] - 2026-05-14
 
 ### Changed

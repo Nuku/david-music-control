@@ -851,14 +851,14 @@ function buildCreditsHTML() {
   ];
 
   const isDead  = a => a.system?.attributes?.hp?.value === 0 || a.system?.attributes?.dying?.value > 0;
-  const deadParty = partyMembers.filter(isDead);
   const memoriamFolderName = game.settings.get(MODULE_ID, "endCreditsMemoriamFolder")?.trim();
   const memoriamFolder = findActorFolderByPath(memoriamFolderName);
+  const deadParty = partyMembers.filter(isDead);
   const deadFolderActors = memoriamFolder ? getActorsInFolderTree(memoriamFolder) : [];
-  const deadActors = deadParty.length > 0
-    ? deadParty
-    : deadFolderActors.length > 0
-      ? deadFolderActors
+  const deadActors = memoriamFolderName
+    ? deadFolderActors
+    : deadParty.length > 0
+      ? deadParty
       : (game.actors?.filter(a => a.type === "character" && isDead(a)) ?? []);
 
   if (deadActors.length > 0) {
