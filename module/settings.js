@@ -180,7 +180,7 @@ Hooks.once('setup', () => {
 		try {
 			game.settings.register(MODULE_ID, key, setting);
 		} catch (error) {
-			console.error(`David Music Control | Failed to register setting ${key}`, error);
+			console.error(`PF2 Director | Failed to register setting ${key}`, error);
 		}
 	}
 
@@ -194,30 +194,67 @@ Hooks.once('setup', () => {
 			restricted: true,
 		});
 	} catch (error) {
-		console.error('David Music Control | Failed to register menu victoryFireworksImageMenu', error);
+		console.error('PF2 Director | Failed to register menu victoryFireworksImageMenu', error);
 	}
 });
 
-// Inject Export/Import buttons directly into the settings UI after Pause Tracks.
-Hooks.on('renderSettingsConfig', (app, html) => {
+function findSettingsRow(root, key) {
+	const field = root.querySelector(`[name="${MODULE_ID}.${key}"]`);
+	if (field) return field.closest('.form-group') ?? field.closest('div');
+	const button = root.querySelector(`button[data-key="${MODULE_ID}.${key}"]`);
+	return button?.closest('.form-group') ?? button?.closest('div') ?? null;
+}
+
+function insertSectionHeader(beforeRow, title, description = '') {
+	if (!beforeRow || beforeRow.previousElementSibling?.classList.contains('dmc-settings-header')) return;
+
+	const header = document.createElement('div');
+	header.className = 'dmc-settings-header';
+	header.innerHTML = `
+		<h3>${title}</h3>
+		${description ? `<p>${description}</p>` : ''}
+	`;
+	beforeRow.before(header);
+}
+
+// Group module settings and inject Export/Import buttons into the settings UI.
+Hooks.on('renderSettingsConfig', (_app, html) => {
 	if (!game.user.isGM) return;
 
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
 
-	// Find our module's section header first, then look for pauseTrack within it.
-	const allInputs = root.querySelectorAll('input, select');
-	let pauseTrackInput = null;
-	for (const el of allInputs) {
-		if (el.name === `${MODULE_ID}.pauseTrack`) { pauseTrackInput = el; break; }
-	}
-	if (!pauseTrackInput) return;
+	insertSectionHeader(
+		findSettingsRow(root, 'pauseAmbience'),
+		'Combat Music',
+		'Core behavior for combat playlists and ambience handling.'
+	);
+	insertSectionHeader(
+		findSettingsRow(root, 'playSceneMusic'),
+		'Scene / Victory',
+		'Automatic scene matching, victory effects, and related controls.'
+	);
+	insertSectionHeader(
+		findSettingsRow(root, 'enableCultSystem'),
+		'PF2e Tools',
+		'Optional PF2e utilities enabled by this module.'
+	);
+	insertSectionHeader(
+		findSettingsRow(root, 'combatMusicMenu'),
+		'Import / Export',
+		'Playlist setup, trait rules, victory music, and saved configuration tools.'
+	);
+	insertSectionHeader(
+		findSettingsRow(root, 'endCreditsMusicConfig'),
+		'End Credits',
+		'Finale music, background, memoriam folder, and live credits controls.'
+	);
 
-	const row = pauseTrackInput.closest('.form-group') ?? pauseTrackInput.closest('div');
+	const row = findSettingsRow(root, 'pauseTrack');
 	if (!row) return;
 
 	// Don't inject twice.
-	if (row.nextElementSibling?.classList.contains('cmm-transfer-row')) return;
+	if (root.querySelector('.cmm-transfer-row')) return;
 
 	const wrapper = document.createElement('div');
 	wrapper.className = 'form-group cmm-transfer-row';

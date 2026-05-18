@@ -26,7 +26,7 @@ async function migrateFlags(doc) {
 			updates[`flags.${oldId}.-=${key}`] = null;
 		}
 		await doc.update(updates);
-		console.log(`David Music Control | Migrated flags from ${oldId} on ${doc.name ?? doc.id}`);
+		console.log(`PF2 Director | Migrated flags from ${oldId} on ${doc.name ?? doc.id}`);
 	}
 }
 
@@ -49,11 +49,11 @@ async function migrateEndCreditsSettings() {
 
 		await game.settings.set(MODULE_ID, newKey, oldValue);
 		migratedAny = true;
-		console.log(`David Music Control | Migrated end credits setting ${oldKey} -> ${newKey}`);
+		console.log(`PF2 Director | Migrated end credits setting ${oldKey} -> ${newKey}`);
 	}
 
 	if (migratedAny) {
-		console.log('David Music Control | End credits settings migrated from end-credits.');
+		console.log('PF2 Director | End credits settings migrated from end-credits.');
 	}
 }
 
@@ -64,7 +64,7 @@ export async function migrate() {
 	const migratedVersion = game.settings.get(MODULE_ID, 'migrated');
 	if (migratedVersion === MIGRATION_VERSION) return;
 
-	console.log('David Music Control | Checking for flag migration...');
+	console.log('PF2 Director | Checking for flag migration...');
 
 	// Migrate all scene tokens across all scenes.
 	for (const scene of game.scenes.contents) {
@@ -87,7 +87,7 @@ export async function migrate() {
 				Object.keys(oldFlags).map((k) => [`-=${k}`, null])
 			);
 			await actor.update(updates);
-			console.log(`David Music Control | Migrated prototype token flags from ${oldId} on ${actor.name}`);
+			console.log(`PF2 Director | Migrated prototype token flags from ${oldId} on ${actor.name}`);
 		}
 	}
 
@@ -100,5 +100,5 @@ export async function migrate() {
 
 	// Mark migration as done so it never runs again.
 	await game.settings.set(MODULE_ID, 'migrated', MIGRATION_VERSION);
-	console.log('David Music Control | Migration complete.');
+	console.log('PF2 Director | Migration complete.');
 }

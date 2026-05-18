@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.4.49] - 2026-05-18
+
+### Changed
+- **Branding**: Renamed the module's displayed title to **PF2 Director** while keeping the existing module ID and package paths unchanged.
+- **Settings**: Grouped the module settings into clearer sections so the growing mix of music, PF2e tools, import/export, and end credits controls is easier to navigate.
+
 ## [2.4.48] - 2026-05-15
 
 ### Fixed

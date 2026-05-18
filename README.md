@@ -1,4 +1,4 @@
-# Foundry VTT - David's Music Control
+# Foundry VTT - PF2 Director
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Nuku/david-music-control)
 ![GitHub Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/latest/pf2-david-music-control.zip)

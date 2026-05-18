@@ -167,7 +167,7 @@ export async function handleSceneChange(scene, { ignoreSettingCheck = false } = 
 
 	// If there is only one playlist, just play it.
 	if (choices.length === 1) {
-		console.log(`David Music Control | Starting scene music: ${choices[0].name}`);
+		console.log(`PF2 Director | Starting scene music: ${choices[0].name}`);
 		stopNonCombatMusic();
 		await choices[0].playAll();
 		return;
@@ -176,7 +176,7 @@ export async function handleSceneChange(scene, { ignoreSettingCheck = false } = 
 	// Multiple playlists — ask the GM.
 	const chosen = await promptPlaylistSelection(scene, choices);
 	if (chosen) {
-		console.log(`David Music Control | Starting scene music (chosen): ${chosen.name}`);
+		console.log(`PF2 Director | Starting scene music (chosen): ${chosen.name}`);
 		stopNonCombatMusic();
 		await chosen.playAll();
 	}

@@ -62,7 +62,7 @@ export async function exportMusicConfig() {
 
 	const json = JSON.stringify(data, null, 2);
 	saveDataToFile(json, 'application/json', `${game.world.id}.music.json`);
-	ui.notifications.info('David Music Control | Music config exported.');
+	ui.notifications.info('PF2 Director | Music config exported.');
 }
 
 /* -------------------------------------------- */
@@ -85,11 +85,11 @@ export function importMusicConfig() {
 		try {
 			data = JSON.parse(text);
 		} catch {
-			ui.notifications.error('David Music Control | Invalid JSON file.');
+			ui.notifications.error('PF2 Director | Invalid JSON file.');
 			return;
 		}
 		if (!data.playlists || !Array.isArray(data.playlists)) {
-			ui.notifications.error('David Music Control | Not a valid music export file.');
+			ui.notifications.error('PF2 Director | Not a valid music export file.');
 			return;
 		}
 		await applyImport(data);
@@ -104,7 +104,7 @@ export function importMusicConfig() {
 }
 
 async function applyImport(data) {
-	ui.notifications.info('David Music Control | Importing music config...');
+	ui.notifications.info('PF2 Director | Importing music config...');
 	let defaultPlaylistId = '';
 
 	// Build a name→playlist map as we go so trait resolution sees newly created playlists.
@@ -178,5 +178,5 @@ async function applyImport(data) {
 		if (boss) await setSetting('victoryMusicBoss', boss);
 	}
 
-	ui.notifications.info('David Music Control | Import complete!');
+	ui.notifications.info('PF2 Director | Import complete!');
 }

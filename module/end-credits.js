@@ -1145,7 +1145,7 @@ Hooks.once("init", () => {
     try {
       game.settings.register(MODULE_ID, key, data);
     } catch (error) {
-      console.error(`David Music Control | Failed to register end credits setting ${key}`, error);
+      console.error(`PF2 Director | Failed to register end credits setting ${key}`, error);
     }
   }
 
@@ -1160,7 +1160,7 @@ Hooks.once("init", () => {
       restricted: true,
     });
   } catch (error) {
-    console.error("David Music Control | Failed to register end credits menu endCreditsMusicConfig", error);
+    console.error("PF2 Director | Failed to register end credits menu endCreditsMusicConfig", error);
   }
 
   // Menu button — Background image config
@@ -1174,7 +1174,7 @@ Hooks.once("init", () => {
       restricted: true,
     });
   } catch (error) {
-    console.error("David Music Control | Failed to register end credits menu endCreditsImageConfig", error);
+    console.error("PF2 Director | Failed to register end credits menu endCreditsImageConfig", error);
   }
 
   try {
@@ -1187,7 +1187,7 @@ Hooks.once("init", () => {
       default: "",
     });
   } catch (error) {
-    console.error("David Music Control | Failed to register end credits setting endCreditsMemoriamFolder", error);
+    console.error("PF2 Director | Failed to register end credits setting endCreditsMemoriamFolder", error);
   }
 
   // Menu button — Toggle credits (runs immediately, no form)
@@ -1206,7 +1206,7 @@ Hooks.once("init", () => {
     restricted: true,
     });
   } catch (error) {
-    console.error("David Music Control | Failed to register end credits menu endCreditsToggle", error);
+    console.error("PF2 Director | Failed to register end credits menu endCreditsToggle", error);
   }
 
   console.log("[End Credits] Initialized.");

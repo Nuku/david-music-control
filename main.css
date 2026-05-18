@@ -10,6 +10,24 @@
     list-style-type: none;
 }
 
+.dmc-settings-header {
+    border-top: 1px solid rgba(0, 0, 0, 0.16);
+    margin: 1rem 0 0.5rem;
+    padding-top: 0.75rem;
+}
+
+.dmc-settings-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.15rem;
+}
+
+.dmc-settings-header p {
+    color: rgba(0, 0, 0, 0.72);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
 .cmm-playlists li {
     display: flex;
     align-items: center;

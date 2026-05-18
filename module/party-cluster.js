@@ -55,7 +55,7 @@ async function createPartyTokenCluster(partyToken) {
 		await updatePlacedPartyTokens(party, partyToken, path);
 		ui.notifications.info(`${party.name} party token updated.`);
 	} catch (error) {
-		console.error('David Music Control | Error creating party token cluster:', error);
+		console.error('PF2 Director | Error creating party token cluster:', error);
 		ui.notifications.error('Unable to create the party token cluster. See the console for details.');
 	}
 }

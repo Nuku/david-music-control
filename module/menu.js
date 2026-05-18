@@ -123,7 +123,7 @@ class PlaylistManager extends HandlebarsApplicationMixin(ApplicationV2) {
 		window: {
 			contentClasses: ['standard-form'],
 			icon: 'fa-solid fa-music',
-			title: 'David Music Control',
+			title: 'PF2 Director',
 		},
 		position: { width: 400 },
 		form: {
@@ -319,7 +319,7 @@ class VictoryMusicManager extends HandlebarsApplicationMixin(ApplicationV2) {
 Hooks.once('setup', () => {
 	const menus = [
 		['combatMusicMenu', {
-			name: 'David Music Control',
+			name: 'PF2 Director',
 			label: 'Combat Playlists',
 			hint: 'Select which ones are your combat playlists.',
 			icon: 'fas fa-music',
@@ -348,7 +348,7 @@ Hooks.once('setup', () => {
 		try {
 			game.settings.registerMenu(MODULE_ID, key, data);
 		} catch (error) {
-			console.error(`David Music Control | Failed to register menu ${key}`, error);
+			console.error(`PF2 Director | Failed to register menu ${key}`, error);
 		}
 	}
 });

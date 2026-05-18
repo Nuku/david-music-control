@@ -278,7 +278,7 @@ export function getTokenHeaderButtons(sheet, buttons) {
 			onClick: () => new TokenMusicConfig(sheet.token).render(true),
 		});
 	} catch (error) {
-		console.error('David Music Control | Error adding actor sheet header buttons:', error);
+		console.error('PF2 Director | Error adding actor sheet header buttons:', error);
 	}
 }
 
