@@ -8,6 +8,7 @@ import './module/at-will-recharge.js';
 import './module/chat-roll-type.js';
 import './module/scene-music.js';
 import './module/end-credits.js';
+import './module/dramatic-health-display.js';
 import { migrate } from './module/migrate.js';
 import('./module/encounter.js');
 

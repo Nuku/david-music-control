@@ -219,8 +219,6 @@ function insertSectionHeader(beforeRow, title, description = '') {
 
 // Group module settings and inject Export/Import buttons into the settings UI.
 Hooks.on('renderSettingsConfig', (_app, html) => {
-	if (!game.user.isGM) return;
-
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
 
@@ -235,10 +233,17 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		'Optional PF2e utilities enabled by this module.'
 	);
 	insertSectionHeader(
+		findSettingsRow(root, 'dramaticHealthBarPosition'),
+		'Dramatic Health Display',
+		'Animated health bar overlays and per-player sound options for visible HP changes.'
+	);
+	insertSectionHeader(
 		findSettingsRow(root, 'endCreditsMusicConfig'),
 		'End Credits',
 		'Finale music, background, memoriam folder, and live credits controls.'
 	);
+
+	if (!game.user.isGM) return;
 
 	const row = findSettingsRow(root, 'pauseTrack');
 	if (!row) return;

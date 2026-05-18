@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.51] - 2026-05-18
+
+### Added
+- **Dramatic Health Display**: Integrated animated health bar overlays with configurable visibility thresholds, optional per-player damage/heal sounds, and a dedicated settings section in the module configuration.
+
 ## [2.4.50] - 2026-05-18
 
 ### Changed

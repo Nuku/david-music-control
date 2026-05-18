@@ -1,0 +1,316 @@
+#dhb-container {
+	position: fixed;
+	z-index: 10000;
+	pointer-events: none;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+#dhb-container.dhb-pos-bottom-center {
+	bottom: 110px;
+	left: 50%;
+	transform: translateX(-50%);
+	align-items: center;
+}
+
+#dhb-container.dhb-pos-bottom-left {
+	bottom: 110px;
+	left: 18px;
+	align-items: flex-start;
+}
+
+#dhb-container.dhb-pos-bottom-right {
+	bottom: 110px;
+	right: 18px;
+	align-items: flex-end;
+}
+
+.dhb-panel {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	min-width: 380px;
+	max-width: 520px;
+	padding: 11px 20px 11px 11px;
+	background: linear-gradient(155deg, rgba(7, 7, 13, 0.97) 0%, rgba(16, 16, 26, 0.94) 100%);
+	border-radius: 12px;
+	position: relative;
+	overflow: hidden;
+	animation: dhb-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.dhb-panel::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 4px;
+	border-radius: 12px 0 0 12px;
+}
+
+.dhb-panel::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 4px;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+}
+
+.dhb-panel.dhb-is-damage::before {
+	background: linear-gradient(180deg, #ff7b7b 0%, #b81c1c 100%);
+	box-shadow: 0 0 14px rgba(255, 70, 70, 0.9);
+}
+
+.dhb-panel.dhb-is-damage {
+	box-shadow:
+		0 6px 28px rgba(0, 0, 0, 0.9),
+		0 0 0 1px rgba(180, 40, 40, 0.45),
+		0 0 22px rgba(180, 40, 40, 0.18);
+}
+
+.dhb-panel.dhb-is-heal::before {
+	background: linear-gradient(180deg, #7bffb8 0%, #1caa5c 100%);
+	box-shadow: 0 0 14px rgba(60, 240, 130, 0.9);
+}
+
+.dhb-panel.dhb-is-heal {
+	box-shadow:
+		0 6px 28px rgba(0, 0, 0, 0.9),
+		0 0 0 1px rgba(40, 180, 100, 0.45),
+		0 0 22px rgba(40, 180, 100, 0.18);
+}
+
+.dhb-portrait {
+	position: relative;
+	width: 58px;
+	height: 58px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	overflow: hidden;
+	border: 2px solid rgba(255, 255, 255, 0.22);
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.dhb-portrait img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.dhb-portrait-flash {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.dhb-is-damage .dhb-portrait-flash {
+	animation: dhb-flash-red 0.55s ease-out forwards;
+}
+
+.dhb-is-heal .dhb-portrait-flash {
+	animation: dhb-flash-green 0.55s ease-out forwards;
+}
+
+.dhb-info {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.dhb-name {
+	font-size: 13px;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.94);
+	text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+	letter-spacing: 0.35px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.dhb-bar-track {
+	height: 15px;
+	background: rgba(0, 0, 0, 0.72);
+	border-radius: 8px;
+	overflow: hidden;
+	position: relative;
+	border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.dhb-bar-ghost {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.11);
+	pointer-events: none;
+	transition: none;
+}
+
+.dhb-bar-fill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	border-radius: 8px;
+	pointer-events: none;
+}
+
+.dhb-bar-fill::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -60%;
+	width: 45%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+	animation: dhb-shimmer 2.4s ease-in-out 0.7s infinite;
+}
+
+.dhb-hp-high {
+	background: linear-gradient(90deg, #266e35 0%, #3daa52 100%);
+	box-shadow: 0 0 6px rgba(50, 200, 80, 0.45) inset;
+}
+
+.dhb-hp-mid {
+	background: linear-gradient(90deg, #7a4c0c 0%, #bf7e22 100%);
+	box-shadow: 0 0 6px rgba(200, 140, 40, 0.45) inset;
+}
+
+.dhb-hp-low {
+	background: linear-gradient(90deg, #7a1a1a 0%, #c42828 100%);
+	box-shadow: 0 0 6px rgba(200, 40, 40, 0.5) inset;
+}
+
+.dhb-hp-text {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.5);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.4px;
+}
+
+.dhb-hp-sep {
+	color: rgba(255, 255, 255, 0.25);
+}
+
+.dhb-delta {
+	font-size: 28px;
+	font-weight: 900;
+	flex-shrink: 0;
+	min-width: 58px;
+	text-align: right;
+	letter-spacing: -1px;
+	font-variant-numeric: tabular-nums;
+	animation: dhb-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.dhb-delta-damage {
+	color: #ff5252;
+	text-shadow:
+		0 0 18px rgba(255, 60, 60, 0.95),
+		0 0 6px rgba(255, 60, 60, 0.6),
+		0 2px 4px rgba(0, 0, 0, 0.85);
+}
+
+.dhb-delta-heal {
+	color: #52ffaa;
+	text-shadow:
+		0 0 18px rgba(60, 255, 130, 0.95),
+		0 0 6px rgba(60, 255, 130, 0.6),
+		0 2px 4px rgba(0, 0, 0, 0.85);
+}
+
+@keyframes dhb-enter {
+	from {
+		opacity: 0;
+		transform: translateY(28px) scale(0.92);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes dhb-exit {
+	from {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(22px) scale(0.96);
+	}
+}
+
+@keyframes dhb-pop {
+	from {
+		opacity: 0;
+		transform: scale(0.3);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes dhb-flash-red {
+	0% { opacity: 0; background: rgba(255, 60, 60, 0.75); }
+	25% { opacity: 1; }
+	100% { opacity: 0; background: rgba(255, 60, 60, 0); }
+}
+
+@keyframes dhb-flash-green {
+	0% { opacity: 0; background: rgba(60, 255, 130, 0.75); }
+	25% { opacity: 1; }
+	100% { opacity: 0; background: rgba(60, 255, 130, 0); }
+}
+
+@keyframes dhb-shimmer {
+	0%, 100% { left: -60%; }
+	50% { left: 120%; }
+}
+
+.dhb-panel.dhb-exiting {
+	animation: dhb-exit 0.55s ease-in forwards !important;
+	pointer-events: none;
+}
+
+.dhb-config-form .dhb-file-row {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+.dhb-config-form .dhb-file-row input[type="text"] {
+	flex: 1;
+}
+
+.dhb-config-form .dhb-btn-browse,
+.dhb-config-form .dhb-btn-test {
+	flex-shrink: 0;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+
+.dhb-config-form .dhb-vol-label {
+	font-weight: 600;
+	color: var(--color-text-hyperlink, #4a90e2);
+	font-size: 0.85em;
+	min-width: 36px;
+	display: inline-block;
+}
