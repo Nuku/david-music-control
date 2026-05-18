@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.50] - 2026-05-18
+
+### Changed
+- **Settings**: Consolidated the music-related settings into a single `Music` section so combat, scene, victory, configuration, and import/export controls are grouped together.
+
 ## [2.4.49] - 2026-05-18
 
 ### Changed

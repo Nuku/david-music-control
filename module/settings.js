@@ -226,23 +226,13 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 
 	insertSectionHeader(
 		findSettingsRow(root, 'pauseAmbience'),
-		'Combat Music',
-		'Core behavior for combat playlists and ambience handling.'
-	);
-	insertSectionHeader(
-		findSettingsRow(root, 'playSceneMusic'),
-		'Scene / Victory',
-		'Automatic scene matching, victory effects, and related controls.'
+		'Music',
+		'Combat playlists, scene matching, victory behavior, and music configuration tools.'
 	);
 	insertSectionHeader(
 		findSettingsRow(root, 'enableCultSystem'),
 		'PF2e Tools',
 		'Optional PF2e utilities enabled by this module.'
-	);
-	insertSectionHeader(
-		findSettingsRow(root, 'combatMusicMenu'),
-		'Import / Export',
-		'Playlist setup, trait rules, victory music, and saved configuration tools.'
 	);
 	insertSectionHeader(
 		findSettingsRow(root, 'endCreditsMusicConfig'),
