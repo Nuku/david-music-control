@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.52] - 2026-05-18
+
+### Changed
+- **Dramatic Health Display**: Damage now makes the health bar shiver briefly, while healing triggers a bright green medical scan sweep across the bar.
+
 ## [2.4.51] - 2026-05-18
 
 ### Added

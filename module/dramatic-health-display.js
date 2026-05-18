@@ -134,6 +134,15 @@ function getContainer() {
 	return element;
 }
 
+function applyBarEffect(panel, isDamage) {
+	const track = panel.querySelector('.dhb-bar-track');
+	if (!track) return;
+
+	track.classList.remove('dhb-bar-track-damage', 'dhb-bar-track-heal');
+	void track.offsetWidth;
+	track.classList.add(isDamage ? 'dhb-bar-track-damage' : 'dhb-bar-track-heal');
+}
+
 function buildPanel(actor, oldPct, newPct, newHp, maxHp, delta, showNumbers) {
 	const isDamage = delta < 0;
 	const sign = isDamage ? '' : '+';
@@ -170,6 +179,7 @@ function buildPanel(actor, oldPct, newPct, newHp, maxHp, delta, showNumbers) {
 			fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.4,0,0.2,1), background-color 0.4s ease`;
 			fill.style.width = `${newPct * 100}%`;
 			fill.className = `dhb-bar-fill ${dhdHpClass(newPct)}`;
+			applyBarEffect(element, isDamage);
 		});
 	});
 
@@ -231,6 +241,7 @@ function showHealthBar(actor, oldHp, newHp, maxHp) {
 			fill.style.width = `${newPct * 100}%`;
 			fill.className = `dhb-bar-fill ${dhdHpClass(newPct)}`;
 		}
+		applyBarEffect(panel, isDamage);
 
 		const hpText = panel.querySelector('.dhb-hp-text');
 		if (hpText) {

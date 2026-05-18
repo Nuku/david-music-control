@@ -144,6 +144,7 @@
 	overflow: hidden;
 	position: relative;
 	border: 1px solid rgba(255, 255, 255, 0.07);
+	transform-origin: center;
 }
 
 .dhb-bar-ghost {
@@ -175,6 +176,24 @@
 	height: 100%;
 	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
 	animation: dhb-shimmer 2.4s ease-in-out 0.7s infinite;
+}
+
+.dhb-bar-track.dhb-bar-track-damage {
+	animation: dhb-bar-shiver 0.34s ease-out;
+}
+
+.dhb-bar-track.dhb-bar-track-heal::before {
+	content: '';
+	position: absolute;
+	inset: -1px;
+	border-radius: 8px;
+	background:
+		linear-gradient(90deg, transparent 0%, rgba(130, 255, 190, 0.15) 30%, rgba(130, 255, 190, 0.75) 50%, rgba(130, 255, 190, 0.15) 70%, transparent 100%),
+		repeating-linear-gradient(115deg, rgba(120, 255, 175, 0.28) 0 8px, rgba(255, 255, 255, 0.04) 8px 16px);
+	mix-blend-mode: screen;
+	opacity: 0;
+	pointer-events: none;
+	animation: dhb-heal-scan 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .dhb-hp-high {
@@ -260,6 +279,32 @@
 	to {
 		opacity: 1;
 		transform: scale(1);
+	}
+}
+
+@keyframes dhb-bar-shiver {
+	0% { transform: translateX(0); }
+	18% { transform: translateX(-4px) skewX(-6deg); }
+	36% { transform: translateX(4px) skewX(5deg); }
+	54% { transform: translateX(-3px) skewX(-4deg); }
+	72% { transform: translateX(3px) skewX(3deg); }
+	100% { transform: translateX(0); }
+}
+
+@keyframes dhb-heal-scan {
+	0% {
+		opacity: 0;
+		transform: translateX(-115%) skewX(-18deg);
+	}
+	15% {
+		opacity: 0.95;
+	}
+	70% {
+		opacity: 0.8;
+	}
+	100% {
+		opacity: 0;
+		transform: translateX(115%) skewX(-18deg);
 	}
 }
 
