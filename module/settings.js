@@ -89,6 +89,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enableVillainPoints: {
+		name: 'Enable Villain Points',
+		hint: 'Tracks spent hero points from character sheets, grants 1 villain point for every 2 hero point uses, and lets the GM spend villain points on chat rerolls.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	pauseTrack: {
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',
@@ -120,6 +128,14 @@ const settings = {
 		config: false,
 		type: String,
 		default: '[]',
+	},
+	villainPointState: {
+		name: 'Villain Point State',
+		hint: 'Stored villain point counters and reset markers.',
+		scope: 'world',
+		config: false,
+		type: String,
+		default: '{}',
 	},
 	migrated: {
 		name: 'Migrated',

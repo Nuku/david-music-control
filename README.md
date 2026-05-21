@@ -50,6 +50,7 @@ Module Settings include:
 - `Enable PF2e Cult System`
 - `Enable Full Rest`
 - `Enable At-Will Recharge`
+- `Enable Villain Points`
 
 The settings UI also includes:
 
@@ -77,6 +78,15 @@ When `Enable Full Rest` is on, PF2e party sheets gain a `Recover` button that:
 ### At-Will Recharge
 
 When `Enable At-Will Recharge` is on, PF2e items with `(at will)` in their name automatically restore their expended use immediately after activation. This applies to both innate spell uses and frequency-based actions.
+
+### Villain Points
+
+When `Enable Villain Points` is on:
+
+- every time a PF2e character's hero point total drops, the module counts that as hero point use
+- every 2 tracked hero point uses grant the GM 1 villain point
+- if the most recent 5 chat messages include a gap of 12 hours or more between consecutive messages, tracked hero point uses and villain points both reset to 0
+- the GM gets a `Villain Point` button on d20 chat messages and can spend 1 point to post a reroll of that check
 
 ### Cult System
 

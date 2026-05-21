@@ -6,6 +6,7 @@ import './module/cult.js';
 import './module/full-rest.js';
 import './module/at-will-recharge.js';
 import './module/chat-roll-type.js';
+import './module/villain-points.js';
 import './module/scene-music.js';
 import './module/end-credits.js';
 import './module/dramatic-health-display.js';

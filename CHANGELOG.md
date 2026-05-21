@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.53] - 2026-05-21
+
+### Added
+- **Villain Points**: Added an optional world setting that tracks hero point spending from PF2e character sheets, grants the GM 1 villain point for every 2 hero point uses, resets both counters after a 12+ hour gap detected within the most recent 5 chat messages, and adds a GM-only villain-point reroll button to d20 chat messages.
+
 ## [2.4.52] - 2026-05-18
 
 ### Changed
