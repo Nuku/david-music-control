@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.57] - 2026-05-21
+
+### Fixed
+- **Villain Points**: Switched the dread sound dialog to Foundry's native audio file-picker control so selecting a sound works reliably.
+
 ## [2.4.56] - 2026-05-21
 
 ### Changed

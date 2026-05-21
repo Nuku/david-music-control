@@ -56,14 +56,6 @@ class VillainPointDreadSoundConfig extends FormApplication {
 	activateListeners(html) {
 		super.activateListeners(html);
 
-		html.find('[data-action="browse-audio"]').on('click', () => {
-			new FilePicker({
-				type: 'audio',
-				current: html.find('[name="villainPointNoticeSound"]').val(),
-				callback: (path) => html.find('[name="villainPointNoticeSound"]').val(path),
-			}).browse();
-		});
-
 		html.find('[data-action="clear-audio"]').on('click', () => {
 			html.find('[name="villainPointNoticeSound"]').val('');
 		});

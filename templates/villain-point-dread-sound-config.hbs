@@ -2,15 +2,11 @@
 	<div class="form-group">
 		<label>Villain Point Dread Sound</label>
 		<div class="form-fields dhb-file-row">
-			<input
-				type="text"
+			<file-picker
 				name="villainPointNoticeSound"
+				type="audio"
 				value="{{villainPointNoticeSound}}"
-				placeholder="Path to audio file..."
-			/>
-			<button type="button" data-action="browse-audio" title="Browse files">
-				<i class="fas fa-folder-open"></i>
-			</button>
+			></file-picker>
 			<button type="button" data-action="clear-audio" title="Clear sound">
 				<i class="fas fa-times"></i>
 			</button>
