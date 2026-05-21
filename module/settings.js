@@ -77,7 +77,8 @@ class VillainPointDreadSoundConfig extends FormApplication {
 	}
 
 	async _updateObject(_event, formData) {
-		await game.settings.set(MODULE_ID, 'villainPointNoticeSound', formData.villainPointNoticeSound ?? '');
+		const selectedSound = String(this.element?.find?.('[name="villainPointNoticeSound"]').val?.() ?? formData.villainPointNoticeSound ?? '').trim();
+		await game.settings.set(MODULE_ID, 'villainPointNoticeSound', selectedSound);
 		await game.settings.set(
 			MODULE_ID,
 			'villainPointNoticeVolume',

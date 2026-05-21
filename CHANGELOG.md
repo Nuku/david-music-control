@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.59] - 2026-05-21
+
+### Fixed
+- **Villain Points**: The dread sound picker now saves the selected audio path reliably by reading the live field value on submit instead of depending on custom-element form serialization.
+
 ## [2.4.58] - 2026-05-21
 
 ### Fixed
