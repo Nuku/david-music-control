@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.62] - 2026-05-21
+
+### Fixed
+- **Villain Points**: Kept pending villain-reroll markers alive through asynchronous chat-message creation so the reroll card reliably gets its skull icon, doom banner, and themed styling.
+
 ## [2.4.61] - 2026-05-21
 
 ### Changed

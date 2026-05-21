@@ -9,7 +9,7 @@ const pendingHeroPointUpdates = new Map();
 const DOOM_FADE_IN_MS = 180;
 const DOOM_HOLD_MS = 1100;
 const DOOM_FADE_OUT_MS = 950;
-let pendingVillainReroll = null;
+const pendingVillainRerolls = [];
 
 const DOOM_MESSAGES = [
 	'The forces arrayed against you are taking notice of your resistance to fate.',
@@ -325,23 +325,24 @@ async function performPf2eVillainReroll(message) {
 	};
 
 	try {
-		pendingVillainReroll = {
+		pendingVillainRerolls.push({
 			sourceMessageId: message.id,
 			userId: game.user.id,
-		};
+			createdAt: Date.now(),
+		});
 		await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
 	} finally {
-		pendingVillainReroll = null;
 		actor.getResource = originalGetResource;
 		actor.updateResource = originalUpdateResource;
 	}
 }
 
 async function decorateVillainRerollMessage(message) {
-	if (!pendingVillainReroll) return;
-	if (message.user?.id !== pendingVillainReroll.userId) return;
 	if (!message.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
+	const pendingIndex = pendingVillainRerolls.findIndex((entry) => entry.userId === message.user?.id);
+	if (pendingIndex === -1) return;
+	const pendingVillainReroll = pendingVillainRerolls[pendingIndex];
 
 	const rerollIndicator = /<i[^>]*class="[^"]*reroll-indicator[^"]*"[^>]*><\/i>/i;
 	const currentFlavor = String(message.flavor ?? '');
@@ -361,6 +362,7 @@ async function decorateVillainRerollMessage(message) {
 			},
 		},
 	});
+	pendingVillainRerolls.splice(pendingIndex, 1);
 }
 
 async function createVillainRerollMessage(message) {
@@ -419,4 +421,13 @@ Hooks.once('ready', () => {
 		if (typeof data.message !== 'string' || !data.message.trim()) return;
 		triggerLocalVillainNotice(data.message);
 	});
+
+	window.setInterval(() => {
+		const cutoff = Date.now() - 30000;
+		for (let index = pendingVillainRerolls.length - 1; index >= 0; index -= 1) {
+			if ((pendingVillainRerolls[index]?.createdAt ?? 0) < cutoff) {
+				pendingVillainRerolls.splice(index, 1);
+			}
+		}
+	}, 10000);
 });
