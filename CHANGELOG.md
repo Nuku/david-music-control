@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.56] - 2026-05-21
+
+### Changed
+- **Villain Points**: Replaced the raw dread-sound path settings with a dedicated `Configure Sound` dialog that provides file browse, clear, test, and volume controls.
+
 ## [2.4.55] - 2026-05-21
 
 ### Added

@@ -32,6 +32,69 @@ class VictoryFireworksImageConfig extends FormApplication {
 	}
 }
 
+class VillainPointDreadSoundConfig extends FormApplication {
+	static get defaultOptions() {
+		return foundry.utils.mergeObject(super.defaultOptions, {
+			id: 'dmc-villain-point-dread-sound-config',
+			title: 'Villain Point Dread Sound',
+			template: 'modules/pf2-david-music-control/templates/villain-point-dread-sound-config.hbs',
+			width: 520,
+			height: 'auto',
+			closeOnSubmit: true,
+		});
+	}
+
+	getData() {
+		const volume = Number(game.settings.get(MODULE_ID, 'villainPointNoticeVolume') ?? 0.7);
+		return {
+			villainPointNoticeSound: game.settings.get(MODULE_ID, 'villainPointNoticeSound') ?? '',
+			villainPointNoticeVolume: volume,
+			volumePct: Math.round(volume * 100),
+		};
+	}
+
+	activateListeners(html) {
+		super.activateListeners(html);
+
+		html.find('[data-action="browse-audio"]').on('click', () => {
+			new FilePicker({
+				type: 'audio',
+				current: html.find('[name="villainPointNoticeSound"]').val(),
+				callback: (path) => html.find('[name="villainPointNoticeSound"]').val(path),
+			}).browse();
+		});
+
+		html.find('[data-action="clear-audio"]').on('click', () => {
+			html.find('[name="villainPointNoticeSound"]').val('');
+		});
+
+		html.find('[data-action="test-audio"]').on('click', () => {
+			const src = String(html.find('[name="villainPointNoticeSound"]').val() ?? '').trim();
+			if (!src) return;
+			const volume = parseFloat(html.find('[name="villainPointNoticeVolume"]').val()) || 0.7;
+			try {
+				AudioHelper.play({ src, volume, autoplay: true, loop: false }, false);
+			} catch (error) {
+				console.warn('[PF2 Director] Could not play villain point dread preview:', error);
+			}
+		});
+
+		html.find('[name="villainPointNoticeVolume"]').on('input', (event) => {
+			html.find('.dmc-volume-label').text(`${Math.round(Number(event.target.value || 0) * 100)}%`);
+		});
+	}
+
+	async _updateObject(_event, formData) {
+		await game.settings.set(MODULE_ID, 'villainPointNoticeSound', formData.villainPointNoticeSound ?? '');
+		await game.settings.set(
+			MODULE_ID,
+			'villainPointNoticeVolume',
+			Math.max(0, Math.min(1, parseFloat(formData.villainPointNoticeVolume) || 0.7))
+		);
+		ui.notifications.info('Villain point dread sound saved.');
+	}
+}
+
 const settings = {
 	defaultPlaylist: {
 		name: 'Default Playlist',
@@ -133,7 +196,7 @@ const settings = {
 		name: 'Villain Point Dread Sound',
 		hint: 'Optional audio file to play for all connected users whenever the GM gains a villain point.',
 		scope: 'world',
-		config: true,
+		config: false,
 		type: String,
 		default: '',
 	},
@@ -141,7 +204,7 @@ const settings = {
 		name: 'Villain Point Dread Volume',
 		hint: 'How loud the villain-point dread sound should be for connected users.',
 		scope: 'world',
-		config: true,
+		config: false,
 		type: Number,
 		range: { min: 0, max: 1, step: 0.05 },
 		default: 0.7,
@@ -229,6 +292,19 @@ Hooks.once('setup', () => {
 	} catch (error) {
 		console.error('PF2 Director | Failed to register menu victoryFireworksImageMenu', error);
 	}
+
+	try {
+		game.settings.registerMenu(MODULE_ID, 'villainPointDreadSoundMenu', {
+			name: 'Villain Point Dread Sound',
+			label: 'Configure Sound',
+			hint: 'Choose an optional audio cue and volume for villain point dread moments.',
+			icon: 'fas fa-skull',
+			type: VillainPointDreadSoundConfig,
+			restricted: true,
+		});
+	} catch (error) {
+		console.error('PF2 Director | Failed to register menu villainPointDreadSoundMenu', error);
+	}
 });
 
 function findSettingsRow(root, key) {
@@ -264,6 +340,11 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		findSettingsRow(root, 'enableCultSystem'),
 		'PF2e Tools',
 		'Optional PF2e utilities enabled by this module.'
+	);
+	insertSectionHeader(
+		findSettingsRow(root, 'villainPointDreadSoundMenu'),
+		'Villain Points',
+		'Optional PF2e villain-point tracking, rerolls, and synchronized dread cues.'
 	);
 	insertSectionHeader(
 		findSettingsRow(root, 'dramaticHealthBarPosition'),
