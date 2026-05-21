@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.54] - 2026-05-21
+
+### Fixed
+- **Villain Points**: GM villain-point rerolls now route through PF2e's own check reroll flow so they behave like hero-point rerolls on the chat card instead of posting a plain standalone reroll.
+
 ## [2.4.53] - 2026-05-21
 
 ### Added

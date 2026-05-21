@@ -1,7 +1,6 @@
 import { MODULE_ID, getSetting, setSetting } from './settings.js';
 
 const FLAG_SCOPE = MODULE_ID;
-const REROLL_FLAG = 'villainPointReroll';
 const GAP_MS = 12 * 60 * 60 * 1000;
 const HERO_POINT_PATH = 'system.resources.heroPoints.value';
 const pendingHeroPointUpdates = new Map();
@@ -142,19 +141,12 @@ function isD20Roll(roll) {
 
 function canUseVillainReroll(message) {
 	if (!isFeatureEnabled() || !game.user.isGM) return false;
-	const flags = message.getFlag(FLAG_SCOPE, REROLL_FLAG);
-	if (flags?.derivedMessageId) return false;
+	if (message.flags?.pf2e?.context?.isReroll) return false;
 	const rolls = getMessageRolls(message);
 	if (rolls.length !== 1) return false;
 	const roll = rolls[0];
 	if (!roll || !Number.isFinite(Number(roll.total))) return false;
 	return isD20Roll(roll);
-}
-
-function buildRerollStatus(message) {
-	const flags = message.getFlag(FLAG_SCOPE, REROLL_FLAG);
-	if (!flags?.derivedMessageId) return '';
-	return `<p class="dmc-villain-point-status">Villain-point reroll posted in <a class="content-link" draggable="true" data-uuid="ChatMessage.${flags.derivedMessageId}" data-id="${flags.derivedMessageId}">linked card</a>.</p>`;
 }
 
 function buildVillainLabel(villainPoints) {
@@ -166,13 +158,6 @@ function injectVillainRerollControl(message, root) {
 
 	const wrapper = document.createElement('div');
 	wrapper.className = 'dmc-villain-point-controls';
-
-	const status = buildRerollStatus(message);
-	if (status) {
-		wrapper.innerHTML = status;
-		root.appendChild(wrapper);
-		return;
-	}
 
 	const state = getState();
 	const disabled = state.villainPoints <= 0 ? ' disabled' : '';
@@ -192,6 +177,48 @@ function injectVillainRerollControl(message, root) {
 	root.appendChild(wrapper);
 }
 
+function getHeroPointResourceClone(actor) {
+	const resource = actor?.getResource?.('hero-points');
+	if (!resource) return null;
+	return {
+		...resource,
+		slug: 'hero-points',
+		value: Math.max(1, Number(resource.value) || 0),
+	};
+}
+
+async function performPf2eVillainReroll(message) {
+	const rerollApi = game.pf2e?.Check?.rerollFromMessage;
+	const actor = message.actor?.isOfType?.('familiar') ? message.actor.master : message.actor;
+	if (typeof rerollApi !== 'function' || !actor?.updateResource || !actor?.getResource) {
+		throw new Error('PF2e reroll API is unavailable.');
+	}
+
+	const originalGetResource = actor.getResource.bind(actor);
+	const originalUpdateResource = actor.updateResource.bind(actor);
+	const originalHeroPoints = originalGetResource('hero-points');
+	const fakeHeroPointResource = getHeroPointResourceClone(actor);
+
+	actor.getResource = function getResourceProxy(slug, ...args) {
+		if (slug === 'hero-points' && fakeHeroPointResource) return { ...fakeHeroPointResource };
+		return originalGetResource(slug, ...args);
+	};
+
+	actor.updateResource = async function updateResourceProxy(slug, value, ...args) {
+		if (slug === 'hero-points' && fakeHeroPointResource) {
+			return originalHeroPoints ?? { ...fakeHeroPointResource, value };
+		}
+		return originalUpdateResource(slug, value, ...args);
+	};
+
+	try {
+		await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
+	} finally {
+		actor.getResource = originalGetResource;
+		actor.updateResource = originalUpdateResource;
+	}
+}
+
 async function createVillainRerollMessage(message) {
 	if (!canUseVillainReroll(message)) {
 		ui.notifications.warn('That message cannot use a villain point reroll.');
@@ -204,27 +231,7 @@ async function createVillainRerollMessage(message) {
 		return null;
 	}
 
-	const roll = getPrimaryRoll(message);
-	const reroll = await roll.reroll({ async: true });
-	const derived = await reroll.toMessage({
-		speaker: foundry.utils.deepClone(message.speaker ?? {}),
-		flavor: `Villain Point Reroll: ${message.flavor ?? message.alias ?? 'Check'}`,
-		whisper: [...(message.whisper ?? [])],
-		blind: !!message.blind,
-		flags: {
-			[FLAG_SCOPE]: {
-				[REROLL_FLAG]: {
-					sourceMessageId: message.id,
-					createdBy: game.user.id,
-				},
-			},
-		},
-	});
-
-	await message.setFlag(FLAG_SCOPE, REROLL_FLAG, {
-		derivedMessageId: derived.id,
-		createdBy: game.user.id,
-	});
+	await performPf2eVillainReroll(message);
 
 	await saveState({
 		...state,
@@ -232,7 +239,7 @@ async function createVillainRerollMessage(message) {
 	});
 
 	ui.notifications.info(`Villain point spent. ${Math.max(0, state.villainPoints - 1)} remaining.`);
-	return derived;
+	return true;
 }
 
 Hooks.on('preUpdateActor', (actor, changes) => {
@@ -246,7 +253,7 @@ Hooks.on('updateActor', (actor) => {
 Hooks.on('renderChatMessage', (message, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
-	if (!canUseVillainReroll(message) && !message.getFlag(FLAG_SCOPE, REROLL_FLAG)?.derivedMessageId) return;
+	if (!canUseVillainReroll(message)) return;
 	injectVillainRerollControl(message, root.querySelector('.message-content') ?? root);
 });
 
