@@ -236,6 +236,7 @@ function isD20Roll(roll) {
 
 function canUseVillainReroll(message) {
 	if (!isFeatureEnabled() || !game.user.isGM) return false;
+	if (getState().villainPoints <= 0) return false;
 	if (message.flags?.pf2e?.context?.isReroll) return false;
 	const rolls = getMessageRolls(message);
 	if (rolls.length !== 1) return false;
@@ -248,6 +249,21 @@ function isVillainRerollMessage(message) {
 	return !!message.getFlag?.(FLAG_SCOPE, 'villainPointReroll');
 }
 
+function decorateVillainRerollCard(message, root) {
+	if (!isVillainRerollMessage(message)) return;
+
+	root.classList.add('dmc-villain-reroll-message');
+	const content = root.querySelector('.message-content') ?? root;
+	content.classList.add('dmc-villain-reroll-card');
+
+	if (!content.querySelector('.dmc-villain-reroll-banner')) {
+		const banner = document.createElement('div');
+		banner.className = 'dmc-villain-reroll-banner';
+		banner.innerHTML = '<i class="fas fa-skull"></i><span>Villain Point Reroll</span>';
+		content.prepend(banner);
+	}
+}
+
 function buildVillainLabel(villainPoints) {
 	return villainPoints === 1 ? '1 villain point' : `${villainPoints} villain points`;
 }
@@ -258,12 +274,10 @@ function injectVillainRerollControl(message, root) {
 	const wrapper = document.createElement('div');
 	wrapper.className = 'dmc-villain-point-controls';
 
-	const state = getState();
-	const disabled = state.villainPoints <= 0 ? ' disabled' : '';
 	wrapper.innerHTML = `
 		<label>Villain Point</label>
 		<div class="dmc-roll-retag-row">
-			<button type="button" data-action="dmc-villain-reroll"${disabled}>Use ${buildVillainLabel(state.villainPoints)}</button>
+			<button type="button" data-action="dmc-villain-reroll">Use ${buildVillainLabel(getState().villainPoints)}</button>
 		</div>
 	`;
 
@@ -384,6 +398,7 @@ Hooks.on('updateActor', (actor) => {
 Hooks.on('renderChatMessage', (message, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
+	decorateVillainRerollCard(message, root);
 	if (!canUseVillainReroll(message)) return;
 	injectVillainRerollControl(message, root.querySelector('.message-content') ?? root);
 });

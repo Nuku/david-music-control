@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.61] - 2026-05-21
+
+### Changed
+- **Villain Points**: Villain-point reroll cards now carry a stronger doom-themed visual treatment, and the GM reroll button is hidden entirely when no villain points are available to spend.
+
 ## [2.4.60] - 2026-05-21
 
 ### Fixed
