@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.60] - 2026-05-21
+
+### Fixed
+- **Villain Points**: Added an explicit Save button to the dread sound configuration dialog so the form reliably submits and persists the selected audio file and volume.
+
 ## [2.4.59] - 2026-05-21
 
 ### Fixed
