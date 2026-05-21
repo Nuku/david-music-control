@@ -65,7 +65,7 @@ class VillainPointDreadSoundConfig extends FormApplication {
 			if (!src) return;
 			const volume = parseFloat(html.find('[name="villainPointNoticeVolume"]').val()) || 0.7;
 			try {
-				AudioHelper.play({ src, volume, autoplay: true, loop: false }, false);
+				getAudioHelper()?.play?.({ src, volume, autoplay: true, loop: false }, false);
 			} catch (error) {
 				console.warn('[PF2 Director] Could not play villain point dread preview:', error);
 			}
@@ -85,6 +85,10 @@ class VillainPointDreadSoundConfig extends FormApplication {
 		);
 		ui.notifications.info('Villain point dread sound saved.');
 	}
+}
+
+function getAudioHelper() {
+	return globalThis.AudioHelper ?? foundry?.audio?.AudioHelper ?? null;
 }
 
 const settings = {

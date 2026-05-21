@@ -53,6 +53,10 @@ function pick(array) {
 	return array[Math.floor(Math.random() * array.length)] ?? null;
 }
 
+function getAudioHelper() {
+	return globalThis.AudioHelper ?? foundry?.audio?.AudioHelper ?? null;
+}
+
 function getState() {
 	const raw = getSetting('villainPointState');
 	if (raw && typeof raw === 'object' && !Array.isArray(raw)) return cloneState(raw);
@@ -117,7 +121,7 @@ function playDreadSound() {
 	const src = String(getSetting('villainPointNoticeSound') ?? '').trim();
 	if (!src) return;
 	try {
-		AudioHelper.play(
+		getAudioHelper()?.play?.(
 			{
 				src,
 				volume: Number(getSetting('villainPointNoticeVolume') ?? 0.7) || 0.7,

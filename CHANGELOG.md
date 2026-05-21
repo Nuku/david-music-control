@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.58] - 2026-05-21
+
+### Fixed
+- **Villain Points**: Resolved dread sound preview and playback to Foundry's current audio helper API so the test button and live stingers work on runtimes without a global `AudioHelper`.
+
 ## [2.4.57] - 2026-05-21
 
 ### Fixed
