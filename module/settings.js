@@ -129,6 +129,23 @@ const settings = {
 		type: String,
 		default: '[]',
 	},
+	villainPointNoticeSound: {
+		name: 'Villain Point Dread Sound',
+		hint: 'Optional audio file to play for all connected users whenever the GM gains a villain point.',
+		scope: 'world',
+		config: true,
+		type: String,
+		default: '',
+	},
+	villainPointNoticeVolume: {
+		name: 'Villain Point Dread Volume',
+		hint: 'How loud the villain-point dread sound should be for connected users.',
+		scope: 'world',
+		config: true,
+		type: Number,
+		range: { min: 0, max: 1, step: 0.05 },
+		default: 0.7,
+	},
 	villainPointState: {
 		name: 'Villain Point State',
 		hint: 'Stored villain point counters and reset markers.',

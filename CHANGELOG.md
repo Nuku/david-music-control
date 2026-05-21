@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.55] - 2026-05-21
+
+### Added
+- **Villain Points**: Gaining or spending villain points now triggers a synchronized doom stinger for all connected users, with a short screen-dim pulse, configurable dread audio, and randomized portent chat messages from `The Gathering Dark`.
+
 ## [2.4.54] - 2026-05-21
 
 ### Fixed

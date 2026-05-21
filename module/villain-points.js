@@ -1,9 +1,41 @@
 import { MODULE_ID, getSetting, setSetting } from './settings.js';
 
 const FLAG_SCOPE = MODULE_ID;
+const SOCKET_EVENT = `module.${MODULE_ID}`;
+const VILLAIN_NOTICE_SOCKET_TYPE = 'villainPointNotice';
 const GAP_MS = 12 * 60 * 60 * 1000;
 const HERO_POINT_PATH = 'system.resources.heroPoints.value';
 const pendingHeroPointUpdates = new Map();
+const DOOM_FADE_IN_MS = 180;
+const DOOM_HOLD_MS = 1100;
+const DOOM_FADE_OUT_MS = 950;
+let pendingVillainReroll = null;
+
+const DOOM_MESSAGES = [
+	'The forces arrayed against you are taking notice of your resistance to fate.',
+	'Something old and patient smiles in the dark between your heartbeats.',
+	'The tapestry of doom tightens another thread around you.',
+	'Your defiance has not gone unseen by the hungry things beyond the veil.',
+	'Fate recoils from your resistance, and darker powers lean in closer.',
+	'The hour grows more hostile. Your struggle has earned the enemy\'s regard.',
+	'An unseen malice marks this moment and stores it away for later.',
+	'The world dims as if some vast intelligence has turned its eye upon you.',
+	'What hunts heroes has begun to count your refusals.',
+	'The dark remembers every hand raised against inevitability.',
+];
+
+const VILLAIN_SPEND_MESSAGES = [
+	'The dark answers your defiance with delighted laughter.',
+	'Something cruel and patient spends what your resistance has earned.',
+	'The shadow behind the curtain pulls one thread and fate shudders.',
+	'The hungry things beyond the veil accept their due.',
+	'An unseen will presses down, and destiny buckles for a moment.',
+	'The enemy of your fortune leans close and chooses this instant.',
+	'What watched you gather strength now spends it with a smile.',
+	'The dark cashes in your borrowed reprieve.',
+	'The laughter comes closer. The bargain has been invoked.',
+	'The doom you awakened now reaches back through the dice.',
+];
 
 function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableVillainPoints');
@@ -15,6 +47,10 @@ function cloneState(state = {}) {
 		villainPoints: Math.max(0, Number(state.villainPoints) || 0),
 		lastResetGapEnd: Math.max(0, Number(state.lastResetGapEnd) || 0),
 	};
+}
+
+function pick(array) {
+	return array[Math.floor(Math.random() * array.length)] ?? null;
 }
 
 function getState() {
@@ -77,6 +113,58 @@ async function maybeResetFromRecentMessages() {
 	return nextState;
 }
 
+function playDreadSound() {
+	const src = String(getSetting('villainPointNoticeSound') ?? '').trim();
+	if (!src) return;
+	try {
+		AudioHelper.play(
+			{
+				src,
+				volume: Number(getSetting('villainPointNoticeVolume') ?? 0.7) || 0.7,
+				autoplay: true,
+				loop: false,
+			},
+			false
+		);
+	} catch (error) {
+		console.warn('[PF2 Director] Could not play villain point dread sound:', error);
+	}
+}
+
+function showDoomOverlay(message) {
+	document.getElementById('dmc-villain-doom-overlay')?.remove();
+
+	const overlay = document.createElement('div');
+	overlay.id = 'dmc-villain-doom-overlay';
+	overlay.innerHTML = `<div class="dmc-villain-doom-text">${message}</div>`;
+	document.body.appendChild(overlay);
+
+	requestAnimationFrame(() => {
+		overlay.classList.add('is-visible');
+		window.setTimeout(() => overlay.classList.add('is-fading'), DOOM_FADE_IN_MS + DOOM_HOLD_MS);
+		window.setTimeout(() => overlay.remove(), DOOM_FADE_IN_MS + DOOM_HOLD_MS + DOOM_FADE_OUT_MS + 80);
+	});
+}
+
+function triggerLocalVillainNotice(message) {
+	showDoomOverlay(message);
+	playDreadSound();
+}
+
+async function broadcastVillainPointNotice(message) {
+	game.socket?.emit(SOCKET_EVENT, {
+		type: VILLAIN_NOTICE_SOCKET_TYPE,
+		message,
+	});
+	triggerLocalVillainNotice(message);
+
+	if (!game.user.isGM) return;
+	await ChatMessage.create({
+		speaker: { alias: 'The Gathering Dark' },
+		content: `<p><em>${message}</em></p>`,
+	});
+}
+
 function getHeroPointValue(actor) {
 	return Math.max(0, Number(foundry.utils.getProperty(actor, HERO_POINT_PATH)) || 0);
 }
@@ -112,6 +200,9 @@ async function handleHeroPointSpend(actor) {
 	await saveState(nextState);
 
 	if (awarded > 0) {
+		for (let index = 0; index < awarded; index += 1) {
+			await broadcastVillainPointNotice(pick(DOOM_MESSAGES) ?? DOOM_MESSAGES[0]);
+		}
 		ui.notifications.info(
 			`${actor.name} spent ${spent} hero point${spent === 1 ? '' : 's'}. The GM gains ${awarded} villain point${awarded === 1 ? '' : 's'} (${nextState.villainPoints} total).`
 		);
@@ -147,6 +238,10 @@ function canUseVillainReroll(message) {
 	const roll = rolls[0];
 	if (!roll || !Number.isFinite(Number(roll.total))) return false;
 	return isD20Roll(roll);
+}
+
+function isVillainRerollMessage(message) {
+	return !!message.getFlag?.(FLAG_SCOPE, 'villainPointReroll');
 }
 
 function buildVillainLabel(villainPoints) {
@@ -212,11 +307,42 @@ async function performPf2eVillainReroll(message) {
 	};
 
 	try {
+		pendingVillainReroll = {
+			sourceMessageId: message.id,
+			userId: game.user.id,
+		};
 		await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
 	} finally {
+		pendingVillainReroll = null;
 		actor.getResource = originalGetResource;
 		actor.updateResource = originalUpdateResource;
 	}
+}
+
+async function decorateVillainRerollMessage(message) {
+	if (!pendingVillainReroll) return;
+	if (message.user?.id !== pendingVillainReroll.userId) return;
+	if (!message.flags?.pf2e?.context?.isReroll) return;
+	if (isVillainRerollMessage(message)) return;
+
+	const rerollIndicator = /<i[^>]*class="[^"]*reroll-indicator[^"]*"[^>]*><\/i>/i;
+	const currentFlavor = String(message.flavor ?? '');
+	const villainIcon = '<i class="fas fa-skull reroll-indicator dmc-villain-reroll-indicator" data-tooltip="Villain Point Reroll"></i>';
+	const nextFlavor = rerollIndicator.test(currentFlavor)
+		? currentFlavor.replace(rerollIndicator, villainIcon)
+		: `${villainIcon}${currentFlavor}`;
+
+	await message.update({
+		flavor: nextFlavor,
+		flags: {
+			[FLAG_SCOPE]: {
+				villainPointReroll: {
+					sourceMessageId: pendingVillainReroll.sourceMessageId,
+					createdBy: pendingVillainReroll.userId,
+				},
+			},
+		},
+	});
 }
 
 async function createVillainRerollMessage(message) {
@@ -237,6 +363,7 @@ async function createVillainRerollMessage(message) {
 		...state,
 		villainPoints: Math.max(0, state.villainPoints - 1),
 	});
+	await broadcastVillainPointNotice(pick(VILLAIN_SPEND_MESSAGES) ?? VILLAIN_SPEND_MESSAGES[0]);
 
 	ui.notifications.info(`Villain point spent. ${Math.max(0, state.villainPoints - 1)} remaining.`);
 	return true;
@@ -260,4 +387,17 @@ Hooks.on('renderChatMessage', (message, html) => {
 Hooks.on('createChatMessage', () => {
 	if (!isFeatureEnabled() || !game.user.isGM) return;
 	void maybeResetFromRecentMessages();
+});
+
+Hooks.on('createChatMessage', (message) => {
+	if (!isFeatureEnabled() || !game.user.isGM) return;
+	void decorateVillainRerollMessage(message);
+});
+
+Hooks.once('ready', () => {
+	game.socket?.on(SOCKET_EVENT, (data) => {
+		if (data?.type !== VILLAIN_NOTICE_SOCKET_TYPE) return;
+		if (typeof data.message !== 'string' || !data.message.trim()) return;
+		triggerLocalVillainNotice(data.message);
+	});
 });
