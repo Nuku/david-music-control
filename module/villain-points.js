@@ -267,13 +267,20 @@ function isVillainRerollMessage(message) {
 }
 
 function findPendingVillainRerollIndex(message) {
-	if (!message?.flags?.pf2e?.context?.isReroll) return -1;
+	if (!messageLooksLikeReroll(message) && !message?.flags?.pf2e?.context?.isReroll) return -1;
 
 	return pendingVillainRerolls.findIndex((entry) => {
 		if (entry?.resolved) return false;
-		if (entry.userId !== message.user?.id) return false;
 		if (entry.sourceMessageId && entry.sourceMessageId === message.id) return false;
-		if (getMessageTimestamp(message) && getMessageTimestamp(message) < (entry.createdAt ?? 0) - 1000) return false;
+		const messageTimestamp = getMessageTimestamp(message);
+		if (messageTimestamp && messageTimestamp < (entry.createdAt ?? 0) - 1000) return false;
+
+		const sameUser = entry.userId && message.user?.id && entry.userId === message.user.id;
+		const sameSpeaker =
+			entry.speakerActorId &&
+			(entry.speakerActorId === message.speaker?.actor || entry.speakerTokenId === message.speaker?.token);
+
+		if (!sameUser && !sameSpeaker) return false;
 		return true;
 	});
 }
@@ -283,6 +290,9 @@ function getMessageSnapshot(message) {
 		messageId: message?.id,
 		userId: message?.user?.id,
 		isReroll: message?.flags?.pf2e?.context?.isReroll ?? false,
+		looksLikeReroll: messageLooksLikeReroll(message),
+		speakerActorId: message?.speaker?.actor ?? null,
+		speakerTokenId: message?.speaker?.token ?? null,
 		flavorLength: String(message?.flavor ?? '').length,
 		rollCount: getMessageRolls(message).length,
 		timestamp: getMessageTimestamp(message),
@@ -448,6 +458,8 @@ async function performPf2eVillainReroll(message) {
 	const pendingVillainReroll = {
 		sourceMessageId: message.id,
 		userId: game.user.id,
+		speakerActorId: message.speaker?.actor ?? null,
+		speakerTokenId: message.speaker?.token ?? null,
 		createdAt: Date.now(),
 		resolved: false,
 		beforeSnapshot: getMessageSnapshot(message),
@@ -486,7 +498,7 @@ async function decorateVillainRerollMessage(message) {
 		...getMessageSnapshot(message),
 		pendingCount: pendingVillainRerolls.length,
 	});
-	if (!message.flags?.pf2e?.context?.isReroll) return;
+	if (!messageLooksLikeReroll(message) && !message.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = findPendingVillainRerollIndex(message);
 	debugLog('Matching pending villain reroll', { messageId: message.id, pendingIndex });
@@ -503,7 +515,7 @@ async function handleUpdatedVillainRerollMessage(message, changes) {
 		hasFlavorChange: Object.hasOwn(changes ?? {}, 'flavor'),
 		pendingCount: pendingVillainRerolls.length,
 	});
-	if (!message?.flags?.pf2e?.context?.isReroll) return;
+	if (!messageLooksLikeReroll(message) && !message?.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = findPendingVillainRerollIndex(message);
 	debugLog('Matching pending villain reroll on update', { messageId: message.id, pendingIndex });
