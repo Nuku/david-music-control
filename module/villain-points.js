@@ -278,6 +278,17 @@ function findPendingVillainRerollIndex(message) {
 	});
 }
 
+function getMessageSnapshot(message) {
+	return {
+		messageId: message?.id,
+		userId: message?.user?.id,
+		isReroll: message?.flags?.pf2e?.context?.isReroll ?? false,
+		flavorLength: String(message?.flavor ?? '').length,
+		rollCount: getMessageRolls(message).length,
+		timestamp: getMessageTimestamp(message),
+	};
+}
+
 async function applyVillainRerollDecoration(message, pendingVillainReroll) {
 	if (!message || !pendingVillainReroll) return false;
 
@@ -389,12 +400,16 @@ async function performPf2eVillainReroll(message) {
 		userId: game.user.id,
 		createdAt: Date.now(),
 		resolved: false,
+		beforeSnapshot: getMessageSnapshot(message),
 	};
 
 	try {
 		debugLog('Queueing pending villain reroll', { messageId: message.id, userId: game.user.id });
+		debugLog('Source message before villain reroll', pendingVillainReroll.beforeSnapshot);
 		pendingVillainRerolls.push(pendingVillainReroll);
 		await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
+		const updatedSourceMessage = game.messages.get(message.id);
+		debugLog('Source message after villain reroll', getMessageSnapshot(updatedSourceMessage ?? message));
 		await finalizePendingVillainReroll(pendingVillainReroll);
 	} finally {
 		debugLog('PF2e villain reroll call finished', { messageId: message.id, pendingCount: pendingVillainRerolls.length });
@@ -405,15 +420,30 @@ async function performPf2eVillainReroll(message) {
 
 async function decorateVillainRerollMessage(message) {
 	debugLog('createChatMessage seen', {
-		messageId: message.id,
-		userId: message.user?.id,
-		isReroll: message.flags?.pf2e?.context?.isReroll ?? false,
+		...getMessageSnapshot(message),
 		pendingCount: pendingVillainRerolls.length,
 	});
 	if (!message.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = findPendingVillainRerollIndex(message);
 	debugLog('Matching pending villain reroll', { messageId: message.id, pendingIndex });
+	if (pendingIndex === -1) return;
+	const pendingVillainReroll = pendingVillainRerolls[pendingIndex];
+	await applyVillainRerollDecoration(message, pendingVillainReroll);
+	pendingVillainRerolls.splice(pendingIndex, 1);
+}
+
+async function handleUpdatedVillainRerollMessage(message, changes) {
+	debugLog('updateChatMessage seen', {
+		...getMessageSnapshot(message),
+		changedIsReroll: foundry.utils.getProperty(changes, 'flags.pf2e.context.isReroll'),
+		hasFlavorChange: Object.hasOwn(changes ?? {}, 'flavor'),
+		pendingCount: pendingVillainRerolls.length,
+	});
+	if (!message?.flags?.pf2e?.context?.isReroll) return;
+	if (isVillainRerollMessage(message)) return;
+	const pendingIndex = findPendingVillainRerollIndex(message);
+	debugLog('Matching pending villain reroll on update', { messageId: message.id, pendingIndex });
 	if (pendingIndex === -1) return;
 	const pendingVillainReroll = pendingVillainRerolls[pendingIndex];
 	await applyVillainRerollDecoration(message, pendingVillainReroll);
@@ -538,6 +568,11 @@ Hooks.on('createChatMessage', () => {
 Hooks.on('createChatMessage', (message) => {
 	if (!isFeatureEnabled() || !game.user.isGM) return;
 	void decorateVillainRerollMessage(message);
+});
+
+Hooks.on('updateChatMessage', (message, changes) => {
+	if (!isFeatureEnabled() || !game.user.isGM) return;
+	void handleUpdatedVillainRerollMessage(message, changes);
 });
 
 Hooks.once('ready', () => {
