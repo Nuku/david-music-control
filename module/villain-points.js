@@ -5,7 +5,8 @@ const SOCKET_EVENT = `module.${MODULE_ID}`;
 const VILLAIN_NOTICE_SOCKET_TYPE = 'villainPointNotice';
 const GAP_MS = 12 * 60 * 60 * 1000;
 const HERO_POINT_PATH = 'system.resources.heroPoints.value';
-const pendingHeroPointUpdates = new Map();
+const MYTHIC_POINT_PATH = 'system.resources.mythicPoints.value';
+const pendingPointUpdates = new Map();
 const DOOM_FADE_IN_MS = 180;
 const DOOM_HOLD_MS = 1100;
 const DOOM_FADE_OUT_MS = 950;
@@ -178,23 +179,38 @@ function getHeroPointValue(actor) {
 	return Math.max(0, Number(foundry.utils.getProperty(actor, HERO_POINT_PATH)) || 0);
 }
 
-function rememberPriorHeroPoints(actor, changes) {
-	if (!isFeatureEnabled()) return;
-	if (actor?.type !== 'character') return;
-	if (foundry.utils.getProperty(changes, HERO_POINT_PATH) === undefined) return;
-	pendingHeroPointUpdates.set(actor.id, getHeroPointValue(actor));
+function getMythicPointValue(actor) {
+	return Math.max(0, Number(foundry.utils.getProperty(actor, MYTHIC_POINT_PATH)) || 0);
 }
 
-async function handleHeroPointSpend(actor) {
+function rememberPriorPointValues(actor, changes) {
+	if (!isFeatureEnabled()) return;
+	if (actor?.type !== 'character') return;
+	const heroChanged = foundry.utils.getProperty(changes, HERO_POINT_PATH) !== undefined;
+	const mythicChanged = foundry.utils.getProperty(changes, MYTHIC_POINT_PATH) !== undefined;
+	if (!heroChanged && !mythicChanged) return;
+
+	pendingPointUpdates.set(actor.id, {
+		heroPoints: getHeroPointValue(actor),
+		mythicPoints: getMythicPointValue(actor),
+	});
+}
+
+async function handlePointSpend(actor) {
 	if (!isFeatureEnabled() || !game.user.isGM) return;
 	if (actor?.type !== 'character') return;
 
-	const previous = pendingHeroPointUpdates.get(actor.id);
-	pendingHeroPointUpdates.delete(actor.id);
-	if (!Number.isFinite(previous)) return;
+	const previous = pendingPointUpdates.get(actor.id);
+	pendingPointUpdates.delete(actor.id);
+	if (!previous || typeof previous !== 'object') return;
 
-	const current = getHeroPointValue(actor);
-	const spent = Math.max(0, previous - current);
+	const previousHero = Math.max(0, Number(previous.heroPoints) || 0);
+	const previousMythic = Math.max(0, Number(previous.mythicPoints) || 0);
+	const currentHero = getHeroPointValue(actor);
+	const currentMythic = getMythicPointValue(actor);
+	const heroSpent = Math.max(0, previousHero - currentHero);
+	const mythicSpent = Math.max(0, previousMythic - currentMythic);
+	const spent = heroSpent + mythicSpent;
 	if (spent <= 0) return;
 
 	const state = await maybeResetFromRecentMessages();
@@ -213,8 +229,14 @@ async function handleHeroPointSpend(actor) {
 		for (let index = 0; index < awarded; index += 1) {
 			await broadcastVillainPointNotice(pick(DOOM_MESSAGES) ?? DOOM_MESSAGES[0]);
 		}
+		const spentLabel =
+			heroSpent > 0 && mythicSpent > 0
+				? `${heroSpent} hero point${heroSpent === 1 ? '' : 's'} and ${mythicSpent} mythic point${mythicSpent === 1 ? '' : 's'}`
+				: heroSpent > 0
+					? `${heroSpent} hero point${heroSpent === 1 ? '' : 's'}`
+					: `${mythicSpent} mythic point${mythicSpent === 1 ? '' : 's'}`;
 		ui.notifications.info(
-			`${actor.name} spent ${spent} hero point${spent === 1 ? '' : 's'}. The GM gains ${awarded} villain point${awarded === 1 ? '' : 's'} after every ${heroPointRate} hero point use${heroPointRate === 1 ? '' : 's'} (${nextState.villainPoints} total).`
+			`${actor.name} spent ${spentLabel}. The GM gains ${awarded} villain point${awarded === 1 ? '' : 's'} after every ${heroPointRate} hero or mythic point use${heroPointRate === 1 ? '' : 's'} (${nextState.villainPoints} total).`
 		);
 	}
 }
@@ -540,11 +562,11 @@ async function resetVillainPointState() {
 }
 
 Hooks.on('preUpdateActor', (actor, changes) => {
-	rememberPriorHeroPoints(actor, changes);
+	rememberPriorPointValues(actor, changes);
 });
 
 Hooks.on('updateActor', (actor) => {
-	handleHeroPointSpend(actor);
+	handlePointSpend(actor);
 });
 
 Hooks.on('renderChatMessage', (message, html) => {

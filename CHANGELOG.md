@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.71] - 2026-05-21
+
+### Changed
+- **Villain Points**: Hero-point tracking now also counts PF2e mythic point spends toward villain-point generation, so either resource can advance the same villain-point threshold.
+
 ## [2.4.70] - 2026-05-21
 
 ### Fixed
