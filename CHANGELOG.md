@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.70] - 2026-05-21
+
+### Fixed
+- **Villain Points**: Finalized villain-point reroll decoration so PF2e rerolls are recognized reliably across in-place and replacement chat-card flows, allowing the skull marker, doom banner, and themed styling to appear consistently.
+
+### Changed
+- **Villain Points**: Polished the villain reroll card presentation with a darker ceremonial banner, stronger atmospheric shading, and clearer emphasis on the kept reroll result.
+
 ## [2.4.62] - 2026-05-21
 
 ### Fixed

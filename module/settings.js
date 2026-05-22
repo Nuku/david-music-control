@@ -157,14 +157,6 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
-	villainPointDebugMode: {
-		name: 'Villain Point Debug Logging',
-		hint: 'Print villain point tracking, reroll decoration, and doom-event activity to the browser console.',
-		scope: 'client',
-		config: true,
-		type: Boolean,
-		default: false,
-	},
 	villainPointHeroPointRate: {
 		name: 'Hero Points Per Villain Point',
 		hint: 'How many hero point uses are required before the GM gains 1 villain point.',

@@ -42,11 +42,6 @@ function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableVillainPoints');
 }
 
-function debugLog(...args) {
-	if (!game.settings.get(MODULE_ID, 'villainPointDebugMode')) return;
-	console.log('[PF2 Director: Villain Points]', ...args);
-}
-
 function cloneState(state = {}) {
 	return {
 		heroPointUses: Math.max(0, Number(state.heroPointUses) || 0),
@@ -79,7 +74,6 @@ function getState() {
 }
 
 async function saveState(state) {
-	debugLog('Saving state', state);
 	await setSetting('villainPointState', JSON.stringify(cloneState(state)));
 }
 
@@ -116,7 +110,6 @@ async function maybeResetFromRecentMessages() {
 
 	const state = getState();
 	const gapEnd = findResetGapEndTimestamp();
-	debugLog('Checking reset window', { gapEnd, state });
 	if (!gapEnd || gapEnd <= state.lastResetGapEnd) return state;
 
 	const nextState = {
@@ -163,13 +156,11 @@ function showDoomOverlay(message) {
 }
 
 function triggerLocalVillainNotice(message) {
-	debugLog('Triggering local villain notice', message);
 	showDoomOverlay(message);
 	playDreadSound();
 }
 
 async function broadcastVillainPointNotice(message) {
-	debugLog('Broadcasting villain notice', message);
 	game.socket?.emit(SOCKET_EVENT, {
 		type: VILLAIN_NOTICE_SOCKET_TYPE,
 		message,
@@ -204,7 +195,6 @@ async function handleHeroPointSpend(actor) {
 
 	const current = getHeroPointValue(actor);
 	const spent = Math.max(0, previous - current);
-	debugLog('Hero point spend observed', { actor: actor.name, previous, current, spent });
 	if (spent <= 0) return;
 
 	const state = await maybeResetFromRecentMessages();
@@ -218,7 +208,6 @@ async function handleHeroPointSpend(actor) {
 		villainPoints: state.villainPoints + Math.max(0, awarded),
 	};
 	await saveState(nextState);
-	debugLog('Hero point spend applied', { actor: actor.name, heroPointRate, beforeUses, afterUses, awarded, nextState });
 
 	if (awarded > 0) {
 		for (let index = 0; index < awarded; index += 1) {
@@ -285,20 +274,6 @@ function findPendingVillainRerollIndex(message) {
 	});
 }
 
-function getMessageSnapshot(message) {
-	return {
-		messageId: message?.id,
-		userId: message?.user?.id,
-		isReroll: message?.flags?.pf2e?.context?.isReroll ?? false,
-		looksLikeReroll: messageLooksLikeReroll(message),
-		speakerActorId: message?.speaker?.actor ?? null,
-		speakerTokenId: message?.speaker?.token ?? null,
-		flavorLength: String(message?.flavor ?? '').length,
-		rollCount: getMessageRolls(message).length,
-		timestamp: getMessageTimestamp(message),
-	};
-}
-
 function extractChatMessageFromRerollResult(result) {
 	if (!result) return null;
 	if (result instanceof ChatMessage) return result;
@@ -325,22 +300,6 @@ function extractChatMessageFromRerollResult(result) {
 	}
 
 	return null;
-}
-
-function summarizeRerollResult(result) {
-	if (!result) return { kind: typeof result, hasResult: false };
-	return {
-		kind: result?.constructor?.name ?? typeof result,
-		keys: Object.keys(result).slice(0, 10),
-		messageId:
-			result?.id ??
-			result?.message?.id ??
-			result?.chatMessage?.id ??
-			result?.document?.id ??
-			result?.data?.message?.id ??
-			result?.data?.chatMessage?.id ??
-			null,
-	};
 }
 
 function messageLooksLikeReroll(message) {
@@ -372,16 +331,11 @@ async function applyVillainRerollDecoration(message, pendingVillainReroll) {
 	});
 
 	pendingVillainReroll.resolved = true;
-	debugLog('Villain reroll message decorated', {
-		messageId: message.id,
-		sourceMessageId: pendingVillainReroll.sourceMessageId,
-	});
 	return true;
 }
 
 function decorateVillainRerollCard(message, root) {
 	if (!isVillainRerollMessage(message)) return;
-	debugLog('Decorating villain reroll card on render', { messageId: message.id });
 
 	root.classList.add('dmc-villain-reroll-message');
 	const content = root.querySelector('.message-content') ?? root;
@@ -462,46 +416,30 @@ async function performPf2eVillainReroll(message) {
 		speakerTokenId: message.speaker?.token ?? null,
 		createdAt: Date.now(),
 		resolved: false,
-		beforeSnapshot: getMessageSnapshot(message),
 	};
 
 	try {
-		debugLog('Queueing pending villain reroll', { messageId: message.id, userId: game.user.id });
-		debugLog('Source message before villain reroll', pendingVillainReroll.beforeSnapshot);
 		pendingVillainRerolls.push(pendingVillainReroll);
 		const rerollResult = await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
-		debugLog('PF2e reroll API result', summarizeRerollResult(rerollResult));
 		const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
 		if (returnedMessage && !pendingVillainReroll.resolved) {
-			debugLog('Decorating reroll message returned directly from PF2e API', getMessageSnapshot(returnedMessage));
 			await applyVillainRerollDecoration(returnedMessage, pendingVillainReroll);
 		}
 		const updatedSourceMessage = game.messages.get(message.id);
-		debugLog('Source message after villain reroll', {
-			...getMessageSnapshot(updatedSourceMessage ?? message),
-			looksLikeReroll: messageLooksLikeReroll(updatedSourceMessage ?? message),
-		});
 		if (updatedSourceMessage && !pendingVillainReroll.resolved && messageLooksLikeReroll(updatedSourceMessage)) {
-			debugLog('Decorating source message after in-place reroll', getMessageSnapshot(updatedSourceMessage));
 			await applyVillainRerollDecoration(updatedSourceMessage, pendingVillainReroll);
 		}
 		await finalizePendingVillainReroll(pendingVillainReroll);
 	} finally {
-		debugLog('PF2e villain reroll call finished', { messageId: message.id, pendingCount: pendingVillainRerolls.length });
 		actor.getResource = originalGetResource;
 		actor.updateResource = originalUpdateResource;
 	}
 }
 
 async function decorateVillainRerollMessage(message) {
-	debugLog('createChatMessage seen', {
-		...getMessageSnapshot(message),
-		pendingCount: pendingVillainRerolls.length,
-	});
 	if (!messageLooksLikeReroll(message) && !message.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = findPendingVillainRerollIndex(message);
-	debugLog('Matching pending villain reroll', { messageId: message.id, pendingIndex });
 	if (pendingIndex === -1) return;
 	const pendingVillainReroll = pendingVillainRerolls[pendingIndex];
 	await applyVillainRerollDecoration(message, pendingVillainReroll);
@@ -509,16 +447,9 @@ async function decorateVillainRerollMessage(message) {
 }
 
 async function handleUpdatedVillainRerollMessage(message, changes) {
-	debugLog('updateChatMessage seen', {
-		...getMessageSnapshot(message),
-		changedIsReroll: foundry.utils.getProperty(changes, 'flags.pf2e.context.isReroll'),
-		hasFlavorChange: Object.hasOwn(changes ?? {}, 'flavor'),
-		pendingCount: pendingVillainRerolls.length,
-	});
 	if (!messageLooksLikeReroll(message) && !message?.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = findPendingVillainRerollIndex(message);
-	debugLog('Matching pending villain reroll on update', { messageId: message.id, pendingIndex });
 	if (pendingIndex === -1) return;
 	const pendingVillainReroll = pendingVillainRerolls[pendingIndex];
 	await applyVillainRerollDecoration(message, pendingVillainReroll);
@@ -529,18 +460,10 @@ async function finalizePendingVillainReroll(pendingVillainReroll) {
 	if (!pendingVillainReroll || pendingVillainReroll.resolved) return;
 
 	const deadline = (pendingVillainReroll.createdAt ?? Date.now()) + REROLL_MATCH_WINDOW_MS;
-	debugLog('Finalizing pending villain reroll', {
-		sourceMessageId: pendingVillainReroll.sourceMessageId,
-		deadline,
-	});
 
 	while (Date.now() <= deadline && !pendingVillainReroll.resolved) {
 		const sourceMessage = game.messages.get(pendingVillainReroll.sourceMessageId);
 		if (sourceMessage && !isVillainRerollMessage(sourceMessage) && messageLooksLikeReroll(sourceMessage)) {
-			debugLog('Decorating source message during pending reroll finalization', {
-				sourceMessageId: pendingVillainReroll.sourceMessageId,
-				messageId: sourceMessage.id,
-			});
 			await applyVillainRerollDecoration(sourceMessage, pendingVillainReroll);
 			break;
 		}
@@ -551,10 +474,6 @@ async function finalizePendingVillainReroll(pendingVillainReroll) {
 		});
 
 		if (rerollMessage) {
-			debugLog('Matched pending villain reroll after reroll call', {
-				sourceMessageId: pendingVillainReroll.sourceMessageId,
-				messageId: rerollMessage.id,
-			});
 			await applyVillainRerollDecoration(rerollMessage, pendingVillainReroll);
 			break;
 		}
@@ -564,16 +483,9 @@ async function finalizePendingVillainReroll(pendingVillainReroll) {
 
 	const pendingIndex = pendingVillainRerolls.indexOf(pendingVillainReroll);
 	if (pendingIndex !== -1) pendingVillainRerolls.splice(pendingIndex, 1);
-
-	if (!pendingVillainReroll.resolved) {
-		debugLog('Pending villain reroll expired without match', {
-			sourceMessageId: pendingVillainReroll.sourceMessageId,
-		});
-	}
 }
 
 async function createVillainRerollMessage(message) {
-	debugLog('Attempting villain reroll', { messageId: message.id, state: getState() });
 	if (!canUseVillainReroll(message)) {
 		ui.notifications.warn('That message cannot use a villain point reroll.');
 		return null;
@@ -604,7 +516,6 @@ async function setVillainPoints(value) {
 		villainPoints: Math.max(0, Number(value) || 0),
 	};
 	await saveState(nextState);
-	debugLog('Set villain points', nextState);
 	return nextState;
 }
 
@@ -625,7 +536,6 @@ async function resetVillainPointState() {
 		lastResetGapEnd: 0,
 	};
 	await saveState(nextState);
-	debugLog('Reset villain point state');
 	return nextState;
 }
 
