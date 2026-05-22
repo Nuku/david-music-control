@@ -10,6 +10,7 @@ const DOOM_FADE_IN_MS = 180;
 const DOOM_HOLD_MS = 1100;
 const DOOM_FADE_OUT_MS = 950;
 const pendingVillainRerolls = [];
+const REROLL_MATCH_WINDOW_MS = 5000;
 
 const DOOM_MESSAGES = [
 	'The forces arrayed against you are taking notice of your resistance to fate.',
@@ -265,6 +266,48 @@ function isVillainRerollMessage(message) {
 	return !!message.getFlag?.(FLAG_SCOPE, 'villainPointReroll');
 }
 
+function findPendingVillainRerollIndex(message) {
+	if (!message?.flags?.pf2e?.context?.isReroll) return -1;
+
+	return pendingVillainRerolls.findIndex((entry) => {
+		if (entry?.resolved) return false;
+		if (entry.userId !== message.user?.id) return false;
+		if (entry.sourceMessageId && entry.sourceMessageId === message.id) return false;
+		if (getMessageTimestamp(message) && getMessageTimestamp(message) < (entry.createdAt ?? 0) - 1000) return false;
+		return true;
+	});
+}
+
+async function applyVillainRerollDecoration(message, pendingVillainReroll) {
+	if (!message || !pendingVillainReroll) return false;
+
+	const rerollIndicator = /<i[^>]*class="[^"]*reroll-indicator[^"]*"[^>]*><\/i>/i;
+	const currentFlavor = String(message.flavor ?? '');
+	const villainIcon = '<i class="fas fa-skull reroll-indicator dmc-villain-reroll-indicator" data-tooltip="Villain Point Reroll"></i>';
+	const nextFlavor = rerollIndicator.test(currentFlavor)
+		? currentFlavor.replace(rerollIndicator, villainIcon)
+		: `${villainIcon}${currentFlavor}`;
+
+	await message.update({
+		flavor: nextFlavor,
+		flags: {
+			[FLAG_SCOPE]: {
+				villainPointReroll: {
+					sourceMessageId: pendingVillainReroll.sourceMessageId,
+					createdBy: pendingVillainReroll.userId,
+				},
+			},
+		},
+	});
+
+	pendingVillainReroll.resolved = true;
+	debugLog('Villain reroll message decorated', {
+		messageId: message.id,
+		sourceMessageId: pendingVillainReroll.sourceMessageId,
+	});
+	return true;
+}
+
 function decorateVillainRerollCard(message, root) {
 	if (!isVillainRerollMessage(message)) return;
 	debugLog('Decorating villain reroll card on render', { messageId: message.id });
@@ -341,14 +384,18 @@ async function performPf2eVillainReroll(message) {
 		return originalUpdateResource(slug, value, ...args);
 	};
 
+	const pendingVillainReroll = {
+		sourceMessageId: message.id,
+		userId: game.user.id,
+		createdAt: Date.now(),
+		resolved: false,
+	};
+
 	try {
 		debugLog('Queueing pending villain reroll', { messageId: message.id, userId: game.user.id });
-		pendingVillainRerolls.push({
-			sourceMessageId: message.id,
-			userId: game.user.id,
-			createdAt: Date.now(),
-		});
+		pendingVillainRerolls.push(pendingVillainReroll);
 		await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
+		await finalizePendingVillainReroll(pendingVillainReroll);
 	} finally {
 		debugLog('PF2e villain reroll call finished', { messageId: message.id, pendingCount: pendingVillainRerolls.length });
 		actor.getResource = originalGetResource;
@@ -365,31 +412,49 @@ async function decorateVillainRerollMessage(message) {
 	});
 	if (!message.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
-	const pendingIndex = pendingVillainRerolls.findIndex((entry) => entry.userId === message.user?.id);
+	const pendingIndex = findPendingVillainRerollIndex(message);
 	debugLog('Matching pending villain reroll', { messageId: message.id, pendingIndex });
 	if (pendingIndex === -1) return;
 	const pendingVillainReroll = pendingVillainRerolls[pendingIndex];
-
-	const rerollIndicator = /<i[^>]*class="[^"]*reroll-indicator[^"]*"[^>]*><\/i>/i;
-	const currentFlavor = String(message.flavor ?? '');
-	const villainIcon = '<i class="fas fa-skull reroll-indicator dmc-villain-reroll-indicator" data-tooltip="Villain Point Reroll"></i>';
-	const nextFlavor = rerollIndicator.test(currentFlavor)
-		? currentFlavor.replace(rerollIndicator, villainIcon)
-		: `${villainIcon}${currentFlavor}`;
-
-	await message.update({
-		flavor: nextFlavor,
-		flags: {
-			[FLAG_SCOPE]: {
-				villainPointReroll: {
-					sourceMessageId: pendingVillainReroll.sourceMessageId,
-					createdBy: pendingVillainReroll.userId,
-				},
-			},
-		},
-	});
+	await applyVillainRerollDecoration(message, pendingVillainReroll);
 	pendingVillainRerolls.splice(pendingIndex, 1);
-	debugLog('Villain reroll message decorated', { messageId: message.id, sourceMessageId: pendingVillainReroll.sourceMessageId });
+}
+
+async function finalizePendingVillainReroll(pendingVillainReroll) {
+	if (!pendingVillainReroll || pendingVillainReroll.resolved) return;
+
+	const deadline = (pendingVillainReroll.createdAt ?? Date.now()) + REROLL_MATCH_WINDOW_MS;
+	debugLog('Finalizing pending villain reroll', {
+		sourceMessageId: pendingVillainReroll.sourceMessageId,
+		deadline,
+	});
+
+	while (Date.now() <= deadline && !pendingVillainReroll.resolved) {
+		const rerollMessage = game.messages.contents.find((message) => {
+			if (isVillainRerollMessage(message)) return false;
+			return findPendingVillainRerollIndex(message) !== -1;
+		});
+
+		if (rerollMessage) {
+			debugLog('Matched pending villain reroll after reroll call', {
+				sourceMessageId: pendingVillainReroll.sourceMessageId,
+				messageId: rerollMessage.id,
+			});
+			await applyVillainRerollDecoration(rerollMessage, pendingVillainReroll);
+			break;
+		}
+
+		await new Promise((resolve) => window.setTimeout(resolve, 100));
+	}
+
+	const pendingIndex = pendingVillainRerolls.indexOf(pendingVillainReroll);
+	if (pendingIndex !== -1) pendingVillainRerolls.splice(pendingIndex, 1);
+
+	if (!pendingVillainReroll.resolved) {
+		debugLog('Pending villain reroll expired without match', {
+			sourceMessageId: pendingVillainReroll.sourceMessageId,
+		});
+	}
 }
 
 async function createVillainRerollMessage(message) {
