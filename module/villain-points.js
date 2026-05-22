@@ -333,6 +333,12 @@ function summarizeRerollResult(result) {
 	};
 }
 
+function messageLooksLikeReroll(message) {
+	const content = String(message?.content ?? '');
+	if (!content) return false;
+	return content.includes('reroll-discard') || content.includes('reroll-second');
+}
+
 async function applyVillainRerollDecoration(message, pendingVillainReroll) {
 	if (!message || !pendingVillainReroll) return false;
 
@@ -459,7 +465,14 @@ async function performPf2eVillainReroll(message) {
 			await applyVillainRerollDecoration(returnedMessage, pendingVillainReroll);
 		}
 		const updatedSourceMessage = game.messages.get(message.id);
-		debugLog('Source message after villain reroll', getMessageSnapshot(updatedSourceMessage ?? message));
+		debugLog('Source message after villain reroll', {
+			...getMessageSnapshot(updatedSourceMessage ?? message),
+			looksLikeReroll: messageLooksLikeReroll(updatedSourceMessage ?? message),
+		});
+		if (updatedSourceMessage && !pendingVillainReroll.resolved && messageLooksLikeReroll(updatedSourceMessage)) {
+			debugLog('Decorating source message after in-place reroll', getMessageSnapshot(updatedSourceMessage));
+			await applyVillainRerollDecoration(updatedSourceMessage, pendingVillainReroll);
+		}
 		await finalizePendingVillainReroll(pendingVillainReroll);
 	} finally {
 		debugLog('PF2e villain reroll call finished', { messageId: message.id, pendingCount: pendingVillainRerolls.length });
