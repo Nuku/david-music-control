@@ -523,6 +523,16 @@ async function finalizePendingVillainReroll(pendingVillainReroll) {
 	});
 
 	while (Date.now() <= deadline && !pendingVillainReroll.resolved) {
+		const sourceMessage = game.messages.get(pendingVillainReroll.sourceMessageId);
+		if (sourceMessage && !isVillainRerollMessage(sourceMessage) && messageLooksLikeReroll(sourceMessage)) {
+			debugLog('Decorating source message during pending reroll finalization', {
+				sourceMessageId: pendingVillainReroll.sourceMessageId,
+				messageId: sourceMessage.id,
+			});
+			await applyVillainRerollDecoration(sourceMessage, pendingVillainReroll);
+			break;
+		}
+
 		const rerollMessage = game.messages.contents.find((message) => {
 			if (isVillainRerollMessage(message)) return false;
 			return findPendingVillainRerollIndex(message) !== -1;
