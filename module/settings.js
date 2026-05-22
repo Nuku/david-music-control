@@ -174,6 +174,14 @@ const settings = {
 		type: Boolean,
 		default: true,
 	},
+	syncPlaylistPlayback: {
+		name: 'Sync Playlist Playback',
+		hint: 'When the GM changes a playlist track, wait briefly for connected clients and snap them to the same playback position.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	fireworksOnVictory: {
 		name: 'Fireworks on Victory',
 		hint: 'On Foundry V14+, show colorful victory fireworks based on encounter XP when combat ends.',

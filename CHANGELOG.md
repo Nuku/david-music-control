@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.72] - 2026-05-22
+
+### Added
+- **Music**: Added an optional `Sync Playlist Playback` world setting that resynchronizes GM-controlled playlist tracks across connected clients after play, pause, resume, track changes, and late joins or reloads.
+
 ## [2.4.71] - 2026-05-21
 
 ### Changed
