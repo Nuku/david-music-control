@@ -289,6 +289,50 @@ function getMessageSnapshot(message) {
 	};
 }
 
+function extractChatMessageFromRerollResult(result) {
+	if (!result) return null;
+	if (result instanceof ChatMessage) return result;
+
+	const candidates = [
+		result.message,
+		result.chatMessage,
+		result.document,
+		result?.data?.message,
+		result?.data?.chatMessage,
+	];
+
+	for (const candidate of candidates) {
+		if (!candidate) continue;
+		if (candidate instanceof ChatMessage) return candidate;
+		if (typeof candidate === 'string') {
+			const message = game.messages.get(candidate);
+			if (message) return message;
+		}
+		if (candidate.id) {
+			const message = game.messages.get(candidate.id);
+			if (message) return message;
+		}
+	}
+
+	return null;
+}
+
+function summarizeRerollResult(result) {
+	if (!result) return { kind: typeof result, hasResult: false };
+	return {
+		kind: result?.constructor?.name ?? typeof result,
+		keys: Object.keys(result).slice(0, 10),
+		messageId:
+			result?.id ??
+			result?.message?.id ??
+			result?.chatMessage?.id ??
+			result?.document?.id ??
+			result?.data?.message?.id ??
+			result?.data?.chatMessage?.id ??
+			null,
+	};
+}
+
 async function applyVillainRerollDecoration(message, pendingVillainReroll) {
 	if (!message || !pendingVillainReroll) return false;
 
@@ -407,7 +451,13 @@ async function performPf2eVillainReroll(message) {
 		debugLog('Queueing pending villain reroll', { messageId: message.id, userId: game.user.id });
 		debugLog('Source message before villain reroll', pendingVillainReroll.beforeSnapshot);
 		pendingVillainRerolls.push(pendingVillainReroll);
-		await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
+		const rerollResult = await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
+		debugLog('PF2e reroll API result', summarizeRerollResult(rerollResult));
+		const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
+		if (returnedMessage && !pendingVillainReroll.resolved) {
+			debugLog('Decorating reroll message returned directly from PF2e API', getMessageSnapshot(returnedMessage));
+			await applyVillainRerollDecoration(returnedMessage, pendingVillainReroll);
+		}
 		const updatedSourceMessage = game.messages.get(message.id);
 		debugLog('Source message after villain reroll', getMessageSnapshot(updatedSourceMessage ?? message));
 		await finalizePendingVillainReroll(pendingVillainReroll);
