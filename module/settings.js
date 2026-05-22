@@ -157,6 +157,23 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	villainPointDebugMode: {
+		name: 'Villain Point Debug Logging',
+		hint: 'Print villain point tracking, reroll decoration, and doom-event activity to the browser console.',
+		scope: 'client',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
+	villainPointHeroPointRate: {
+		name: 'Hero Points Per Villain Point',
+		hint: 'How many hero point uses are required before the GM gains 1 villain point.',
+		scope: 'world',
+		config: true,
+		type: Number,
+		range: { min: 1, max: 10, step: 1 },
+		default: 2,
+	},
 	pauseTrack: {
 		name: 'Pause Tracks',
 		hint: 'When switching tracks, pause old tracks instead of stopping them, unless they are a playlist.',

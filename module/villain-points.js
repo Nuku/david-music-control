@@ -41,6 +41,11 @@ function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableVillainPoints');
 }
 
+function debugLog(...args) {
+	if (!game.settings.get(MODULE_ID, 'villainPointDebugMode')) return;
+	console.log('[PF2 Director: Villain Points]', ...args);
+}
+
 function cloneState(state = {}) {
 	return {
 		heroPointUses: Math.max(0, Number(state.heroPointUses) || 0),
@@ -57,6 +62,10 @@ function getAudioHelper() {
 	return globalThis.AudioHelper ?? foundry?.audio?.AudioHelper ?? null;
 }
 
+function getHeroPointRate() {
+	return Math.max(1, Number(getSetting('villainPointHeroPointRate')) || 2);
+}
+
 function getState() {
 	const raw = getSetting('villainPointState');
 	if (raw && typeof raw === 'object' && !Array.isArray(raw)) return cloneState(raw);
@@ -69,6 +78,7 @@ function getState() {
 }
 
 async function saveState(state) {
+	debugLog('Saving state', state);
 	await setSetting('villainPointState', JSON.stringify(cloneState(state)));
 }
 
@@ -105,6 +115,7 @@ async function maybeResetFromRecentMessages() {
 
 	const state = getState();
 	const gapEnd = findResetGapEndTimestamp();
+	debugLog('Checking reset window', { gapEnd, state });
 	if (!gapEnd || gapEnd <= state.lastResetGapEnd) return state;
 
 	const nextState = {
@@ -151,11 +162,13 @@ function showDoomOverlay(message) {
 }
 
 function triggerLocalVillainNotice(message) {
+	debugLog('Triggering local villain notice', message);
 	showDoomOverlay(message);
 	playDreadSound();
 }
 
 async function broadcastVillainPointNotice(message) {
+	debugLog('Broadcasting villain notice', message);
 	game.socket?.emit(SOCKET_EVENT, {
 		type: VILLAIN_NOTICE_SOCKET_TYPE,
 		message,
@@ -190,25 +203,28 @@ async function handleHeroPointSpend(actor) {
 
 	const current = getHeroPointValue(actor);
 	const spent = Math.max(0, previous - current);
+	debugLog('Hero point spend observed', { actor: actor.name, previous, current, spent });
 	if (spent <= 0) return;
 
 	const state = await maybeResetFromRecentMessages();
 	const beforeUses = state.heroPointUses;
 	const afterUses = beforeUses + spent;
-	const awarded = Math.floor(afterUses / 2) - Math.floor(beforeUses / 2);
+	const heroPointRate = getHeroPointRate();
+	const awarded = Math.floor(afterUses / heroPointRate) - Math.floor(beforeUses / heroPointRate);
 	const nextState = {
 		...state,
 		heroPointUses: afterUses,
 		villainPoints: state.villainPoints + Math.max(0, awarded),
 	};
 	await saveState(nextState);
+	debugLog('Hero point spend applied', { actor: actor.name, heroPointRate, beforeUses, afterUses, awarded, nextState });
 
 	if (awarded > 0) {
 		for (let index = 0; index < awarded; index += 1) {
 			await broadcastVillainPointNotice(pick(DOOM_MESSAGES) ?? DOOM_MESSAGES[0]);
 		}
 		ui.notifications.info(
-			`${actor.name} spent ${spent} hero point${spent === 1 ? '' : 's'}. The GM gains ${awarded} villain point${awarded === 1 ? '' : 's'} (${nextState.villainPoints} total).`
+			`${actor.name} spent ${spent} hero point${spent === 1 ? '' : 's'}. The GM gains ${awarded} villain point${awarded === 1 ? '' : 's'} after every ${heroPointRate} hero point use${heroPointRate === 1 ? '' : 's'} (${nextState.villainPoints} total).`
 		);
 	}
 }
@@ -251,6 +267,7 @@ function isVillainRerollMessage(message) {
 
 function decorateVillainRerollCard(message, root) {
 	if (!isVillainRerollMessage(message)) return;
+	debugLog('Decorating villain reroll card on render', { messageId: message.id });
 
 	root.classList.add('dmc-villain-reroll-message');
 	const content = root.querySelector('.message-content') ?? root;
@@ -325,6 +342,7 @@ async function performPf2eVillainReroll(message) {
 	};
 
 	try {
+		debugLog('Queueing pending villain reroll', { messageId: message.id, userId: game.user.id });
 		pendingVillainRerolls.push({
 			sourceMessageId: message.id,
 			userId: game.user.id,
@@ -332,15 +350,23 @@ async function performPf2eVillainReroll(message) {
 		});
 		await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
 	} finally {
+		debugLog('PF2e villain reroll call finished', { messageId: message.id, pendingCount: pendingVillainRerolls.length });
 		actor.getResource = originalGetResource;
 		actor.updateResource = originalUpdateResource;
 	}
 }
 
 async function decorateVillainRerollMessage(message) {
+	debugLog('createChatMessage seen', {
+		messageId: message.id,
+		userId: message.user?.id,
+		isReroll: message.flags?.pf2e?.context?.isReroll ?? false,
+		pendingCount: pendingVillainRerolls.length,
+	});
 	if (!message.flags?.pf2e?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = pendingVillainRerolls.findIndex((entry) => entry.userId === message.user?.id);
+	debugLog('Matching pending villain reroll', { messageId: message.id, pendingIndex });
 	if (pendingIndex === -1) return;
 	const pendingVillainReroll = pendingVillainRerolls[pendingIndex];
 
@@ -363,9 +389,11 @@ async function decorateVillainRerollMessage(message) {
 		},
 	});
 	pendingVillainRerolls.splice(pendingIndex, 1);
+	debugLog('Villain reroll message decorated', { messageId: message.id, sourceMessageId: pendingVillainReroll.sourceMessageId });
 }
 
 async function createVillainRerollMessage(message) {
+	debugLog('Attempting villain reroll', { messageId: message.id, state: getState() });
 	if (!canUseVillainReroll(message)) {
 		ui.notifications.warn('That message cannot use a villain point reroll.');
 		return null;
@@ -387,6 +415,38 @@ async function createVillainRerollMessage(message) {
 
 	ui.notifications.info(`Villain point spent. ${Math.max(0, state.villainPoints - 1)} remaining.`);
 	return true;
+}
+
+async function setVillainPoints(value) {
+	const state = getState();
+	const nextState = {
+		...state,
+		villainPoints: Math.max(0, Number(value) || 0),
+	};
+	await saveState(nextState);
+	debugLog('Set villain points', nextState);
+	return nextState;
+}
+
+async function addVillainPoints(amount = 1) {
+	const state = getState();
+	return setVillainPoints(state.villainPoints + (Number(amount) || 0));
+}
+
+async function removeVillainPoints(amount = 1) {
+	const state = getState();
+	return setVillainPoints(state.villainPoints - (Number(amount) || 0));
+}
+
+async function resetVillainPointState() {
+	const nextState = {
+		heroPointUses: 0,
+		villainPoints: 0,
+		lastResetGapEnd: 0,
+	};
+	await saveState(nextState);
+	debugLog('Reset villain point state');
+	return nextState;
 }
 
 Hooks.on('preUpdateActor', (actor, changes) => {
@@ -416,6 +476,20 @@ Hooks.on('createChatMessage', (message) => {
 });
 
 Hooks.once('ready', () => {
+	const module = game.modules.get(MODULE_ID);
+	if (module) {
+		module.api = {
+			...(module.api ?? {}),
+			villainPoints: {
+				getState,
+				set: setVillainPoints,
+				add: addVillainPoints,
+				remove: removeVillainPoints,
+				reset: resetVillainPointState,
+			},
+		};
+	}
+
 	game.socket?.on(SOCKET_EVENT, (data) => {
 		if (data?.type !== VILLAIN_NOTICE_SOCKET_TYPE) return;
 		if (typeof data.message !== 'string' || !data.message.trim()) return;

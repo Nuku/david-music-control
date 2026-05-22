@@ -84,7 +84,7 @@ When `Enable At-Will Recharge` is on, PF2e items with `(at will)` in their name 
 When `Enable Villain Points` is on:
 
 - every time a PF2e character's hero point total drops, the module counts that as hero point use
-- every 2 tracked hero point uses grant the GM 1 villain point
+- every configured number of tracked hero point uses grant the GM 1 villain point, defaulting to 2
 - if the most recent 5 chat messages include a gap of 12 hours or more between consecutive messages, tracked hero point uses and villain points both reset to 0
 - the GM gets a `Villain Point` button on d20 chat messages and can spend 1 point to post a reroll of that check
 
