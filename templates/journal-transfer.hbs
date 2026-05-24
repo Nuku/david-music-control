@@ -1,46 +1,10 @@
 <form class="standard-form dmc-journal-transfer-form">
 	<section class="dmc-transfer-section">
 		<header>
-			<h2>File Pipeline</h2>
-			<p>Use the original file-based export/import flow.</p>
-		</header>
-		<div class="dmc-transfer-actions">
-			<button type="button" data-action="export-file">
-				<i class="fas fa-file-export"></i> Export JSON File
-			</button>
-			<button type="button" data-action="import-file">
-				<i class="fas fa-file-import"></i> Import JSON File
-			</button>
-		</div>
-	</section>
-
-	<section class="dmc-transfer-section">
-		<header>
-			<h2>Copy / Paste Pipeline</h2>
-			<p>Copy the current config as JSON or paste edited JSON here and apply it directly.</p>
-		</header>
-		<div class="dmc-transfer-actions">
-			<button type="button" data-action="refresh-json">
-				<i class="fas fa-rotate"></i> Refresh JSON
-			</button>
-			<button type="button" data-action="copy-json">
-				<i class="fas fa-copy"></i> Copy JSON
-			</button>
-			<button type="submit">
-				<i class="fas fa-paste"></i> Apply Pasted JSON
-			</button>
-		</div>
-		<label class="dmc-transfer-textarea">
-			<span>Music Config JSON</span>
-			<textarea name="musicJson" spellcheck="false">{{json}}</textarea>
-		</label>
-	</section>
-
-	<section class="dmc-transfer-section">
-		<header>
 			<h2>Journal Text to Subsystem Export</h2>
-			<p>Paste plain text copied from a journal. The parser builds an influence subsystem export and downloads it as JSON.</p>
+			<p>Paste plain text copied from a journal entry and convert it into a PF2e subsystem export file. The parser can currently recognize influence-style and research-style subsystem text.</p>
 		</header>
+		<p class="hint">Recommended workflow: copy the journal text, paste it into Journal Text, click Preview Export JSON to sanity-check the result, then click Download Subsystem Export to save the file to your computer.</p>
 		<div class="dmc-transfer-actions">
 			<button type="button" data-action="preview-journal-json">
 				<i class="fas fa-eye"></i> Preview Export JSON

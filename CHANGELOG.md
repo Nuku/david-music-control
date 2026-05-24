@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.78] - 2026-05-24
+
+### Changed
+- **Subsystem export**: Focused the journal transfer tool on PF2e subsystem export workflows, with clearer subsystem-specific wording and removal of the old music-config copy/paste controls from that dialog.
+
+### Fixed
+- **Music**: Playlist playback sync now reacts to any playlist track start, pause, or resume instead of only GM-initiated changes.
+
 ## [2.4.77] - 2026-05-24
 
 ### Added

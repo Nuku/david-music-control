@@ -1,10 +1,4 @@
 import { MODULE_ID } from './settings.js';
-import {
-	exportMusicConfig,
-	importMusicConfig,
-	importMusicConfigFromText,
-	stringifyMusicConfig,
-} from './transfer.js';
 
 function randomId() {
 	return foundry.utils.randomID();
@@ -407,7 +401,7 @@ class JournalTransferApp extends FormApplication {
 	static get defaultOptions() {
 		return foundry.utils.mergeObject(super.defaultOptions, {
 			id: 'dmc-journal-transfer',
-			title: 'PF2 Director Transfer',
+			title: 'PF2 Director Subsystem Export',
 			template: 'modules/pf2-david-music-control/templates/journal-transfer.hbs',
 			width: 700,
 			height: 'auto',
@@ -419,44 +413,12 @@ class JournalTransferApp extends FormApplication {
 
 	getData() {
 		return {
-			json: stringifyMusicConfig(),
 			journalText: '',
 		};
 	}
 
 	activateListeners(html) {
 		super.activateListeners(html);
-
-		html.find('[data-action="export-file"]').on('click', (event) => {
-			event.preventDefault();
-			exportMusicConfig();
-		});
-
-		html.find('[data-action="import-file"]').on('click', (event) => {
-			event.preventDefault();
-			importMusicConfig();
-		});
-
-		html.find('[data-action="refresh-json"]').on('click', (event) => {
-			event.preventDefault();
-			this.render();
-		});
-
-		html.find('[data-action="copy-json"]').on('click', async (event) => {
-			event.preventDefault();
-			const textarea = html.find('[name="musicJson"]').get(0);
-			const value = textarea?.value?.trim() ?? '';
-			if (!value) return;
-			try {
-				await navigator.clipboard.writeText(value);
-				ui.notifications.info('PF2 Director | JSON copied to clipboard.');
-			} catch (error) {
-				console.warn('PF2 Director | Could not write to clipboard:', error);
-				textarea?.focus();
-				textarea?.select();
-				ui.notifications.warn('PF2 Director | Clipboard write failed. JSON selected instead.');
-			}
-		});
 
 		html.find('[data-action="export-journal-text"]').on('click', (event) => {
 			event.preventDefault();
@@ -480,20 +442,7 @@ class JournalTransferApp extends FormApplication {
 		});
 	}
 
-	async _updateObject(_event, formData) {
-		const payload = String(formData.musicJson ?? '').trim();
-		if (!payload) {
-			ui.notifications.warn('PF2 Director | Paste a music config JSON payload first.');
-			return;
-		}
-
-		try {
-			await importMusicConfigFromText(payload);
-			this.render();
-		} catch (error) {
-			ui.notifications.error(error.message || 'PF2 Director | Import failed.');
-		}
-	}
+	async _updateObject(_event, _formData) {}
 }
 
 let transferApp = null;

@@ -176,7 +176,7 @@ const settings = {
 	},
 	syncPlaylistPlayback: {
 		name: 'Sync Playlist Playback',
-		hint: 'When the GM changes a playlist track, wait briefly for connected clients and snap them to the same playback position.',
+		hint: 'When a playlist track starts, pauses, or resumes, wait briefly for connected clients and snap them to the same playback position.',
 		scope: 'world',
 		config: true,
 		type: Boolean,

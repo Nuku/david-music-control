@@ -175,9 +175,6 @@ function queuePlaybackSync(sound, userId) {
 async function startPlaybackSync(sound, userId) {
 	if (!game.user.isGM || !isPlaybackSyncEnabled()) return;
 
-	const initiator = game.users.get(userId);
-	if (!initiator?.isGM) return;
-
 	const session = {
 		type: PLAYBACK_SYNC_SOCKET_TYPE,
 		action: PLAYBACK_SYNC_REQUEST,
