@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.77] - 2026-05-24
+
+### Added
+- **Subsystem export**: The journal transfer tool now detects research-style journal text and exports it into the PF2e subsystem research format.
+
+### Fixed
+- **Subsystem export**: Influence milestone parsing now preserves unlock text more cleanly and no longer spills later journal sections into the final milestone entry.
+- **Subsystem export**: Research check exports now start each check at 0 current research points while preserving the pasted maximum RP values.
+
 ## [2.4.74] - 2026-05-24
 
 ### Added

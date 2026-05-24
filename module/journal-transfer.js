@@ -56,13 +56,61 @@ function parseInfluenceSkillList(segment) {
 	});
 }
 
+function parseSkillOptions(segment) {
+	const matches = [...segment.matchAll(/DC\s+(\d+)\s+([^,]+?)(?:\s+to\s+([^,]+?))?(?=(?:,\s*or\s+DC\s+\d+\s+)|(?:,\s*DC\s+\d+\s+)|$)/gi)];
+	return matches.map((match) => {
+		const skillText = normalizeWhitespace(match[2]);
+		return {
+			skill: skillText.toLowerCase(),
+			dc: Number(match[1]),
+			lore: /\blore\b/i.test(skillText),
+			description: normalizeWhitespace(match[3] ?? ''),
+		};
+	});
+}
+
+function isIgnorableTraitLine(line) {
+	return /^[a-z][a-z\s-]{2,}$/i.test(line) && !/[.:;]/.test(line) && (line.match(/\s+/g)?.length ?? 0) <= 5;
+}
+
 function parseInfluenceThresholds(lines) {
-	const joined = lines.join('\n');
-	const matches = [...joined.matchAll(/Influence\s+(\d+)\s+([\s\S]*?)(?=\nInfluence\s+\d+\s+|$)/g)];
-	return matches.map((match) => ({
-		points: Number(match[1]),
-		description: normalizeWhitespace(match[2]),
-	}));
+	const entries = [];
+	let current = null;
+	const stopLabels = new Set(['resistances', 'weaknesses', 'background', 'appearance', 'personality']);
+
+	for (const line of lines) {
+		const influenceMatch = line.match(/^Influence\s+(\d+)\s*(.*)$/i);
+		if (influenceMatch) {
+			if (current) {
+				current.description = normalizeWhitespace(current.descriptionLines.join(' '));
+				delete current.descriptionLines;
+				entries.push(current);
+			}
+			current = {
+				points: Number(influenceMatch[1]),
+				descriptionLines: [],
+			};
+			const remainder = normalizeWhitespace(influenceMatch[2] ?? '');
+			if (remainder) current.descriptionLines.push(remainder);
+			continue;
+		}
+
+		if (!current) continue;
+
+		const lower = line.toLowerCase();
+		if ([...stopLabels].some((label) => lower.startsWith(label))) break;
+		if (isIgnorableTraitLine(line)) continue;
+
+		current.descriptionLines.push(line);
+	}
+
+	if (current) {
+		current.description = normalizeWhitespace(current.descriptionLines.join(' '));
+		delete current.descriptionLines;
+		entries.push(current);
+	}
+
+	return entries;
 }
 
 function extractLabeledSection(text, label, nextLabels) {
@@ -73,6 +121,60 @@ function extractLabeledSection(text, label, nextLabels) {
 	const pattern = new RegExp(`${escapedLabel}\\s+([\\s\\S]*?)(?=\\n(?:${nextPattern})\\b|$)`, 'i');
 	const match = text.match(pattern);
 	return normalizeWhitespace(match?.[1] ?? '');
+}
+
+function slugifyName(value) {
+	return normalizeWhitespace(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function parseResearchTopics(lines) {
+	const topics = [];
+	for (let i = 0; i < lines.length; i += 1) {
+		const name = lines[i];
+		const description = lines[i + 1] ?? '';
+		const maxLine = lines[i + 2] ?? '';
+		const checksLine = lines[i + 3] ?? '';
+		if (!/^Maximum RP\s+\d+/i.test(maxLine) || !/^Research Checks\b/i.test(checksLine)) continue;
+
+		const maximumResearchPoints = Number(maxLine.match(/^Maximum RP\s+(\d+)/i)?.[1] ?? 0);
+		const skillOptions = parseSkillOptions(checksLine.replace(/^Research Checks\s*/i, ''));
+		topics.push({
+			name,
+			description,
+			maximumResearchPoints,
+			skillOptions,
+		});
+		i += 3;
+	}
+	return topics;
+}
+
+function parseResearchBreakpoints(lines) {
+	const breakpoints = [];
+	for (const line of lines) {
+		const match = line.match(/^(\d+)\s+Research Points?\s+(.+)$/i);
+		if (!match) continue;
+		breakpoints.push({
+			breakpoint: Number(match[1]),
+			description: normalizeWhitespace(match[2]),
+		});
+	}
+	return breakpoints;
+}
+
+function parseResearchSummaryLine(line) {
+	const match = line.match(/^Research Checks\s+(.+)$/i);
+	if (!match) return [];
+	return match[1]
+		.split(/\s*,\s*/)
+		.map((entry) => {
+			const itemMatch = entry.match(/^(.+?)\s*\(([^)]+)\)$/);
+			if (!itemMatch) return { name: normalizeWhitespace(entry), location: '' };
+			return {
+				name: normalizeWhitespace(itemMatch[1]),
+				location: normalizeWhitespace(itemMatch[2]),
+			};
+		});
 }
 
 function buildInfluenceExportFromJournalText(text) {
@@ -134,7 +236,7 @@ function buildInfluenceExportFromJournalText(text) {
 			id: randomId(),
 			position: index + 1,
 			name: item.name,
-			hidden: false,
+			hidden: true,
 			skill: item.skill,
 			dc: item.dc,
 			lore: item.lore,
@@ -143,9 +245,9 @@ function buildInfluenceExportFromJournalText(text) {
 			id: randomId(),
 			position: index + 1,
 			name: `Influence ${item.points}`,
-			hidden: false,
+			hidden: true,
 			description: `<p>${item.description}</p>`,
-			influence: item.points,
+			points: item.points,
 		})),
 		weaknesses: weaknessText ? (() => {
 			const id = randomId();
@@ -154,7 +256,7 @@ function buildInfluenceExportFromJournalText(text) {
 					id,
 				position: 1,
 				name: 'Weaknesses',
-				hidden: false,
+				hidden: true,
 				description: `<p>${weaknessText}</p>`,
 				modifier: {
 					used: false,
@@ -170,7 +272,7 @@ function buildInfluenceExportFromJournalText(text) {
 					id,
 				position: 1,
 				name: 'Resistances',
-				hidden: false,
+				hidden: true,
 				description: `<p>${resistanceText}</p>`,
 				modifier: {
 					used: false,
@@ -198,8 +300,104 @@ function buildInfluenceExportFromJournalText(text) {
 	};
 }
 
+function buildResearchExportFromJournalText(text) {
+	const lines = splitPlainTextLines(text);
+	if (!lines.length) throw new Error('PF2 Director | Paste journal text first.');
+
+	const researchHeaderIndex = lines.findIndex((line) => /^Research\s+\d+$/i.test(line));
+	if (researchHeaderIndex === -1) {
+		throw new Error('PF2 Director | Could not find the research header in pasted text.');
+	}
+
+	const topics = parseResearchTopics(lines.slice(0, researchHeaderIndex));
+	const name = lines[researchHeaderIndex - 1];
+	const researchLevel = Number(lines[researchHeaderIndex].match(/^Research\s+(\d+)$/i)?.[1] ?? 0);
+	const summaryLine = lines.find((line) => /^Research Checks\s+.+\(.+\)/i.test(line)) ?? '';
+	const breakpointLines = lines.slice(researchHeaderIndex + 1);
+	const breakpoints = parseResearchBreakpoints(breakpointLines);
+	const topicSummaries = parseResearchSummaryLine(summaryLine);
+
+	if (!name) {
+		throw new Error('PF2 Director | Could not determine the research entry name from pasted text.');
+	}
+
+	const topicLocationMap = new Map(topicSummaries.map((topic) => [slugifyName(topic.name), topic.location]));
+	const record = {
+		id: randomId(),
+		position: 1,
+		name,
+		version: '0.8.9',
+		background: '',
+		pins: {
+			sidebar: 'premise',
+		},
+		premise: '',
+		gmNotes: '',
+		tags: [],
+		hidden: false,
+		timeLimit: {
+			current: 0,
+			unit: 'year',
+			max: null,
+		},
+		started: false,
+		researchPoints: 0,
+		researchChecks: makeOrderedCollection(topics, (topic, index) => {
+			const skillCheckId = randomId();
+			return {
+				id: randomId(),
+				position: index + 1,
+				skillChecks: {
+					[skillCheckId]: {
+						id: skillCheckId,
+						skills: makeOrderedCollection(topic.skillOptions, (option) => ({
+							id: randomId(),
+							lore: option.lore,
+							dc: option.dc,
+							basic: false,
+							skill: option.skill,
+						})),
+						hidden: true,
+						description: '',
+					},
+				},
+				name: topic.name,
+				hidden: true,
+				description: topicLocationMap.get(slugifyName(topic.name)) || topic.description || '',
+				currentResearchPoints: 0,
+				maximumResearchPoints: topic.maximumResearchPoints,
+			};
+		}),
+		researchBreakpoints: makeOrderedCollection(breakpoints, (breakpoint, index) => ({
+			id: randomId(),
+			position: index + 1,
+			hidden: true,
+			breakpoint: breakpoint.breakpoint,
+			description: `<p>${breakpoint.description}</p>`,
+		})),
+		researchEvents: {},
+	};
+
+	return {
+		influence: {},
+		chase: {},
+		research: {
+			[record.id]: record,
+		},
+		infiltration: {},
+	};
+}
+
+function buildSubsystemExportFromJournalText(text) {
+	const normalized = String(text ?? '');
+	if (/\bResearch Checks\b/i.test(normalized) && /\bResearch\s+\d+\b/i.test(normalized)) {
+		return buildResearchExportFromJournalText(text);
+	}
+	return buildInfluenceExportFromJournalText(text);
+}
+
 function downloadSubsystemExport(text) {
-	const json = JSON.stringify(buildInfluenceExportFromJournalText(text), null, 2);
+	const json = JSON.stringify(buildSubsystemExportFromJournalText(text), null, 2);
 	const name = splitPlainTextLines(text)[0] || game.world.id || 'subsystems';
 	saveDataToFile(json, 'application/json', `${name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'subsystems'}.subsystems.json`);
 	ui.notifications.info('PF2 Director | Subsystem export downloaded.');
@@ -275,7 +473,7 @@ class JournalTransferApp extends FormApplication {
 			const journalText = String(html.find('[name="journalText"]').val() ?? '').trim();
 			const output = html.find('[name="journalJson"]').get(0);
 			try {
-				output.value = JSON.stringify(buildInfluenceExportFromJournalText(journalText), null, 2);
+				output.value = JSON.stringify(buildSubsystemExportFromJournalText(journalText), null, 2);
 			} catch (error) {
 				ui.notifications.error(error.message || 'PF2 Director | Could not build subsystem export.');
 			}
