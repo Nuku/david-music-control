@@ -299,20 +299,67 @@ class JournalTransferApp extends FormApplication {
 }
 
 let transferApp = null;
+const injectedJournalButtons = new WeakSet();
 
 function getTransferApp() {
 	if (!transferApp) transferApp = new JournalTransferApp();
 	return transferApp;
 }
 
-function isJournalApp(app) {
-	const docName = app?.document?.documentName ?? app?.object?.documentName;
-	return docName === 'JournalEntry';
+function extractRenderElement(html, app) {
+	let element = html instanceof HTMLElement ? html : html?.[0];
+	if (!element) return null;
+
+	if (!element.classList?.contains('application') && !element.classList?.contains('window-app')) {
+		const appRoot = element.closest?.('.application, .window-app');
+		if (appRoot) {
+			element = appRoot;
+		} else {
+			const appId = app?.options?.id || app?.id;
+			if (appId) element = document.getElementById(appId) || element;
+		}
+	}
+
+	return element;
+}
+
+function injectJournalTransferButton(sheet, html) {
+	if (!game.user.isGM) return;
+
+	const root = extractRenderElement(html, sheet);
+	if (!root) return;
+
+	const header = root.querySelector('.window-header');
+	if (!header) return;
+	if (header.querySelector('.dmc-journal-transfer-button')) return;
+	if (injectedJournalButtons.has(header)) return;
+
+	const button = document.createElement('a');
+	button.className = 'header-button control dmc-journal-transfer-button';
+	button.dataset.tooltip = 'PF2 Director Transfer';
+	button.setAttribute('aria-label', 'PF2 Director Transfer');
+	button.innerHTML = '<i class="fas fa-file-arrow-up"></i>';
+	button.addEventListener('click', (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+		getTransferApp().render(true, { focus: true });
+	});
+
+	const closeButton = header.querySelector('.close, [data-action="close"], .header-button.close');
+	if (closeButton) header.insertBefore(button, closeButton);
+	else header.appendChild(button);
+
+	injectedJournalButtons.add(header);
+}
+
+function handleJournalRender(sheet, html) {
+	injectJournalTransferButton(sheet, html);
 }
 
 Hooks.on('getApplicationHeaderButtons', (app, buttons) => {
 	if (!game.user.isGM) return;
-	if (!isJournalApp(app)) return;
+	const docName = app?.document?.documentName ?? app?.object?.documentName;
+	if (docName !== 'JournalEntry') return;
 
 	if (buttons.some((button) => button.class === 'dmc-journal-transfer-button')) return;
 
@@ -323,6 +370,12 @@ Hooks.on('getApplicationHeaderButtons', (app, buttons) => {
 		onclick: () => getTransferApp().render(true, { focus: true }),
 	});
 });
+
+Hooks.on('renderJournalSheet', handleJournalRender);
+Hooks.on('renderJournalEntrySheet', handleJournalRender);
+Hooks.on('renderJournalEntrySheet5e', handleJournalRender);
+Hooks.on('renderMetaMorphicJournalEntrySheet', handleJournalRender);
+Hooks.on('renderEnhancedJournal', handleJournalRender);
 
 Hooks.on('closeApplication', (app) => {
 	if (app !== transferApp) return;
