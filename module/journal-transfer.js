@@ -305,39 +305,23 @@ function getTransferApp() {
 	return transferApp;
 }
 
-function injectJournalTransferButton(app, html) {
-	if (!game.user.isGM) return;
-
-	const root = html instanceof HTMLElement ? html : html?.[0];
-	if (!root) return;
-
-	const header = root.querySelector('.window-header');
-	if (!header || header.querySelector('.dmc-journal-transfer-button')) return;
-
-	const button = document.createElement('a');
-	button.className = 'header-button control dmc-journal-transfer-button';
-	button.dataset.tooltip = 'PF2 Director Transfer';
-	button.setAttribute('aria-label', 'PF2 Director Transfer');
-	button.innerHTML = '<i class="fas fa-file-arrow-up"></i>';
-	button.addEventListener('click', (event) => {
-		event.preventDefault();
-		event.stopPropagation();
-		getTransferApp().render(true, { focus: true });
-	});
-
-	const closeButton = header.querySelector('.close');
-	if (closeButton) header.insertBefore(button, closeButton);
-	else header.appendChild(button);
-}
-
 function isJournalApp(app) {
 	const docName = app?.document?.documentName ?? app?.object?.documentName;
 	return docName === 'JournalEntry';
 }
 
-Hooks.on('renderApplication', (app, html) => {
+Hooks.on('getApplicationHeaderButtons', (app, buttons) => {
+	if (!game.user.isGM) return;
 	if (!isJournalApp(app)) return;
-	injectJournalTransferButton(app, html);
+
+	if (buttons.some((button) => button.class === 'dmc-journal-transfer-button')) return;
+
+	buttons.unshift({
+		label: 'PF2 Director Transfer',
+		class: 'dmc-journal-transfer-button',
+		icon: 'fas fa-file-arrow-up',
+		onclick: () => getTransferApp().render(true, { focus: true }),
+	});
 });
 
 Hooks.on('closeApplication', (app) => {
