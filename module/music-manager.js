@@ -168,7 +168,7 @@ export async function updateTurnMusic(combat, changes) {
 				await combat.setFlag(MODULE_ID, 'pausedEncounterMusic', encounterMusic);
 			}
 		}
-		await switchTo(combat, turnMusic, combatantToken.id);
+		await switchTo(combat, turnMusic, combatantToken.id, { pausePrevious: getSetting('pauseTrack') });
 		return;
 	}
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.73] - 2026-05-23
+
+### Fixed
+- **Music**: Active-actor combat tracks now honor `Pause Tracks` during turn-to-turn handoffs, so personal tracks resume from their paused position instead of restarting.
+
 ## [2.4.72] - 2026-05-22
 
 ### Added
