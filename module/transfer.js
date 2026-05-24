@@ -5,7 +5,7 @@ import { parseMusic } from './music-manager.js';
 /*  Export                                      */
 /* -------------------------------------------- */
 
-export async function exportMusicConfig() {
+export function buildMusicConfigExportData() {
 	const combatPlaylists = game.playlists.contents.filter((p) => p.getFlag(MODULE_ID, 'combat'));
 	const defaultPlaylistId = getSetting('defaultPlaylist');
 	const traitRules = getSetting('traitRules') ?? [];
@@ -60,7 +60,15 @@ export async function exportMusicConfig() {
 		},
 	};
 
-	const json = JSON.stringify(data, null, 2);
+	return data;
+}
+
+export function stringifyMusicConfig(data = buildMusicConfigExportData()) {
+	return JSON.stringify(data, null, 2);
+}
+
+export async function exportMusicConfig() {
+	const json = stringifyMusicConfig();
 	saveDataToFile(json, 'application/json', `${game.world.id}.music.json`);
 	ui.notifications.info('PF2 Director | Music config exported.');
 }
@@ -68,6 +76,26 @@ export async function exportMusicConfig() {
 /* -------------------------------------------- */
 /*  Import                                      */
 /* -------------------------------------------- */
+
+export function parseMusicConfigText(text) {
+	let data;
+	try {
+		data = JSON.parse(text);
+	} catch {
+		throw new Error('PF2 Director | Invalid JSON file.');
+	}
+
+	if (!data.playlists || !Array.isArray(data.playlists)) {
+		throw new Error('PF2 Director | Not a valid music export file.');
+	}
+
+	return data;
+}
+
+export async function importMusicConfigFromText(text) {
+	const data = parseMusicConfigText(text);
+	await applyImport(data);
+}
 
 export function importMusicConfig() {
 	const input = document.createElement('input');
@@ -81,18 +109,12 @@ export function importMusicConfig() {
 		const file = ev.target.files[0];
 		if (!file) return;
 		const text = await file.text();
-		let data;
 		try {
-			data = JSON.parse(text);
-		} catch {
-			ui.notifications.error('PF2 Director | Invalid JSON file.');
+			await importMusicConfigFromText(text);
+		} catch (error) {
+			ui.notifications.error(error.message || 'PF2 Director | Import failed.');
 			return;
 		}
-		if (!data.playlists || !Array.isArray(data.playlists)) {
-			ui.notifications.error('PF2 Director | Not a valid music export file.');
-			return;
-		}
-		await applyImport(data);
 	});
 
 	// Clean up if user cancels without selecting a file.
@@ -103,7 +125,7 @@ export function importMusicConfig() {
 	input.click();
 }
 
-async function applyImport(data) {
+export async function applyImport(data) {
 	ui.notifications.info('PF2 Director | Importing music config...');
 	let defaultPlaylistId = '';
 

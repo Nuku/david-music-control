@@ -28,6 +28,58 @@
     margin: 0;
 }
 
+.dmc-journal-transfer-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dmc-transfer-section {
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 8px;
+    padding: 0.9rem;
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.dmc-transfer-section > header {
+    margin-bottom: 0.75rem;
+}
+
+.dmc-transfer-section > header h2 {
+    margin: 0 0 0.2rem;
+    font-size: 1rem;
+}
+
+.dmc-transfer-section > header p {
+    margin: 0;
+    font-size: 0.82rem;
+    opacity: 0.8;
+}
+
+.dmc-transfer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.dmc-transfer-actions button {
+    flex: 1 1 180px;
+}
+
+.dmc-transfer-textarea {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.dmc-transfer-textarea textarea {
+    min-height: 320px;
+    resize: vertical;
+    font-family: monospace;
+    line-height: 1.35;
+}
+
 .cmm-playlists li {
     display: flex;
     align-items: center;

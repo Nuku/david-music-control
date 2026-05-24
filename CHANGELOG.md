@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.74] - 2026-05-24
+
+### Added
+- **Journal transfer**: Added a GM-only journal header button that opens the PF2 Director transfer dialog on demand instead of auto-expanding.
+- **Subsystem export**: Added a plain-text journal parser that converts pasted influence-style journal text into a downloadable subsystem export JSON file.
+
+### Changed
+- **Transfer tools**: Split transfer logic into reusable import/export helpers so file-based, pasted-JSON, and journal-text export pipelines can all share the same dialog.
+
 ## [2.4.73] - 2026-05-23
 
 ### Fixed
