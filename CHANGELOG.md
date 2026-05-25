@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.93] - 2026-05-25
+
+### Changed
+- **Music**: Ambient creature sounds now start louder before door and distance muffling are applied.
+
 ## [2.4.92] - 2026-05-25
 
 ### Fixed

@@ -13,9 +13,10 @@ const CREATURE_SOUNDS_SETTINGS = {
 const CREATURE_SOUND_NONE = 'none';
 const ATTACK_WEIGHT = 0.7;
 const NEARBY_SOURCE_WEIGHT = 0.65;
-const BASE_VOLUME = 0.4;
+const BASE_VOLUME = 0.8;
 const DOOR_ATTENUATION = 0.5;
 const DISTANCE_ATTENUATION = 0.99;
+const MIN_AUDIBLE_VOLUME = 0.1;
 const SHORT_RETRY_MIN_SECONDS = 1;
 const SHORT_RETRY_MAX_SECONDS = 10;
 const NORMAL_RETRY_MIN_SECONDS = 31;
@@ -586,7 +587,7 @@ async function runCreatureAmbienceCycle() {
 		return;
 	}
 	let anyListenerFound = false;
-	let anyAudible = false;
+	const pendingPlayerPlaybacks = [];
 	let loudestAudibleResult = null;
 	for (const user of players) {
 		const bestResult = await findBestListenerResultForUser(user, sourceToken);
@@ -597,14 +598,16 @@ async function runCreatureAmbienceCycle() {
 		anyListenerFound = true;
 		const volume = computeVolume(bestResult.pathResult);
 		if (volume <= 0) continue;
-		anyAudible = true;
-		logDebug(
-			`Playing ${soundType} ambience from ${sourceToken.name} for ${user.name}: ${bestResult.pathResult.squares.toFixed(2)} squares, ${bestResult.pathResult.closedDoors} closed doors, volume ${volume.toFixed(4)}.`
-		);
-		emitSoundToUser(user.id, src, volume, sourceToken, bestResult.listener, bestResult.pathResult);
+		pendingPlayerPlaybacks.push({
+			user,
+			volume,
+			listener: bestResult.listener,
+			pathResult: bestResult.pathResult,
+		});
 		if (!loudestAudibleResult || volume > loudestAudibleResult.volume) {
 			loudestAudibleResult = {
 				volume,
+				user,
 				listener: bestResult.listener,
 				pathResult: bestResult.pathResult,
 			};
@@ -615,10 +618,23 @@ async function runCreatureAmbienceCycle() {
 		scheduleNextCycle('short');
 		return;
 	}
-	if (!anyAudible) {
+	if (!loudestAudibleResult) {
 		logDebug(`No valid audible path was found for source ${sourceToken.name}.`);
-		scheduleNextCycle('normal');
+		scheduleNextCycle('short');
 		return;
+	}
+	if (loudestAudibleResult.volume < MIN_AUDIBLE_VOLUME) {
+		logDebug(
+			`Loudest player-heard ambience from ${sourceToken.name} was only ${loudestAudibleResult.volume.toFixed(4)}, below ${MIN_AUDIBLE_VOLUME.toFixed(1)}.`
+		);
+		scheduleNextCycle('short');
+		return;
+	}
+	for (const playback of pendingPlayerPlaybacks) {
+		logDebug(
+			`Playing ${soundType} ambience from ${sourceToken.name} for ${playback.user.name}: ${playback.pathResult.squares.toFixed(2)} squares, ${playback.pathResult.closedDoors} closed doors, volume ${playback.volume.toFixed(4)}.`
+		);
+		emitSoundToUser(playback.user.id, src, playback.volume, sourceToken, playback.listener, playback.pathResult);
 	}
 	if (loudestAudibleResult) {
 		for (const gm of getConnectedGMs()) {
