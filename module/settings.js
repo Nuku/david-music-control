@@ -336,57 +336,20 @@ function findSettingsRow(root, key) {
 	return button?.closest('.form-group') ?? button?.closest('div') ?? null;
 }
 
-function insertSectionHeader(beforeRow, title, description = '') {
-	if (!beforeRow || beforeRow.previousElementSibling?.classList.contains('dmc-settings-header')) return;
-
-	const header = document.createElement('div');
-	header.className = 'dmc-settings-header';
-	header.innerHTML = `
-		<h3>${title}</h3>
-		${description ? `<p>${description}</p>` : ''}
+function createSection(title, description = '') {
+	const section = document.createElement('section');
+	section.className = 'dmc-settings-section';
+	section.innerHTML = `
+		<header class="dmc-settings-header">
+			<h3>${title}</h3>
+			${description ? `<p>${description}</p>` : ''}
+		</header>
+		<div class="dmc-settings-section-body"></div>
 	`;
-	beforeRow.before(header);
+	return section;
 }
 
-// Group module settings and inject Export/Import buttons into the settings UI.
-Hooks.on('renderSettingsConfig', (_app, html) => {
-	const root = html instanceof HTMLElement ? html : html[0];
-	if (!root) return;
-
-	insertSectionHeader(
-		findSettingsRow(root, 'pauseAmbience'),
-		'Music',
-		'Combat playlists, scene matching, victory behavior, and music configuration tools.'
-	);
-	insertSectionHeader(
-		findSettingsRow(root, 'enableCultSystem'),
-		'PF2e Tools',
-		'Optional PF2e utilities enabled by this module.'
-	);
-	insertSectionHeader(
-		findSettingsRow(root, 'villainPointDreadSoundMenu'),
-		'Villain Points',
-		'Optional PF2e villain-point tracking, rerolls, and synchronized dread cues.'
-	);
-	insertSectionHeader(
-		findSettingsRow(root, 'dramaticHealthBarPosition'),
-		'Dramatic Health Display',
-		'Animated health bar overlays and per-player sound options for visible HP changes.'
-	);
-	insertSectionHeader(
-		findSettingsRow(root, 'endCreditsMusicConfig'),
-		'End Credits',
-		'Finale music, background, memoriam folder, and live credits controls.'
-	);
-
-	if (!game.user.isGM) return;
-
-	const row = findSettingsRow(root, 'pauseTrack');
-	if (!row) return;
-
-	// Don't inject twice.
-	if (root.querySelector('.cmm-transfer-row')) return;
-
+function buildTransferRow() {
 	const wrapper = document.createElement('div');
 	wrapper.className = 'form-group cmm-transfer-row';
 	wrapper.innerHTML = `
@@ -401,7 +364,6 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		</div>
 		<p class="hint">Export or import combat playlists and trait rules as a JSON file.</p>
 	`;
-	row.after(wrapper);
 
 	wrapper.querySelector('#cmm-export-btn').addEventListener('click', () => {
 		exportMusicConfig();
@@ -410,4 +372,77 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 	wrapper.querySelector('#cmm-import-btn').addEventListener('click', () => {
 		importMusicConfig();
 	});
+
+	return wrapper;
+}
+
+function appendRows(root, container, keys) {
+	for (const key of keys) {
+		const row = findSettingsRow(root, key);
+		if (row) container.appendChild(row);
+	}
+}
+
+// Group module settings and inject Export/Import buttons into the settings UI.
+Hooks.on('renderSettingsConfig', (_app, html) => {
+	const root = html instanceof HTMLElement ? html : html[0];
+	if (!root) return;
+
+	root.querySelectorAll('.dmc-settings-section').forEach((section) => {
+		const body = section.querySelector('.dmc-settings-section-body');
+		if (!body) return;
+		while (body.firstChild) root.appendChild(body.firstChild);
+		section.remove();
+	});
+	root.querySelectorAll('.dmc-settings-header').forEach((header) => {
+		if (!header.closest('.dmc-settings-section')) header.remove();
+	});
+	root.querySelectorAll('.cmm-transfer-row').forEach((row) => row.remove());
+
+	const sectionConfigs = [
+		{
+			title: 'Music',
+			description: 'Combat playlists, scene matching, synchronization, and victory audio behavior.',
+			keys: ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'pauseTrack', 'syncPlaylistPlayback', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
+			gmOnly: true,
+			extraRow: game.user.isGM ? buildTransferRow() : null,
+		},
+		{
+			title: 'PF2e Tools',
+			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
+			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping'],
+		},
+		{
+			title: 'Villain Points',
+			description: 'Hero-point conversion, rerolls, and synchronized dread cues for the table.',
+			keys: ['enableVillainPoints', 'villainPointHeroPointRate', 'villainPointDreadSoundMenu'],
+			gmOnly: true,
+		},
+		{
+			title: 'Dramatic Health Display',
+			description: 'Overlay position, visibility rules, and per-user sound feedback for HP changes.',
+			keys: ['dramaticHealthBarPosition', 'dramaticHealthShowNumbers', 'dramaticHealthShowAlways', 'dramaticHealthMinChangePercent', 'dramaticHealthDebugMode', 'dramaticHealthSoundConfig'],
+		},
+		{
+			title: 'End Credits',
+			description: 'Credits music, background media, memoriam source, and live start or stop control.',
+			keys: ['endCreditsMusicConfig', 'endCreditsImageConfig', 'endCreditsMemoriamFolder', 'endCreditsToggle'],
+			gmOnly: true,
+		},
+	];
+
+	const firstRow = sectionConfigs.flatMap((section) => section.keys).map((key) => findSettingsRow(root, key)).find(Boolean);
+	if (!firstRow) return;
+
+	const fragment = document.createDocumentFragment();
+	for (const config of sectionConfigs) {
+		if (config.gmOnly && !game.user.isGM) continue;
+		const section = createSection(config.title, config.description);
+		const body = section.querySelector('.dmc-settings-section-body');
+		appendRows(root, body, config.keys);
+		if (config.extraRow) body.appendChild(config.extraRow);
+		if (body.childElementCount) fragment.appendChild(section);
+	}
+
+	firstRow.before(fragment);
 });

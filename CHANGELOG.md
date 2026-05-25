@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.81] - 2026-05-25
+
+### Changed
+- **Settings**: Reorganized the module settings into clearer sections for music, PF2e tools, villain points, dramatic health display, and end credits.
+
 ## [2.4.80] - 2026-05-24
 
 ### Changed

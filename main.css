@@ -10,10 +10,22 @@
     list-style-type: none;
 }
 
+.dmc-settings-section {
+    margin: 0 0 1rem;
+    padding: 0.9rem 1rem 0.35rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.dmc-settings-section-body > .form-group:last-child {
+    margin-bottom: 0.35rem;
+}
+
 .dmc-settings-header {
-    border-top: 1px solid rgba(0, 0, 0, 0.16);
-    margin: 1rem 0 0.5rem;
-    padding-top: 0.75rem;
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .dmc-settings-header h3 {
