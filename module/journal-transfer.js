@@ -1,4 +1,5 @@
 import { MODULE_ID } from './settings.js';
+const SUBSYSTEMS_MODULE_ID = 'pf2e-subsystems';
 
 function randomId() {
 	return foundry.utils.randomID();
@@ -390,6 +391,141 @@ function buildSubsystemExportFromJournalText(text) {
 	return buildInfluenceExportFromJournalText(text);
 }
 
+function hasLiveSubsystemModule() {
+	return game.modules.get(SUBSYSTEMS_MODULE_ID)?.active === true;
+}
+
+async function createLiveSubsystemFromJournalText(text) {
+	if (!hasLiveSubsystemModule()) {
+		throw new Error('PF2 Director | PF2e Subsystems must be enabled to create live subsystem data.');
+	}
+
+	const data = buildSubsystemExportFromJournalText(text);
+
+	if (Object.keys(data.influence ?? {}).length > 0) {
+		const sourceInfluence = Object.values(data.influence)[0];
+		const setting = game.settings.get(SUBSYSTEMS_MODULE_ID, 'influence');
+		const eventId = randomId();
+		await setting.updateSource({
+			events: {
+				[eventId]: {
+					...sourceInfluence,
+					id: eventId,
+					influencePoints: 0,
+					timeLimit: {
+						max: sourceInfluence.timeLimit.max,
+					},
+					discoveries: Object.values(sourceInfluence.discoveries).reduce((acc, discovery) => {
+						const id = randomId();
+						acc[id] = { ...discovery, id };
+						return acc;
+					}, {}),
+					influenceSkills: Object.values(sourceInfluence.influenceSkills).reduce((acc, skill) => {
+						const id = randomId();
+						acc[id] = { ...skill, id, hidden: true };
+						return acc;
+					}, {}),
+					influence: Object.values(sourceInfluence.influence).reduce((acc, influence) => {
+						const id = randomId();
+						acc[id] = { ...influence, id, hidden: true };
+						return acc;
+					}, {}),
+					weaknesses: Object.values(sourceInfluence.weaknesses).reduce((acc, weakness) => {
+						const id = randomId();
+						acc[id] = {
+							...weakness,
+							id,
+							hidden: true,
+							modifier: { value: weakness.modifier.value },
+						};
+						return acc;
+					}, {}),
+					resistances: Object.values(sourceInfluence.resistances).reduce((acc, resistance) => {
+						const id = randomId();
+						acc[id] = {
+							...resistance,
+							id,
+							hidden: true,
+							modifier: { value: resistance.modifier.value },
+						};
+						return acc;
+					}, {}),
+					penalties: Object.values(sourceInfluence.penalties).reduce((acc, penalty) => {
+						const id = randomId();
+						acc[id] = {
+							...penalty,
+							id,
+							hidden: true,
+							modifier: { value: penalty.modifier?.value ?? 0 },
+						};
+						return acc;
+					}, {}),
+				},
+			},
+		});
+		await game.settings.set(SUBSYSTEMS_MODULE_ID, 'influence', setting);
+		ui.notifications.info(`PF2 Director | Created live Influence subsystem: ${sourceInfluence.name}`);
+		return;
+	}
+
+	if (Object.keys(data.research ?? {}).length > 0) {
+		const sourceResearch = Object.values(data.research)[0];
+		const setting = game.settings.get(SUBSYSTEMS_MODULE_ID, 'research');
+		const eventId = randomId();
+		await setting.updateSource({
+			events: {
+				[eventId]: {
+					...sourceResearch,
+					id: eventId,
+					timeLimit: {
+						unit: sourceResearch.timeLimit.unit,
+						max: sourceResearch.timeLimit.max,
+					},
+					started: false,
+					researchPoints: 0,
+					researchChecks: Object.values(sourceResearch.researchChecks).reduce((acc, check) => {
+						const checkId = randomId();
+						acc[checkId] = {
+							...check,
+							id: checkId,
+							currentResearchPoints: 0,
+							skillChecks: Object.values(check.skillChecks).reduce((skillAcc, skillCheck) => {
+								const skillCheckId = randomId();
+								skillAcc[skillCheckId] = {
+									...skillCheck,
+									id: skillCheckId,
+									skills: Object.values(skillCheck.skills).reduce((entryAcc, skill) => {
+										const skillId = randomId();
+										entryAcc[skillId] = { ...skill, id: skillId };
+										return entryAcc;
+									}, {}),
+								};
+								return skillAcc;
+							}, {}),
+						};
+						return acc;
+					}, {}),
+					researchBreakpoints: Object.values(sourceResearch.researchBreakpoints).reduce((acc, breakpoint) => {
+						const id = randomId();
+						acc[id] = { ...breakpoint, id, hidden: true };
+						return acc;
+					}, {}),
+					researchEvents: Object.values(sourceResearch.researchEvents).reduce((acc, event) => {
+						const id = randomId();
+						acc[id] = { ...event, id, hidden: true };
+						return acc;
+					}, {}),
+				},
+			},
+		});
+		await game.settings.set(SUBSYSTEMS_MODULE_ID, 'research', setting);
+		ui.notifications.info(`PF2 Director | Created live Research subsystem: ${sourceResearch.name}`);
+		return;
+	}
+
+	throw new Error('PF2 Director | No supported subsystem data was found to create live.');
+}
+
 function downloadSubsystemExport(text) {
 	const json = JSON.stringify(buildSubsystemExportFromJournalText(text), null, 2);
 	const name = splitPlainTextLines(text)[0] || game.world.id || 'subsystems';
@@ -414,6 +550,7 @@ class JournalTransferApp extends FormApplication {
 	getData() {
 		return {
 			journalText: '',
+			subsystemsEnabled: hasLiveSubsystemModule(),
 		};
 	}
 
@@ -438,6 +575,16 @@ class JournalTransferApp extends FormApplication {
 				output.value = JSON.stringify(buildSubsystemExportFromJournalText(journalText), null, 2);
 			} catch (error) {
 				ui.notifications.error(error.message || 'PF2 Director | Could not build subsystem export.');
+			}
+		});
+
+		html.find('[data-action="create-live-subsystem"]').on('click', async (event) => {
+			event.preventDefault();
+			const journalText = String(html.find('[name="journalText"]').val() ?? '').trim();
+			try {
+				await createLiveSubsystemFromJournalText(journalText);
+			} catch (error) {
+				ui.notifications.error(error.message || 'PF2 Director | Could not create live subsystem data.');
 			}
 		});
 	}

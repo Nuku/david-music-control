@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.86] - 2026-05-25
+
+### Added
+- **Subsystem export**: When PF2e Subsystems is enabled, the journal export window can now create a new live influence or research subsystem entry directly instead of only downloading JSON.
+
+### Changed
+- **Subsystem export**: The journal export window is now fully subsystem-focused, with clearer instructions and removal of unrelated music transfer controls from that popup.
+
 ## [2.4.85] - 2026-05-25
 
 ### Changed
