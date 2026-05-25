@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.85] - 2026-05-25
+
+### Changed
+- **At-Will Recharge**: The auto-recharge name matcher now recognizes both `(at will)` and `at-will`.
+
 ## [2.4.84] - 2026-05-25
 
 ### Added

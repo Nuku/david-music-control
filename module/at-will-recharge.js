@@ -1,7 +1,7 @@
 import { getSetting } from './settings.js';
 
 function isAtWill(item) {
-	return /\(at will\)/i.test(item?.name ?? '');
+	return /(?:\(at will\)|\bat-will\b)/i.test(item?.name ?? '');
 }
 
 async function maybeRestoreLocationUses(item, changes) {
