@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.88] - 2026-05-25
+
+### Changed
+- **Manifest**: Added recommended module listings for PF2e Creature Sounds and PF2e Subsystems so the optional integrations are easier to discover during install.
+
 ## [2.4.87] - 2026-05-25
 
 ### Added

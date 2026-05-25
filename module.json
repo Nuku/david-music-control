@@ -2,7 +2,7 @@
     "id": "pf2-david-music-control",
     "title": "PF2 Director",
     "description": "Direct combat music, scene presentation, PF2e party tools, and cinematic end credits.",
-    "version": "2.4.87",
+    "version": "2.4.88",
     "authors": [
         {
             "name": "Mad Wizard",
@@ -17,6 +17,20 @@
         "./styles/end-credits.css",
         "./styles/dramatic-health-display.css"
     ],
+    "relationships": {
+        "recommends": [
+            {
+                "id": "pf2e-creature-sounds",
+                "type": "module",
+                "reason": "Used for ambient creature attack and hurt sound selection when Creature Ambience is enabled."
+            },
+            {
+                "id": "pf2e-subsystems",
+                "type": "module",
+                "reason": "Enables creation of live Influence and Research subsystem entries from the journal export tools."
+            }
+        ]
+    },
     "socket": true,
     "compatibility": {
         "minimum": 13,
@@ -25,5 +39,5 @@
     },
     "url": "https://github.com/Nuku/david-music-control/",
     "manifest": "https://raw.githubusercontent.com/Nuku/david-music-control/main/module.json",
-    "download": "https://github.com/Nuku/david-music-control/releases/download/v2.4.87/pf2-david-music-control.zip"
+    "download": "https://github.com/Nuku/david-music-control/releases/download/v2.4.88/pf2-david-music-control.zip"
 }
