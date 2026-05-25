@@ -87,6 +87,13 @@ function actorIsPlayerObserved(actor) {
 	return game.users.some((user) => !user.isGM && actor.testUserPermission?.(user, observerLevel));
 }
 
+function actorCanMakeAmbientSound(actor) {
+	if (!actor) return false;
+	const hpValue = Number(actor.system?.attributes?.hp?.value);
+	if (Number.isFinite(hpValue) && hpValue <= 0) return false;
+	return true;
+}
+
 function getTokenCenter(tokenDocument) {
 	const tokenObject = tokenDocument?.object;
 	if (tokenObject?.center) return tokenObject.center;
@@ -106,7 +113,9 @@ function getActiveSceneTokens() {
 }
 
 function getEligibleSourceTokens() {
-	return getActiveSceneTokens().filter((token) => token.actor && !actorIsPlayerObserved(token.actor));
+	return getActiveSceneTokens().filter(
+		(token) => token.actor && actorCanMakeAmbientSound(token.actor) && !actorIsPlayerObserved(token.actor)
+	);
 }
 
 function getEligibleListenerTokensForUser(user, sourceToken) {
