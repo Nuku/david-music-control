@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.90] - 2026-05-25
+
+### Changed
+- **Music**: Ambient creature sounds now favor nearby living threats around currently controlled player tokens most of the time, and the setting text now explicitly explains that audibility is checked to a player's nearest Observer-or-owner token.
+
 ## [2.4.88] - 2026-05-25
 
 ### Changed

@@ -12,6 +12,7 @@ const CREATURE_SOUNDS_SETTINGS = {
 };
 const CREATURE_SOUND_NONE = 'none';
 const ATTACK_WEIGHT = 0.7;
+const NEARBY_SOURCE_WEIGHT = 0.65;
 const BASE_VOLUME = 0.4;
 const DOOR_ATTENUATION = 0.5;
 const DISTANCE_ATTENUATION = 0.99;
@@ -118,6 +119,11 @@ function getEligibleSourceTokens() {
 	);
 }
 
+function getControlledPlayerTokens() {
+	if (!canvas?.tokens?.controlled?.length) return [];
+	return canvas.tokens.controlled.filter((token) => token.actor && actorIsPlayerObserved(token.actor));
+}
+
 function getEligibleListenerTokensForUser(user, sourceToken) {
 	const observerLevel = CONST.DOCUMENT_OWNERSHIP_LEVELS?.OBSERVER ?? 2;
 	return getActiveSceneTokens().filter((token) => {
@@ -130,6 +136,28 @@ function getEligibleListenerTokensForUser(user, sourceToken) {
 function chooseSourceToken() {
 	const candidates = getEligibleSourceTokens();
 	if (!candidates.length) return null;
+	const controlledPlayerTokens = getControlledPlayerTokens();
+	if (controlledPlayerTokens.length && Math.random() < NEARBY_SOURCE_WEIGHT) {
+		let bestCandidate = null;
+		let bestDistance = Number.POSITIVE_INFINITY;
+		for (const sourceToken of candidates) {
+			const sourceCenter = getTokenCenter(sourceToken.document);
+			if (!sourceCenter) continue;
+			for (const playerToken of controlledPlayerTokens) {
+				const playerCenter = getTokenCenter(playerToken.document);
+				if (!playerCenter) continue;
+				const distance = Math.hypot(sourceCenter.x - playerCenter.x, sourceCenter.y - playerCenter.y);
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					bestCandidate = sourceToken;
+				}
+			}
+		}
+		if (bestCandidate) {
+			logDebug(`Biased source pick chose nearby creature ${bestCandidate.name} at distance ${bestDistance.toFixed(2)}.`);
+			return bestCandidate;
+		}
+	}
 	return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
 }
 

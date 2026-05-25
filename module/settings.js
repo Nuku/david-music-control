@@ -119,7 +119,7 @@ const settings = {
 	},
 	enableCreatureAmbience: {
 		name: 'Enable Creature Ambience',
-		hint: 'Periodically plays PF2e Creature Sounds creature noises for players who have a path to a nearby observed actor, with closed doors and distance muffling the result.',
+		hint: 'Periodically plays PF2e Creature Sounds creature noises for players who have a path from the source creature to that player\'s nearest placed Observer-or-owner token, with closed doors and distance muffling the result.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
