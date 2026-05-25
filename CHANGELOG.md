@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.92] - 2026-05-25
+
+### Fixed
+- **Music**: Creature ambience now evaluates PF2e Creature Sounds' bundled data definitions before reading the sound database, avoiding runtime failures from unresolved upstream sound-set constants.
+
 ## [2.4.91] - 2026-05-25
 
 ### Fixed

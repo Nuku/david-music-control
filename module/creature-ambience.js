@@ -186,7 +186,7 @@ async function loadBuiltinCreatureSoundDatabase() {
 		const response = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/dist/pf2e-creature-sounds.js`);
 		if (!response.ok) throw new Error(`Unable to load ${CREATURE_SOUNDS_MODULE_ID} bundle.`);
 		const source = await response.text();
-		const parsed = Function(`"use strict"; return (${extractObjectLiteral(source, 'const creature_sounds_db =')});`)();
+		const parsed = Function(`"use strict"; ${extractCreatureSoundDatabaseProgram(source)}; return creature_sounds_db;`)();
 		return Object.fromEntries(
 			Object.entries(parsed).map(([key, value]) => [
 				key,
@@ -200,46 +200,23 @@ async function loadBuiltinCreatureSoundDatabase() {
 	return builtinSoundDatabasePromise;
 }
 
-function extractObjectLiteral(source, marker) {
-	const markerIndex = source.indexOf(marker);
-	if (markerIndex === -1) throw new Error('Unable to locate PF2e Creature Sounds database.');
-	const startIndex = source.indexOf('{', markerIndex);
-	if (startIndex === -1) throw new Error('Unable to locate PF2e Creature Sounds database object start.');
-	let depth = 0;
-	let inString = false;
-	let stringDelimiter = '';
-	let escaped = false;
-	for (let index = startIndex; index < source.length; index += 1) {
-		const char = source[index];
-		if (inString) {
-			if (escaped) {
-				escaped = false;
-				continue;
-			}
-			if (char === '\\') {
-				escaped = true;
-				continue;
-			}
-			if (char === stringDelimiter) {
-				inString = false;
-				stringDelimiter = '';
-			}
-			continue;
-		}
-		if (char === '"' || char === '\'' || char === '`') {
-			inString = true;
-			stringDelimiter = char;
-			continue;
-		}
-		if (char === '{') {
-			depth += 1;
-			continue;
-		}
-		if (char !== '}') continue;
-		depth -= 1;
-		if (depth === 0) return source.slice(startIndex, index + 1);
+function extractCreatureSoundDatabaseProgram(source) {
+	const functionMarker = 'function getActorName';
+	const dbMarker = 'const creature_sounds_db =';
+	const endMarker = 'const soundDatabase = Object.fromEntries';
+	const functionIndex = source.indexOf(functionMarker);
+	const dbIndex = source.indexOf(dbMarker);
+	const endIndex = source.indexOf(endMarker, dbIndex);
+	if (functionIndex === -1 || dbIndex === -1 || endIndex === -1) {
+		throw new Error('Unable to locate PF2e Creature Sounds database.');
 	}
-	throw new Error('Unable to parse PF2e Creature Sounds database.');
+	const startIndex = source.indexOf('const ', functionIndex);
+	if (startIndex === -1 || startIndex > dbIndex) {
+		throw new Error('Unable to locate PF2e Creature Sounds data definitions.');
+	}
+	const program = source.slice(startIndex, endIndex).trim();
+	if (!program) throw new Error('Unable to parse PF2e Creature Sounds database.');
+	return program;
 }
 
 function getCustomSoundDatabase() {
