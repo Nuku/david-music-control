@@ -145,6 +145,7 @@
 	position: relative;
 	border: 1px solid rgba(255, 255, 255, 0.07);
 	transform-origin: center;
+	isolation: isolate;
 }
 
 .dhb-bar-ghost {
@@ -156,6 +157,7 @@
 	background: rgba(255, 255, 255, 0.11);
 	pointer-events: none;
 	transition: none;
+	z-index: 1;
 }
 
 .dhb-bar-fill {
@@ -165,6 +167,7 @@
 	height: 100%;
 	border-radius: 8px;
 	pointer-events: none;
+	z-index: 2;
 }
 
 .dhb-bar-fill::after {
@@ -194,6 +197,7 @@
 	opacity: 0;
 	pointer-events: none;
 	animation: dhb-heal-scan 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+	z-index: 3;
 }
 
 .dhb-hp-high {
