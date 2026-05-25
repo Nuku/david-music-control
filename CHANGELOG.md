@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.84] - 2026-05-25
+
+### Added
+- **Dice**: Added a `Digital Roll (PCG)` dice fulfillment option to Foundry's Configure Dice settings.
+
 ## [2.4.81] - 2026-05-25
 
 ### Changed
