@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.91] - 2026-05-25
+
+### Fixed
+- **Music**: Creature ambience now parses PF2e Creature Sounds' bundled sound database more reliably, avoiding startup failures when the upstream bundle formatting changes.
+
 ## [2.4.90] - 2026-05-25
 
 ### Changed
