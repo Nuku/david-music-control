@@ -231,6 +231,14 @@ const settings = {
 		type: String,
 		default: '{}',
 	},
+	villainPointWidgetPosition: {
+		name: 'Villain Point Widget Position',
+		hint: 'Stored client position for the floating GM villain point widget.',
+		scope: 'client',
+		config: false,
+		type: String,
+		default: '',
+	},
 	migrated: {
 		name: 'Migrated',
 		hint: 'Internal migration marker.',

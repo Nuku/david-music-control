@@ -424,6 +424,83 @@ function buildVillainLabel(villainPoints) {
 	return villainPoints === 1 ? '1 villain point' : `${villainPoints} villain points`;
 }
 
+function getSavedVillainPointWidgetPosition() {
+	const raw = String(getSetting('villainPointWidgetPosition') ?? '').trim();
+	if (!raw) return null;
+
+	try {
+		const parsed = JSON.parse(raw);
+		const right = Number(parsed?.right);
+		const top = Number(parsed?.top);
+		if (!Number.isFinite(right) || !Number.isFinite(top)) return null;
+		return { right, top };
+	} catch (_error) {
+		return null;
+	}
+}
+
+async function saveVillainPointWidgetPosition(position) {
+	await setSetting(
+		'villainPointWidgetPosition',
+		JSON.stringify({
+			right: Math.max(0, Math.round(Number(position?.right) || 0)),
+			top: Math.max(0, Math.round(Number(position?.top) || 0)),
+		})
+	);
+}
+
+function applyVillainPointWidgetPosition(widget, position = getSavedVillainPointWidgetPosition()) {
+	if (!widget || !position) return;
+	widget.style.right = `${Math.max(0, position.right)}px`;
+	widget.style.top = `${Math.max(0, position.top)}px`;
+}
+
+function enableVillainPointWidgetDragging(widget) {
+	const handle = widget?.querySelector('.dmc-villain-point-widget-header');
+	if (!widget || !handle) return;
+
+	handle.addEventListener('pointerdown', (event) => {
+		if (event.button !== 0) return;
+		const rect = widget.getBoundingClientRect();
+		const startX = event.clientX;
+		const startY = event.clientY;
+		const startRight = Math.max(0, window.innerWidth - rect.right);
+		const startTop = Math.max(0, rect.top);
+
+		widget.classList.add('is-dragging');
+		handle.setPointerCapture?.(event.pointerId);
+		event.preventDefault();
+
+		const onMove = (moveEvent) => {
+			const deltaX = moveEvent.clientX - startX;
+			const deltaY = moveEvent.clientY - startY;
+			const maxRight = Math.max(0, window.innerWidth - rect.width);
+			const maxTop = Math.max(0, window.innerHeight - rect.height);
+			const nextRight = Math.min(maxRight, Math.max(0, startRight - deltaX));
+			const nextTop = Math.min(maxTop, Math.max(0, startTop + deltaY));
+			widget.style.right = `${nextRight}px`;
+			widget.style.top = `${nextTop}px`;
+		};
+
+		const onUp = async (upEvent) => {
+			handle.releasePointerCapture?.(event.pointerId);
+			widget.classList.remove('is-dragging');
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+			window.removeEventListener('pointercancel', onUp);
+			await saveVillainPointWidgetPosition({
+				right: parseFloat(widget.style.right) || 0,
+				top: parseFloat(widget.style.top) || 0,
+			});
+			upEvent.preventDefault();
+		};
+
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+		window.addEventListener('pointercancel', onUp);
+	});
+}
+
 function getVillainPointWidget() {
 	return document.getElementById(VILLAIN_POINT_WIDGET_ID);
 }
@@ -486,6 +563,8 @@ function createVillainPointWidget() {
 	});
 
 	document.body.appendChild(widget);
+	applyVillainPointWidgetPosition(widget);
+	enableVillainPointWidgetDragging(widget);
 	updateVillainPointWidget();
 	return widget;
 }

@@ -809,12 +809,15 @@
 .dmc-villain-point-widget-header {
     align-items: center;
     color: #e5c5ae;
+    cursor: move;
     display: flex;
     font-size: 0.75rem;
     font-weight: 700;
     gap: 0.45rem;
     letter-spacing: 0.12em;
+    touch-action: none;
     text-transform: uppercase;
+    user-select: none;
 }
 
 .dmc-villain-point-widget-header i {
@@ -879,6 +882,12 @@
 
 .dmc-villain-point-widget button:active {
     transform: translateY(1px);
+}
+
+.dmc-villain-point-widget.is-dragging {
+    box-shadow:
+        inset 0 1px 0 rgba(248, 224, 183, 0.18),
+        0 14px 32px rgba(0, 0, 0, 0.42);
 }
 
 @media (max-width: 900px) {

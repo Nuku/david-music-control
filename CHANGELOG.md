@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.80] - 2026-05-24
+
+### Changed
+- **Villain Points**: The GM floating villain-point widget is now draggable by its header and remembers its last position per client.
+
 ## [2.4.79] - 2026-05-24
 
 ### Added
