@@ -387,11 +387,12 @@ function appendRows(root, container, keys) {
 Hooks.on('renderSettingsConfig', (_app, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
+	const existingModuleContainer = root.querySelector('.dmc-settings-section .dmc-settings-section-body')?.closest('.dmc-settings-section')?.parentElement;
 
 	root.querySelectorAll('.dmc-settings-section').forEach((section) => {
 		const body = section.querySelector('.dmc-settings-section-body');
 		if (!body) return;
-		while (body.firstChild) root.appendChild(body.firstChild);
+		while (body.firstChild) (existingModuleContainer ?? root).appendChild(body.firstChild);
 		section.remove();
 	});
 	root.querySelectorAll('.dmc-settings-header').forEach((header) => {
@@ -433,6 +434,8 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 
 	const firstRow = sectionConfigs.flatMap((section) => section.keys).map((key) => findSettingsRow(root, key)).find(Boolean);
 	if (!firstRow) return;
+	const moduleContainer = firstRow.parentElement;
+	if (!moduleContainer) return;
 
 	const fragment = document.createDocumentFragment();
 	for (const config of sectionConfigs) {
@@ -444,5 +447,5 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		if (body.childElementCount) fragment.appendChild(section);
 	}
 
-	firstRow.before(fragment);
+	moduleContainer.prepend(fragment);
 });
