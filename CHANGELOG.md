@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.87] - 2026-05-25
+
+### Added
+- **Music**: Added optional ambient creature sounds that use PF2e Creature Sounds, player-only audibility checks, door and distance muffling, and GM mirroring of the loudest player-heard result.
+
 ## [2.4.86] - 2026-05-25
 
 ### Added

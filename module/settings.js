@@ -117,6 +117,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enableCreatureAmbience: {
+		name: 'Enable Creature Ambience',
+		hint: 'Periodically plays PF2e Creature Sounds creature noises for players who have a path to a nearby observed actor, with closed doors and distance muffling the result.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	enableCultSystem: {
 		name: 'Enable PF2e Cult System',
 		hint: 'Adds a Cult tab to PF2e party sheets for tracking cult statistics, phase notes, and level checks.',
@@ -145,6 +153,14 @@ const settings = {
 		name: 'Enable Roll Retyping',
 		hint: 'Allows GMs and eligible players to reinterpret non-d20 roll chat cards as typed damage or healing and create a derived follow-up card.',
 		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
+	creatureAmbienceDebug: {
+		name: 'Creature Ambience Debug Logging',
+		hint: 'Log creature ambience scheduling, pathfinding, and per-user playback decisions to the browser console.',
+		scope: 'client',
 		config: true,
 		type: Boolean,
 		default: false,
@@ -404,14 +420,14 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'Music',
 			description: 'Combat playlists, scene matching, synchronization, and victory audio behavior.',
-			keys: ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'pauseTrack', 'syncPlaylistPlayback', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
+			keys: ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'enableCreatureAmbience', 'pauseTrack', 'syncPlaylistPlayback', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
 			gmOnly: true,
 			extraRow: game.user.isGM ? buildTransferRow() : null,
 		},
 		{
 			title: 'PF2e Tools',
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping'],
+			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'creatureAmbienceDebug'],
 		},
 		{
 			title: 'Villain Points',
