@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.4.79] - 2026-05-24
+
+### Added
+- **Villain Points**: Added a GM-only floating villain-point widget with always-visible `+` and `-` controls for fast manual correction of the current pool.
+
+### Changed
+- **Villain Points**: Manually adding a villain point from the GM widget now triggers the same synchronized dread sound, darkened screen pulse, and portent message as a normal villain-point gain.
+
+### Fixed
+- **Villain Points**: Added a hero/mythic reroll safety net so PF2e reroll messages explicitly labeled as hero-point or mythic-point rerolls can backfill one tracked spend when the underlying resource-drop detection misses it.
+
 ## [2.4.78] - 2026-05-24
 
 ### Changed

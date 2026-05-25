@@ -7,11 +7,15 @@ const GAP_MS = 12 * 60 * 60 * 1000;
 const HERO_POINT_PATH = 'system.resources.heroPoints.value';
 const MYTHIC_POINT_PATH = 'system.resources.mythicPoints.value';
 const pendingPointUpdates = new Map();
+const recentDetectedPointSpends = new Map();
+const processedPointRerollMessages = new Map();
 const DOOM_FADE_IN_MS = 180;
 const DOOM_HOLD_MS = 1100;
 const DOOM_FADE_OUT_MS = 950;
 const pendingVillainRerolls = [];
 const REROLL_MATCH_WINDOW_MS = 5000;
+const VILLAIN_POINT_WIDGET_ID = 'dmc-villain-point-widget';
+const POINT_SPEND_BACKFILL_WINDOW_MS = 8000;
 
 const DOOM_MESSAGES = [
 	'The forces arrayed against you are taking notice of your resistance to fate.',
@@ -76,6 +80,7 @@ function getState() {
 
 async function saveState(state) {
 	await setSetting('villainPointState', JSON.stringify(cloneState(state)));
+	refreshVillainPointWidget();
 }
 
 function getMessageTimestamp(message) {
@@ -212,6 +217,15 @@ async function handlePointSpend(actor) {
 	const mythicSpent = Math.max(0, previousMythic - currentMythic);
 	const spent = heroSpent + mythicSpent;
 	if (spent <= 0) return;
+	recentDetectedPointSpends.set(actor.id, Date.now());
+
+	await applyTrackedPointUse(actor, spent, { heroSpent, mythicSpent });
+}
+
+async function applyTrackedPointUse(actor, spent, options = {}) {
+	const heroSpent = Math.max(0, Number(options.heroSpent) || 0);
+	const mythicSpent = Math.max(0, Number(options.mythicSpent) || 0);
+	const sourceLabel = typeof options.sourceLabel === 'string' ? options.sourceLabel : null;
 
 	const state = await maybeResetFromRecentMessages();
 	const beforeUses = state.heroPointUses;
@@ -230,7 +244,9 @@ async function handlePointSpend(actor) {
 			await broadcastVillainPointNotice(pick(DOOM_MESSAGES) ?? DOOM_MESSAGES[0]);
 		}
 		const spentLabel =
-			heroSpent > 0 && mythicSpent > 0
+			sourceLabel
+				? sourceLabel
+				: heroSpent > 0 && mythicSpent > 0
 				? `${heroSpent} hero point${heroSpent === 1 ? '' : 's'} and ${mythicSpent} mythic point${mythicSpent === 1 ? '' : 's'}`
 				: heroSpent > 0
 					? `${heroSpent} hero point${heroSpent === 1 ? '' : 's'}`
@@ -330,6 +346,39 @@ function messageLooksLikeReroll(message) {
 	return content.includes('reroll-discard') || content.includes('reroll-second');
 }
 
+function getPointRerollTypeFromMessage(message) {
+	const flavor = String(message?.flavor ?? '').toLowerCase();
+	if (flavor.includes('mythic point')) return 'mythic';
+	if (flavor.includes('hero point')) return 'hero';
+	return null;
+}
+
+async function maybeBackfillPointUseFromReroll(message) {
+	if (!isFeatureEnabled() || !game.user.isGM) return;
+	if (!message || isVillainRerollMessage(message)) return;
+	if (!messageLooksLikeReroll(message) && !message.flags?.pf2e?.context?.isReroll) return;
+	if (processedPointRerollMessages.has(message.id)) return;
+
+	const rerollType = getPointRerollTypeFromMessage(message);
+	if (!rerollType) return;
+
+	const actor = message.actor?.isOfType?.('familiar') ? message.actor.master : message.actor;
+	if (actor?.type !== 'character') return;
+
+	const lastDetected = recentDetectedPointSpends.get(actor.id) ?? 0;
+	if (Date.now() - lastDetected <= POINT_SPEND_BACKFILL_WINDOW_MS) {
+		processedPointRerollMessages.set(message.id, Date.now());
+		return;
+	}
+
+	processedPointRerollMessages.set(message.id, Date.now());
+	await applyTrackedPointUse(actor, 1, {
+		heroSpent: rerollType === 'hero' ? 1 : 0,
+		mythicSpent: rerollType === 'mythic' ? 1 : 0,
+		sourceLabel: `${rerollType} point reroll`,
+	});
+}
+
 async function applyVillainRerollDecoration(message, pendingVillainReroll) {
 	if (!message || !pendingVillainReroll) return false;
 
@@ -373,6 +422,82 @@ function decorateVillainRerollCard(message, root) {
 
 function buildVillainLabel(villainPoints) {
 	return villainPoints === 1 ? '1 villain point' : `${villainPoints} villain points`;
+}
+
+function getVillainPointWidget() {
+	return document.getElementById(VILLAIN_POINT_WIDGET_ID);
+}
+
+function removeVillainPointWidget() {
+	getVillainPointWidget()?.remove();
+}
+
+function shouldShowVillainPointWidget() {
+	return isFeatureEnabled() && !!game.user?.isGM;
+}
+
+function updateVillainPointWidget() {
+	const widget = getVillainPointWidget();
+	if (!widget) return;
+
+	const villainPoints = getState().villainPoints;
+	widget.querySelector('.dmc-villain-point-widget-value')?.replaceChildren(String(villainPoints));
+	widget.querySelector('.dmc-villain-point-widget-hint')?.replaceChildren(buildVillainLabel(villainPoints));
+}
+
+function createVillainPointWidget() {
+	if (!shouldShowVillainPointWidget()) {
+		removeVillainPointWidget();
+		return null;
+	}
+
+	const existing = getVillainPointWidget();
+	if (existing) {
+		updateVillainPointWidget();
+		return existing;
+	}
+
+	const widget = document.createElement('section');
+	widget.id = VILLAIN_POINT_WIDGET_ID;
+	widget.className = 'dmc-villain-point-widget';
+	widget.innerHTML = `
+		<div class="dmc-villain-point-widget-header">
+			<i class="fas fa-skull"></i>
+			<span>Villain Points</span>
+		</div>
+		<div class="dmc-villain-point-widget-body">
+			<button type="button" data-action="decrease-villain-points" aria-label="Remove villain point">-</button>
+			<div class="dmc-villain-point-widget-readout">
+				<strong class="dmc-villain-point-widget-value">0</strong>
+				<span class="dmc-villain-point-widget-hint">0 villain points</span>
+			</div>
+			<button type="button" data-action="increase-villain-points" aria-label="Add villain point">+</button>
+		</div>
+	`;
+
+	widget.querySelector('[data-action="decrease-villain-points"]')?.addEventListener('click', async (event) => {
+		event.preventDefault();
+		await removeVillainPoints(1);
+	});
+
+	widget.querySelector('[data-action="increase-villain-points"]')?.addEventListener('click', async (event) => {
+		event.preventDefault();
+		await addVillainPoints(1);
+	});
+
+	document.body.appendChild(widget);
+	updateVillainPointWidget();
+	return widget;
+}
+
+function refreshVillainPointWidget() {
+	if (!shouldShowVillainPointWidget()) {
+		removeVillainPointWidget();
+		return;
+	}
+
+	createVillainPointWidget();
+	updateVillainPointWidget();
 }
 
 function injectVillainRerollControl(message, root) {
@@ -543,7 +668,12 @@ async function setVillainPoints(value) {
 
 async function addVillainPoints(amount = 1) {
 	const state = getState();
-	return setVillainPoints(state.villainPoints + (Number(amount) || 0));
+	const increase = Math.max(0, Number(amount) || 0);
+	const nextState = await setVillainPoints(state.villainPoints + increase);
+	for (let index = 0; index < increase; index += 1) {
+		await broadcastVillainPointNotice(pick(DOOM_MESSAGES) ?? DOOM_MESSAGES[0]);
+	}
+	return nextState;
 }
 
 async function removeVillainPoints(amount = 1) {
@@ -567,6 +697,7 @@ Hooks.on('preUpdateActor', (actor, changes) => {
 
 Hooks.on('updateActor', (actor) => {
 	handlePointSpend(actor);
+	refreshVillainPointWidget();
 });
 
 Hooks.on('renderChatMessage', (message, html) => {
@@ -585,11 +716,17 @@ Hooks.on('createChatMessage', () => {
 Hooks.on('createChatMessage', (message) => {
 	if (!isFeatureEnabled() || !game.user.isGM) return;
 	void decorateVillainRerollMessage(message);
+	void maybeBackfillPointUseFromReroll(message);
 });
 
 Hooks.on('updateChatMessage', (message, changes) => {
 	if (!isFeatureEnabled() || !game.user.isGM) return;
 	void handleUpdatedVillainRerollMessage(message, changes);
+	void maybeBackfillPointUseFromReroll(message);
+});
+
+Hooks.on('renderSidebarTab', () => {
+	refreshVillainPointWidget();
 });
 
 Hooks.once('ready', () => {
@@ -613,12 +750,20 @@ Hooks.once('ready', () => {
 		triggerLocalVillainNotice(data.message);
 	});
 
+	refreshVillainPointWidget();
+
 	window.setInterval(() => {
 		const cutoff = Date.now() - 30000;
 		for (let index = pendingVillainRerolls.length - 1; index >= 0; index -= 1) {
 			if ((pendingVillainRerolls[index]?.createdAt ?? 0) < cutoff) {
 				pendingVillainRerolls.splice(index, 1);
 			}
+		}
+		for (const [messageId, timestamp] of processedPointRerollMessages.entries()) {
+			if (timestamp < cutoff) processedPointRerollMessages.delete(messageId);
+		}
+		for (const [actorId, timestamp] of recentDetectedPointSpends.entries()) {
+			if (timestamp < cutoff) recentDetectedPointSpends.delete(actorId);
 		}
 	}, 10000);
 });
