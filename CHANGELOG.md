@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.97] - 2026-05-25
+
+### Fixed
+- **Music**: Creature ambience no longer selects party-allied creatures as ambient sound sources.
+
 ## [2.4.96] - 2026-05-25
 
 ### Added

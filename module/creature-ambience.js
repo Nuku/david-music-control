@@ -100,6 +100,17 @@ function actorCanMakeAmbientSound(actor) {
 	return true;
 }
 
+function tokenIsPartyAllied(token) {
+	const alliance = String(
+		token?.alliance ??
+			token?.document?.alliance ??
+			token?.actor?.alliance ??
+			token?.actor?.system?.details?.alliance ??
+			''
+	).trim().toLowerCase();
+	return alliance === 'party';
+}
+
 function getTokenCenter(tokenDocument) {
 	const tokenObject = tokenDocument?.object;
 	if (tokenObject?.center) return tokenObject.center;
@@ -120,13 +131,21 @@ function getActiveSceneTokens() {
 
 function getEligibleSourceTokens() {
 	return getActiveSceneTokens().filter(
-		(token) => token.actor && actorCanMakeAmbientSound(token.actor) && !actorIsPlayerObserved(token.actor)
+		(token) => token.actor && actorCanMakeAmbientSound(token.actor) && !actorIsPlayerObserved(token.actor) && !tokenIsPartyAllied(token)
 	);
 }
 
 function getControlledPlayerTokens() {
 	if (!canvas?.tokens?.controlled?.length) return [];
 	return canvas.tokens.controlled.filter((token) => token.actor && actorIsPlayerObserved(token.actor));
+}
+
+function getPlacedPlayerObservedTokens(sourceToken = null) {
+	return getActiveSceneTokens().filter((token) => {
+		if (!token.actor) return false;
+		if (sourceToken && token.document.id === sourceToken.document.id) return false;
+		return actorIsPlayerObserved(token.actor);
+	});
 }
 
 function getEligibleListenerTokensForUser(user, sourceToken) {
@@ -555,7 +574,8 @@ async function findBestListenerResultForUser(user, sourceToken) {
 
 function getForcedLocalDebugUser(sourceToken) {
 	if (!game.user?.isGM || !isForceLocalDebugEnabled()) return null;
-	const listeners = getControlledPlayerTokens().filter((token) => token.document.id !== sourceToken.document.id);
+	const controlledListeners = getControlledPlayerTokens().filter((token) => token.document.id !== sourceToken.document.id);
+	const listeners = controlledListeners.length ? controlledListeners : getPlacedPlayerObservedTokens(sourceToken);
 	if (!listeners.length) return null;
 	return {
 		user: game.user,
