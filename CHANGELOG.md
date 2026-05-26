@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.98] - 2026-05-25
+
+### Changed
+- **Music**: Ambient creature sounds now start from a lower base volume, and forced local debug playback no longer mirrors the same event back onto the GM a second time.
+
 ## [2.4.97] - 2026-05-25
 
 ### Fixed

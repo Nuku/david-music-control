@@ -13,7 +13,7 @@ const CREATURE_SOUNDS_SETTINGS = {
 const CREATURE_SOUND_NONE = 'none';
 const ATTACK_WEIGHT = 0.7;
 const NEARBY_SOURCE_WEIGHT = 0.65;
-const BASE_VOLUME = 0.8;
+const BASE_VOLUME = 0.65;
 const DOOR_ATTENUATION = 0.5;
 const DISTANCE_ATTENUATION = 0.99;
 const MIN_AUDIBLE_VOLUME = 0.1;
@@ -580,6 +580,7 @@ function getForcedLocalDebugUser(sourceToken) {
 	return {
 		user: game.user,
 		listeners,
+		forcedLocalDebug: true,
 	};
 }
 
@@ -631,14 +632,17 @@ async function runCreatureAmbienceCycle() {
 	let anyListenerFound = false;
 	const pendingPlayerPlaybacks = [];
 	let loudestAudibleResult = null;
+	let usedForcedLocalDebug = false;
 	const listenerEntries = players.map((user) => ({
 		user,
 		listeners: getEligibleListenerTokensForUser(user, sourceToken),
+		forcedLocalDebug: false,
 	}));
 	if (!listenerEntries.length) {
 		const forcedLocalDebug = getForcedLocalDebugUser(sourceToken);
 		if (forcedLocalDebug) {
 			listenerEntries.push(forcedLocalDebug);
+			usedForcedLocalDebug = true;
 			logDebug(`No connected players were found; forcing local debug playback through GM ${game.user.name}.`);
 		} else {
 			logDebug('No connected players were found for creature ambience.');
@@ -693,7 +697,7 @@ async function runCreatureAmbienceCycle() {
 		);
 		emitSoundToUser(playback.user.id, src, playback.volume, sourceToken, playback.listener, playback.pathResult);
 	}
-	if (loudestAudibleResult) {
+	if (loudestAudibleResult && !usedForcedLocalDebug) {
 		for (const gm of getConnectedGMs()) {
 			logDebug(
 				`Mirroring ${soundType} ambience from ${sourceToken.name} for GM ${gm.name} at player-max volume ${loudestAudibleResult.volume.toFixed(4)}.`
