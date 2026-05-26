@@ -165,6 +165,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	creatureAmbienceForceLocalDebug: {
+		name: 'Force Local Creature Ambience Debug',
+		hint: 'Debug only. If no non-GM players are connected, allow the local GM client to test creature ambience using controlled player-facing tokens as listener anchors.',
+		scope: 'client',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	enableVillainPoints: {
 		name: 'Enable Villain Points',
 		hint: 'Tracks spent hero points from character sheets, grants 1 villain point for every 2 hero point uses, and lets the GM spend villain points on chat rerolls.',
@@ -427,7 +435,7 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'PF2e Tools',
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'creatureAmbienceDebug'],
+			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 		},
 		{
 			title: 'Villain Points',

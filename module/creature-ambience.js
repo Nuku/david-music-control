@@ -39,6 +39,10 @@ function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableCreatureAmbience');
 }
 
+function isForceLocalDebugEnabled() {
+	return game.settings.get(MODULE_ID, 'creatureAmbienceForceLocalDebug');
+}
+
 function isCombatActive() {
 	return !!game.combat?.started;
 }
@@ -546,6 +550,20 @@ function emitSoundToUser(userId, src, volume, sourceToken, listenerToken, pathRe
 
 async function findBestListenerResultForUser(user, sourceToken) {
 	const listeners = getEligibleListenerTokensForUser(user, sourceToken);
+	return findBestListenerResultAcrossTokens(sourceToken, listeners);
+}
+
+function getForcedLocalDebugUser(sourceToken) {
+	if (!game.user?.isGM || !isForceLocalDebugEnabled()) return null;
+	const listeners = getControlledPlayerTokens().filter((token) => token.document.id !== sourceToken.document.id);
+	if (!listeners.length) return null;
+	return {
+		user: game.user,
+		listeners,
+	};
+}
+
+function findBestListenerResultAcrossTokens(sourceToken, listeners) {
 	if (!listeners.length) return null;
 	let best = null;
 	for (const listener of listeners) {
@@ -590,25 +608,35 @@ async function runCreatureAmbienceCycle() {
 		return;
 	}
 	const players = getConnectedPlayers();
-	if (!players.length) {
-		logDebug('No connected players were found for creature ambience.');
-		scheduleNextCycle('short');
-		return;
-	}
 	let anyListenerFound = false;
 	const pendingPlayerPlaybacks = [];
 	let loudestAudibleResult = null;
-	for (const user of players) {
-		const bestResult = await findBestListenerResultForUser(user, sourceToken);
+	const listenerEntries = players.map((user) => ({
+		user,
+		listeners: getEligibleListenerTokensForUser(user, sourceToken),
+	}));
+	if (!listenerEntries.length) {
+		const forcedLocalDebug = getForcedLocalDebugUser(sourceToken);
+		if (forcedLocalDebug) {
+			listenerEntries.push(forcedLocalDebug);
+			logDebug(`No connected players were found; forcing local debug playback through GM ${game.user.name}.`);
+		} else {
+			logDebug('No connected players were found for creature ambience.');
+			scheduleNextCycle('short');
+			return;
+		}
+	}
+	for (const entry of listenerEntries) {
+		const bestResult = findBestListenerResultAcrossTokens(sourceToken, entry.listeners);
 		if (!bestResult) {
-			if (getEligibleListenerTokensForUser(user, sourceToken).length) anyListenerFound = true;
+			if (entry.listeners.length) anyListenerFound = true;
 			continue;
 		}
 		anyListenerFound = true;
 		const volume = computeVolume(bestResult.pathResult);
 		if (volume <= 0) continue;
 		pendingPlayerPlaybacks.push({
-			user,
+			user: entry.user,
 			volume,
 			listener: bestResult.listener,
 			pathResult: bestResult.pathResult,
@@ -616,7 +644,7 @@ async function runCreatureAmbienceCycle() {
 		if (!loudestAudibleResult || volume > loudestAudibleResult.volume) {
 			loudestAudibleResult = {
 				volume,
-				user,
+				user: entry.user,
 				listener: bestResult.listener,
 				pathResult: bestResult.pathResult,
 			};

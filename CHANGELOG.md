@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.96] - 2026-05-25
+
+### Added
+- **Music**: Added a client-side debug override that lets a GM locally test creature ambience through controlled player-facing tokens when no non-GM players are connected.
+
 ## [2.4.93] - 2026-05-25
 
 ### Changed
