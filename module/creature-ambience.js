@@ -508,6 +508,7 @@ function computeVolume(pathResult) {
 
 function triggerLocalSoundPlayback({ src, volume }) {
 	try {
+		logDebug(`Local playback requested for ${src} at volume ${Math.max(0, Math.min(1, volume)).toFixed(4)}.`);
 		foundry.audio.AudioHelper.play(
 			{
 				src,
@@ -666,6 +667,9 @@ Hooks.once('ready', () => {
 		if (data?.type !== SOCKET_TYPE) return;
 		if (data.userId !== game.user.id) return;
 		if (typeof data.src !== 'string' || !data.src.trim()) return;
+		logDebug(
+			`Socket playback received for source token ${data.sourceTokenId ?? '?'} to listener ${data.listenerTokenId ?? '?'} at volume ${Number(data.volume ?? 0).toFixed(4)}.`
+		);
 		triggerLocalSoundPlayback(data);
 	});
 	restartCreatureAmbience();
