@@ -524,7 +524,7 @@ function triggerLocalSoundPlayback({ src, volume }) {
 }
 
 function emitSoundToUser(userId, src, volume, sourceToken, listenerToken, pathResult) {
-	game.socket?.emit(SOCKET_EVENT, {
+	const payload = {
 		type: SOCKET_TYPE,
 		userId,
 		src,
@@ -533,7 +533,15 @@ function emitSoundToUser(userId, src, volume, sourceToken, listenerToken, pathRe
 		listenerTokenId: listenerToken.document.id,
 		closedDoors: pathResult.closedDoors,
 		squares: pathResult.squares,
-	});
+	};
+	if (userId === game.user.id) {
+		logDebug(
+			`Direct local playback shortcut for source token ${payload.sourceTokenId} to listener ${payload.listenerTokenId} at volume ${Number(payload.volume ?? 0).toFixed(4)}.`
+		);
+		triggerLocalSoundPlayback(payload);
+		return;
+	}
+	game.socket?.emit(SOCKET_EVENT, payload);
 }
 
 async function findBestListenerResultForUser(user, sourceToken) {
