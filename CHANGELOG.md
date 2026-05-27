@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.102] - 2026-05-27
+
+### Fixed
+- **Subsystem tools**: Lore skill ids now use PF2e-style hyphenated slugs such as `art-lore` in generated and parsed subsystem data.
+
 ## [2.4.101] - 2026-05-27
 
 ### Changed

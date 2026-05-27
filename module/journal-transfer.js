@@ -11,8 +11,8 @@ const PF2_SKILLS = [
 	'survival', 'thievery', 'perception',
 ];
 const LORE_SKILLS = [
-	'art lore', 'engineering lore', 'scouting lore', 'warfare lore', 'alcohol lore', 'poetry lore',
-	'history lore', 'underworld lore', 'sailing lore', 'library lore',
+	'art-lore', 'engineering-lore', 'scouting-lore', 'warfare-lore', 'alcohol-lore', 'poetry-lore',
+	'history-lore', 'underworld-lore', 'sailing-lore', 'library-lore',
 ];
 const INFLUENCE_DISCOVERY_KNOWLEDGE_SKILLS = ['society', 'nature', 'occultism', 'religion'];
 const INFLUENCE_SOCIAL_SKILLS = [
@@ -108,6 +108,11 @@ function getGeneratorSkillPool(includeLore = false) {
 	return includeLore ? [...PF2_SKILLS, ...LORE_SKILLS] : [...PF2_SKILLS];
 }
 
+function normalizeSkillSlug(skillText) {
+	const normalized = normalizeWhitespace(skillText).toLowerCase();
+	return normalized.replace(/\blore\b/g, 'lore').replace(/\s+lore\b/g, '-lore');
+}
+
 function shuffleArray(items) {
 	const copy = [...items];
 	for (let index = copy.length - 1; index > 0; index -= 1) {
@@ -140,7 +145,7 @@ function pickInfluenceSkills() {
 function buildSkillEntries(skills, level, offsets = []) {
 	return skills.map((skill, index) => ({
 		id: randomId(),
-		skill,
+		skill: normalizeSkillSlug(skill),
 		lore: /\blore\b/i.test(skill),
 		dc: variedDc(level, offsets[index] ?? 0),
 	}));
@@ -445,7 +450,7 @@ function parseDcSkillList(segment) {
 		const skillText = normalizeWhitespace(match[2]);
 		const lore = /\blore\b/i.test(skillText);
 		return {
-			skill: skillText.toLowerCase(),
+			skill: normalizeSkillSlug(skillText),
 			dc: Number(match[1]),
 			lore,
 		};
@@ -459,7 +464,7 @@ function parseInfluenceSkillList(segment) {
 		const lore = /\blore\b/i.test(skillText);
 		return {
 			name: normalizeWhitespace(match[3] ?? ''),
-			skill: skillText.toLowerCase(),
+			skill: normalizeSkillSlug(skillText),
 			dc: Number(match[1]),
 			lore,
 		};
@@ -471,7 +476,7 @@ function parseSkillOptions(segment) {
 	return matches.map((match) => {
 		const skillText = normalizeWhitespace(match[2]);
 		return {
-			skill: skillText.toLowerCase(),
+			skill: normalizeSkillSlug(skillText),
 			dc: Number(match[1]),
 			lore: /\blore\b/i.test(skillText),
 			description: normalizeWhitespace(match[3] ?? ''),
