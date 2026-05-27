@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.101] - 2026-05-27
+
+### Changed
+- **Subsystem tools**: Generated Influence events now favor Perception plus a single knowledge skill for Discovery, and no longer offer Perception as an Influence skill.
+
 ## [2.4.99] - 2026-05-27
 
 ### Added

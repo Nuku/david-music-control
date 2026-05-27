@@ -14,6 +14,11 @@ const LORE_SKILLS = [
 	'art lore', 'engineering lore', 'scouting lore', 'warfare lore', 'alcohol lore', 'poetry lore',
 	'history lore', 'underworld lore', 'sailing lore', 'library lore',
 ];
+const INFLUENCE_DISCOVERY_KNOWLEDGE_SKILLS = ['society', 'nature', 'occultism', 'religion'];
+const INFLUENCE_SOCIAL_SKILLS = [
+	'arcana', 'crafting', 'deception', 'diplomacy', 'intimidation', 'medicine',
+	'nature', 'occultism', 'performance', 'religion', 'society',
+];
 const GENERATOR_BANKS = {
 	influence: {
 		names: ['Reserved Oracle', 'Battle-Worn Envoy', 'Ashen Archivist', 'Sea-Bound Hero', 'Veiled Witness'],
@@ -117,6 +122,21 @@ function pickDistinctSkills(count, includeLore = false) {
 	return pool.slice(0, Math.max(1, count));
 }
 
+function pickDistinctFromPool(pool, count) {
+	return shuffleArray(pool).slice(0, Math.max(1, count));
+}
+
+function pickInfluenceDiscoverySkills() {
+	const skills = [];
+	if (Math.random() < 0.8) skills.push('perception');
+	skills.push(...pickDistinctFromPool(INFLUENCE_DISCOVERY_KNOWLEDGE_SKILLS, 1));
+	return skills;
+}
+
+function pickInfluenceSkills() {
+	return pickDistinctFromPool(INFLUENCE_SOCIAL_SKILLS, 4);
+}
+
 function buildSkillEntries(skills, level, offsets = []) {
 	return skills.map((skill, index) => ({
 		id: randomId(),
@@ -129,8 +149,8 @@ function buildSkillEntries(skills, level, offsets = []) {
 function buildGeneratedInfluenceEvent(name, level) {
 	const bank = GENERATOR_BANKS.influence;
 	const npcName = name || randomChoice(bank.names);
-	const discoverySkills = buildSkillEntries(pickDistinctSkills(4, true), level, [-2, 0, 1, 2]);
-	const influenceSkills = buildSkillEntries(pickDistinctSkills(4, true), level, [-1, 0, 1, 3]).map((entry) => ({
+	const discoverySkills = buildSkillEntries(pickInfluenceDiscoverySkills(), level, [-2, 0]);
+	const influenceSkills = buildSkillEntries(pickInfluenceSkills(), level, [-1, 0, 1, 3]).map((entry) => ({
 		...entry,
 		name: randomChoice(bank.skillPrompts),
 	}));
