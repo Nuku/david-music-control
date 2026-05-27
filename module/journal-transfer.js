@@ -139,7 +139,22 @@ function pickInfluenceDiscoverySkills() {
 }
 
 function pickInfluenceSkills() {
-	return pickDistinctFromPool(INFLUENCE_SOCIAL_SKILLS, 4);
+	const skills = pickDistinctFromPool(INFLUENCE_SOCIAL_SKILLS.filter((skill) => skill !== 'diplomacy'), 4);
+	if (Math.random() < 0.9 && !skills.includes('diplomacy')) {
+		skills[skills.length - 1] = 'diplomacy';
+	}
+	return shuffleArray(skills);
+}
+
+function getInfluenceSkillOffsets(skills) {
+	const offsets = [-1, 0, 1, 3];
+	const diplomacyIndex = skills.indexOf('diplomacy');
+	if (diplomacyIndex === -1) return offsets;
+
+	const targetOffset = Math.random() < 0.7 ? 3 : -1;
+	const targetIndex = offsets.indexOf(targetOffset);
+	[offsets[diplomacyIndex], offsets[targetIndex]] = [offsets[targetIndex], offsets[diplomacyIndex]];
+	return offsets;
 }
 
 function buildSkillEntries(skills, level, offsets = []) {
@@ -155,7 +170,8 @@ function buildGeneratedInfluenceEvent(name, level) {
 	const bank = GENERATOR_BANKS.influence;
 	const npcName = name || randomChoice(bank.names);
 	const discoverySkills = buildSkillEntries(pickInfluenceDiscoverySkills(), level, [-2, 0]);
-	const influenceSkills = buildSkillEntries(pickInfluenceSkills(), level, [-1, 0, 1, 3]).map((entry) => ({
+	const generatedInfluenceSkills = pickInfluenceSkills();
+	const influenceSkills = buildSkillEntries(generatedInfluenceSkills, level, getInfluenceSkillOffsets(generatedInfluenceSkills)).map((entry) => ({
 		...entry,
 		name: randomChoice(bank.skillPrompts),
 	}));

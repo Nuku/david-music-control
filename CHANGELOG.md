@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.103] - 2026-05-27
+
+### Changed
+- **Subsystem tools**: Generated Influence events now include Diplomacy almost all the time, and when it appears its DC is biased toward either the easiest or hardest Influence check.
+
 ## [2.4.102] - 2026-05-27
 
 ### Fixed
