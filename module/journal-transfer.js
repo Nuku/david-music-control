@@ -103,8 +103,17 @@ function getGeneratorSkillPool(includeLore = false) {
 	return includeLore ? [...PF2_SKILLS, ...LORE_SKILLS] : [...PF2_SKILLS];
 }
 
+function shuffleArray(items) {
+	const copy = [...items];
+	for (let index = copy.length - 1; index > 0; index -= 1) {
+		const swapIndex = Math.floor(Math.random() * (index + 1));
+		[copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+	}
+	return copy;
+}
+
 function pickDistinctSkills(count, includeLore = false) {
-	const pool = foundry.utils.shuffle(getGeneratorSkillPool(includeLore));
+	const pool = shuffleArray(getGeneratorSkillPool(includeLore));
 	return pool.slice(0, Math.max(1, count));
 }
 
