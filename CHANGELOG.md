@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.99] - 2026-05-27
+
+### Added
+- **Subsystem export**: The journal export parser now recognizes infiltration-style subsystem text and can turn it into PF2e Subsystems export data.
+- **Subsystem tools**: Added a new subsystem generator that can create Influence, Research, or Infiltration events from a chosen level using PF2e level-based DCs, with preview, download, and direct live creation when PF2e Subsystems is enabled.
+
+### Changed
+- **Subsystem tools**: The subsystem export window now includes clearer guidance for both pasted-journal conversion and fresh event generation workflows.
+
 ## [2.4.98] - 2026-05-25
 
 ### Changed

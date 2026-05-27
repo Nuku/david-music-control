@@ -85,6 +85,19 @@
     gap: 0.35rem;
 }
 
+.dmc-generator-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.dmc-generator-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
 .dmc-transfer-textarea textarea {
     min-height: 320px;
     resize: vertical;

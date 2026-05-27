@@ -1,8 +1,394 @@
 import { MODULE_ID } from './settings.js';
 const SUBSYSTEMS_MODULE_ID = 'pf2e-subsystems';
+const STANDARD_DCS_BY_LEVEL = {
+	'-2': 12, '-1': 13, 0: 14, 1: 15, 2: 16, 3: 18, 4: 19, 5: 20, 6: 22, 7: 23, 8: 24, 9: 26,
+	10: 27, 11: 28, 12: 30, 13: 31, 14: 32, 15: 34, 16: 35, 17: 36, 18: 38, 19: 39, 20: 40,
+	21: 42, 22: 44, 23: 46, 24: 48, 25: 50, 26: 52,
+};
+const PF2_SKILLS = [
+	'acrobatics', 'arcana', 'athletics', 'crafting', 'deception', 'diplomacy', 'intimidation',
+	'medicine', 'nature', 'occultism', 'performance', 'religion', 'society', 'stealth',
+	'survival', 'thievery', 'perception',
+];
+const LORE_SKILLS = [
+	'art lore', 'engineering lore', 'scouting lore', 'warfare lore', 'alcohol lore', 'poetry lore',
+	'history lore', 'underworld lore', 'sailing lore', 'library lore',
+];
+const GENERATOR_BANKS = {
+	influence: {
+		names: ['Reserved Oracle', 'Battle-Worn Envoy', 'Ashen Archivist', 'Sea-Bound Hero', 'Veiled Witness'],
+		titles: ['a keeper of dangerous memories', 'a celebrated local power', 'an exacting patron of truth', 'a difficult ally with sharp expectations'],
+		discoveries: ['notice hidden tells', 'study old scars and symbols', 'recognize a revealing contradiction', 'read the room for subtle reactions'],
+		skillPrompts: ['to discuss their ideals', 'to appeal to shared duty', 'to impress with cultural knowledge', 'to read the emotional undercurrent'],
+		milestones: [
+			'The figure opens up and shares a personal truth that gives the PCs new leverage.',
+			'The figure offers concrete assistance and points the PCs toward a deeper understanding.',
+			'The figure grants rare insight or a valuable boon tied to the situation.',
+		],
+	},
+	research: {
+		names: ['Lost Correspondence', 'Heroic Testaments', 'Ruined Survey', 'Temple Fragments', 'Courtly Records'],
+		topics: ['Annotated Margins', 'Dusty Ledgers', 'Witness Accounts', 'Sealed Fragments'],
+		topicDescriptions: [
+			'Hidden context is buried in the source material and only careful analysis reveals what matters.',
+			'The source is incomplete, contradictory, or coded, requiring interpretation as much as observation.',
+			'The material is rich with clues, but extracting them takes time and methodical work.',
+		],
+		breakpoints: [
+			'The PCs uncover a useful historical connection that reframes the problem.',
+			'The PCs identify a practical lead that points them toward the next stage of the investigation.',
+			'The PCs uncover a decisive truth that changes how they understand the subject.',
+			'The PCs piece together the larger pattern and gain a powerful strategic advantage.',
+		],
+	},
+	infiltration: {
+		names: ['Veiled Festival Escape', 'Silent Archive Break-In', 'Watchtower Prisoner Rescue', 'Masked Court Extraction'],
+		objectives: ['Reach the target, secure them, and get out cleanly.', 'Slip inside, accomplish the objective, and escape before suspicion turns violent.'],
+		obstacles: ['Blend With the Crowd', 'Locate the Target', 'Bypass the Lock', 'Escape Unnoticed'],
+		obstacleDescriptions: [
+			'The PCs must move naturally and avoid drawing attention while chaos unfolds around them.',
+			'The PCs search, question bystanders, or follow subtle evidence without revealing their purpose.',
+			'The PCs need to remove a final barrier using force, finesse, or misdirection.',
+			'With the objective secured, the PCs must withdraw before the situation collapses around them.',
+		],
+		complications: ['Suspicious Reveler', 'Nervous Witness'],
+		complicationDescriptions: [
+			'An onlooker presses the PCs with unwanted attention at the worst possible time.',
+			'Tension rises and the crowd starts to notice that something is wrong.',
+		],
+		opportunities: ['Helpful Bystander', 'Momentary Distraction'],
+		opportunityDescriptions: [
+			'Someone nearby recognizes the PCs or misreads their intent in a way that could help.',
+			'The environment offers a brief opening the PCs can exploit to cancel out a mistake.',
+		],
+	},
+};
 
 function randomId() {
 	return foundry.utils.randomID();
+}
+
+function randomChoice(array) {
+	return array[Math.floor(Math.random() * array.length)];
+}
+
+function clampLevel(level) {
+	return Math.max(-1, Math.min(26, Number(level) || 1));
+}
+
+function standardDcForLevel(level) {
+	return STANDARD_DCS_BY_LEVEL[String(clampLevel(level))] ?? STANDARD_DCS_BY_LEVEL[1];
+}
+
+function variedDc(level, offset = 0) {
+	return standardDcForLevel(level) + offset;
+}
+
+function getSuggestedPartyLevel() {
+	const activeParty = game.actors?.find?.((actor) => actor.type === 'party' && actor.active);
+	const partyMembers = activeParty?.members ?? [];
+	if (partyMembers.length > 0) {
+		const total = partyMembers.reduce((sum, actor) => sum + (actor?.system?.details?.level?.value ?? actor?.level ?? 0), 0);
+		return Math.max(1, Math.round(total / partyMembers.length));
+	}
+	const playerCharacters = game.actors?.filter?.((actor) => actor.hasPlayerOwner && actor.type === 'character') ?? [];
+	if (playerCharacters.length > 0) {
+		const total = playerCharacters.reduce((sum, actor) => sum + (actor?.system?.details?.level?.value ?? actor?.level ?? 0), 0);
+		return Math.max(1, Math.round(total / playerCharacters.length));
+	}
+	return game.user?.character?.system?.details?.level?.value ?? 1;
+}
+
+function getGeneratorSkillPool(includeLore = false) {
+	return includeLore ? [...PF2_SKILLS, ...LORE_SKILLS] : [...PF2_SKILLS];
+}
+
+function pickDistinctSkills(count, includeLore = false) {
+	const pool = foundry.utils.shuffle(getGeneratorSkillPool(includeLore));
+	return pool.slice(0, Math.max(1, count));
+}
+
+function buildSkillEntries(skills, level, offsets = []) {
+	return skills.map((skill, index) => ({
+		id: randomId(),
+		skill,
+		lore: /\blore\b/i.test(skill),
+		dc: variedDc(level, offsets[index] ?? 0),
+	}));
+}
+
+function buildGeneratedInfluenceEvent(name, level) {
+	const bank = GENERATOR_BANKS.influence;
+	const npcName = name || randomChoice(bank.names);
+	const discoverySkills = buildSkillEntries(pickDistinctSkills(4, true), level, [-2, 0, 1, 2]);
+	const influenceSkills = buildSkillEntries(pickDistinctSkills(4, true), level, [-1, 0, 1, 3]).map((entry) => ({
+		...entry,
+		name: randomChoice(bank.skillPrompts),
+	}));
+	const milestones = [3, 5, 7].map((points, index) => ({
+		id: randomId(),
+		position: index + 1,
+		name: `Influence ${points}`,
+		hidden: true,
+		description: `<p>${randomChoice(bank.milestones)}</p>`,
+		points,
+	}));
+	const weaknessId = randomId();
+	const resistanceId = randomId();
+	const eventId = randomId();
+	return {
+		influence: {
+			[eventId]: {
+				id: eventId,
+				position: 1,
+				name: npcName,
+				version: '0.8.9',
+				background: '',
+				pins: { sidebar: 'premise' },
+				premise: `<p>${npcName} is ${randomChoice(bank.titles)}.</p>`,
+				gmNotes: '',
+				hidden: false,
+				perception: 0,
+				will: 0,
+				influencePoints: 0,
+				timeLimit: { current: 0, max: null },
+				discoveries: makeOrderedCollection(discoverySkills, (entry, index) => ({
+					id: entry.id,
+					position: index + 1,
+					hidden: false,
+					skill: entry.skill,
+					dc: entry.dc,
+					lore: entry.lore,
+				})),
+				influenceSkills: makeOrderedCollection(influenceSkills, (entry, index) => ({
+					id: entry.id,
+					position: index + 1,
+					name: entry.name,
+					hidden: true,
+					skill: entry.skill,
+					dc: entry.dc,
+					lore: entry.lore,
+				})),
+				influence: makeOrderedCollection(milestones, (entry) => entry),
+				weaknesses: {
+					[weaknessId]: {
+						id: weaknessId,
+						position: 1,
+						name: 'Weakness',
+						hidden: true,
+						description: `<p>${npcName} responds well to careful empathy and shared purpose.</p>`,
+						modifier: { used: false, value: 1 },
+					},
+				},
+				resistances: {
+					[resistanceId]: {
+						id: resistanceId,
+						position: 1,
+						name: 'Resistance',
+						hidden: true,
+						description: `<p>${npcName} reacts poorly to blunt pressure or careless disrespect.</p>`,
+						modifier: { used: false, value: 1 },
+					},
+				},
+				penalties: {},
+			},
+		},
+		chase: {},
+		research: {},
+		infiltration: {},
+	};
+}
+
+function buildGeneratedResearchEvent(name, level) {
+	const bank = GENERATOR_BANKS.research;
+	const eventName = name || randomChoice(bank.names);
+	const topics = Array.from({ length: 4 }, (_, index) => ({
+		id: randomId(),
+		position: index + 1,
+		name: randomChoice(bank.topics),
+		hidden: true,
+		description: randomChoice(['north wing', 'sealed archive', 'private collection', 'collapsed alcove']),
+		currentResearchPoints: 0,
+		maximumResearchPoints: index < 2 ? 10 : 5,
+		skillChecks: {
+			[randomId()]: {
+				id: randomId(),
+				hidden: true,
+				description: '',
+				skills: makeOrderedCollection(buildSkillEntries(pickDistinctSkills(3, true), level, [-2, 0, 2]), (entry) => ({
+					id: entry.id,
+					skill: entry.skill,
+					lore: entry.lore,
+					dc: entry.dc,
+					basic: false,
+				})),
+			},
+		},
+	}));
+	const breakpoints = [5, 10, 15, 20].map((value, index) => ({
+		id: randomId(),
+		position: index + 1,
+		hidden: true,
+		breakpoint: value,
+		description: `<p>${randomChoice(bank.breakpoints)}</p>`,
+	}));
+	const eventId = randomId();
+	return {
+		influence: {},
+		chase: {},
+		research: {
+			[eventId]: {
+				id: eventId,
+				position: 1,
+				name: eventName,
+				version: '0.8.9',
+				background: '',
+				pins: { sidebar: 'premise' },
+				premise: `<p>${eventName} contains clues that reward careful, repeated study.</p>`,
+				gmNotes: '',
+				tags: [],
+				hidden: false,
+				timeLimit: { current: 0, unit: 'year', max: null },
+				started: false,
+				researchPoints: 0,
+				researchChecks: makeOrderedCollection(topics, (topic) => topic),
+				researchBreakpoints: makeOrderedCollection(breakpoints, (point) => point),
+				researchEvents: {},
+			},
+		},
+		infiltration: {},
+	};
+}
+
+function buildGeneratedInfiltrationEvent(name, level) {
+	const bank = GENERATOR_BANKS.infiltration;
+	const eventName = name || randomChoice(bank.names);
+	const objectiveId = randomId();
+	const obstacleNames = bank.obstacles;
+	const objectiveDescription = randomChoice(bank.objectives);
+	const obstacles = obstacleNames.map((obstacleName, index) => {
+		const skillEntries = buildSkillEntries(pickDistinctSkills(index === 0 ? 4 : 5, true), level, [-2, 0, 0, 1, 2]);
+		const skillCheckId = randomId();
+		return {
+			id: randomId(),
+			img: 'icons/svg/cowled.svg',
+			name: obstacleName,
+			position: index + 1,
+			hidden: false,
+			individual: false,
+			infiltrationPoints: { current: 0, max: index < 2 ? 2 : 3 },
+			infiltrationPointData: {},
+			skillChecks: {
+				[skillCheckId]: {
+					id: skillCheckId,
+					hidden: true,
+					description: '',
+					dcAdjustments: [],
+					difficulty: { leveledDC: false, DC: skillEntries[0]?.dc ?? variedDc(level) },
+					skills: makeOrderedCollection(skillEntries, (entry) => ({
+						id: entry.id,
+						skill: entry.skill,
+						lore: entry.lore,
+						difficulty: { leveledDC: false, DC: entry.dc },
+					})),
+				},
+			},
+			description: `<p>${bank.obstacleDescriptions[index % bank.obstacleDescriptions.length]}</p>`,
+		};
+	});
+	const complications = bank.complications.map((complicationName, index) => {
+		const skillEntries = buildSkillEntries(pickDistinctSkills(3, true), level, [0, 1, 2]);
+		const skillCheckId = randomId();
+		return {
+			id: randomId(),
+			position: index + 1,
+			hidden: true,
+			name: complicationName,
+			infiltrationPoints: { current: 0, max: 0 },
+			trigger: index === 0 ? 'The PCs reach 5 Awareness Points for the first time.' : 'The PCs reach 10 Awareness Points for the first time.',
+			skillChecks: {
+				[skillCheckId]: {
+					id: skillCheckId,
+					hidden: true,
+					description: '',
+					dcAdjustments: [],
+					difficulty: { leveledDC: false, DC: skillEntries[0]?.dc ?? variedDc(level) },
+					skills: makeOrderedCollection(skillEntries, (entry) => ({
+						id: entry.id,
+						skill: entry.skill,
+						lore: entry.lore,
+						difficulty: { leveledDC: false, DC: entry.dc },
+					})),
+				},
+			},
+			description: `<p>${bank.complicationDescriptions[index % bank.complicationDescriptions.length]}</p>`,
+			results: {
+				criticalSuccess: { degreeOfSuccess: 'criticalSuccess', description: '', inUse: false, nrOutcomes: 0 },
+				success: { degreeOfSuccess: 'success', description: 'The PCs avert suspicion and keep moving.', inUse: true, nrOutcomes: 0 },
+				failure: { degreeOfSuccess: 'failure', description: 'The party accrues 1 AP.', awarenessPoints: 1, inUse: true, nrOutcomes: 0 },
+				criticalFailure: { degreeOfSuccess: 'criticalFailure', description: 'The party accrues 2 AP.', awarenessPoints: 2, inUse: true, nrOutcomes: 0 },
+			},
+			resultsOutcome: '',
+		};
+	});
+	const opportunities = bank.opportunities.map((opportunityName, index) => ({
+		id: randomId(),
+		position: index + 1,
+		hidden: true,
+		name: opportunityName,
+		requirements: index === 0 ? 'A PC fails an obstacle check.' : 'The situation briefly shifts in the PCs’ favor.',
+		description: `<p>${bank.opportunityDescriptions[index % bank.opportunityDescriptions.length]}</p>`,
+	}));
+	const eventId = randomId();
+	return {
+		influence: {},
+		chase: {},
+		research: {},
+		infiltration: {
+			[eventId]: {
+				id: eventId,
+				position: 1,
+				name: eventName,
+				version: '0.8.9',
+				background: '',
+				awarenessPoints: {
+					current: 0,
+					hidden: 0,
+					breakpoints: {
+						'1': { id: '1', breakpoint: 5, dcIncrease: null, description: '<p>Attention starts to focus on the PCs.</p>', position: 1, hidden: true, inUse: false },
+						'2': { id: '2', breakpoint: 10, dcIncrease: 1, description: '<p>The opposition grows suspicious; obstacle DCs increase by 1.</p>', position: 2, hidden: true, inUse: false },
+						'3': { id: '3', breakpoint: 15, dcIncrease: null, description: '<p>The infiltration begins to collapse around the PCs.</p>', position: 3, hidden: true, inUse: false },
+					},
+				},
+				objectives: {
+					[objectiveId]: {
+						id: objectiveId,
+						name: eventName,
+						position: 1,
+						hidden: false,
+						obstacles: makeOrderedCollection(obstacles, (obstacle) => obstacle),
+					},
+				},
+				preparations: { activities: {} },
+				complications: makeOrderedCollection(complications, (entry) => entry),
+				opportunities: makeOrderedCollection(opportunities, (entry) => entry),
+				pins: { sidebar: 'premise' },
+				premise: `<p>${objectiveDescription}</p>`,
+				gmNotes: '',
+				hidden: false,
+				started: false,
+				edgePoints: {},
+			},
+		},
+	};
+}
+
+function buildGeneratedSubsystemExport(type, name, level) {
+	const normalizedType = String(type ?? '').toLowerCase();
+	const safeLevel = clampLevel(level);
+	if (normalizedType === 'research') return buildGeneratedResearchEvent(name, safeLevel);
+	if (normalizedType === 'infiltration') return buildGeneratedInfiltrationEvent(name, safeLevel);
+	return buildGeneratedInfluenceEvent(name, safeLevel);
 }
 
 function normalizeWhitespace(value) {
@@ -170,6 +556,223 @@ function parseResearchSummaryLine(line) {
 				location: normalizeWhitespace(itemMatch[2]),
 			};
 		});
+}
+
+function escapeHtml(value) {
+	return String(value ?? '')
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;');
+}
+
+function wrapParagraphs(lines) {
+	const chunks = lines
+		.map((line) => normalizeWhitespace(line))
+		.filter(Boolean)
+		.map((line) => `<p>${escapeHtml(line)}</p>`);
+	return chunks.join('');
+}
+
+function collectSectionBlocks(lines, suffix) {
+	const blocks = [];
+	let current = null;
+	for (const line of lines) {
+		if (line.endsWith(suffix)) {
+			if (current) blocks.push(current);
+			current = { title: line.slice(0, -suffix.length).trim(), lines: [] };
+			continue;
+		}
+		if (current) current.lines.push(line);
+	}
+	if (current) blocks.push(current);
+	return blocks;
+}
+
+function parseOutcomeLines(lines) {
+	const outcomes = {
+		criticalSuccess: { degreeOfSuccess: 'criticalSuccess', description: '', inUse: false, nrOutcomes: 0 },
+		success: { degreeOfSuccess: 'success', description: '', inUse: false, nrOutcomes: 0 },
+		failure: { degreeOfSuccess: 'failure', description: '', inUse: false, nrOutcomes: 0 },
+		criticalFailure: { degreeOfSuccess: 'criticalFailure', description: '', inUse: false, nrOutcomes: 0 },
+	};
+
+	const outcomePatterns = [
+		['criticalSuccess', /^Critical Success\s+(.+)$/i],
+		['success', /^Success\s+(.+)$/i],
+		['criticalFailure', /^Critical Failure\s+(.+)$/i],
+		['failure', /^Failure\s+(.+)$/i],
+	];
+
+	for (const line of lines) {
+		for (const [key, pattern] of outcomePatterns) {
+			const match = line.match(pattern);
+			if (!match) continue;
+			outcomes[key].description = match[1];
+			outcomes[key].inUse = true;
+			const apMatch = match[1].match(/accrues?\s+(\d+)\s+AP/i);
+			if (apMatch) outcomes[key].awarenessPoints = Number(apMatch[1]);
+			break;
+		}
+	}
+
+	return outcomes;
+}
+
+function parseInfiltrationBreakpointLines(lines) {
+	const result = {};
+	let current = null;
+	for (const line of lines) {
+		const match = line.match(/^(\d+)\s+Awareness Points:\s*(.+)$/i);
+		if (match) {
+			if (current) {
+				current.description = wrapParagraphs(current.descriptionLines);
+				delete current.descriptionLines;
+				result[current.id] = current;
+			}
+			const breakpoint = Number(match[1]);
+			const text = match[2];
+			const dcMatch = text.match(/Increase the DC(?:s)? .* by (\d+)/i);
+			current = {
+				id: String(Object.keys(result).length + 1),
+				breakpoint,
+				dcIncrease: dcMatch ? Number(dcMatch[1]) : null,
+				position: Object.keys(result).length + 1,
+				hidden: true,
+				inUse: false,
+				descriptionLines: [text],
+			};
+			continue;
+		}
+		if (current) current.descriptionLines.push(line);
+	}
+	if (current) {
+		current.description = wrapParagraphs(current.descriptionLines);
+		delete current.descriptionLines;
+		result[current.id] = current;
+	}
+	return result;
+}
+
+function parseInfiltrationObstacleBlock(block, position) {
+	const pointsLine = block.lines.find((line) => /^Infiltration Points\s+/i.test(line)) ?? '';
+	const pointsMatch = pointsLine.match(/^Infiltration Points\s+(\d+)\s+\((group|individual)\)$/i);
+	const overcomeLine = block.lines.find((line) => /^Overcome\s+/i.test(line)) ?? '';
+	const skillOptions = parseSkillOptions(overcomeLine.replace(/^Overcome\s*/i, ''));
+	const narrativeLines = block.lines.filter((line) =>
+		!/^Infiltration Points\s+/i.test(line) &&
+		!/^Overcome\s+/i.test(line)
+	);
+	const outcomes = parseOutcomeLines(narrativeLines);
+	const descriptionLines = narrativeLines.filter((line) =>
+		!/^Success\s+/i.test(line) &&
+		!/^Failure\s+/i.test(line) &&
+		!/^Critical Failure\s+/i.test(line) &&
+		!/^Critical Success\s+/i.test(line)
+	);
+	const appendedOutcomeLines = [];
+	for (const key of ['success', 'failure', 'criticalFailure', 'criticalSuccess']) {
+		if (outcomes[key].description) {
+			const label =
+				key === 'criticalFailure' ? 'Critical Failure' :
+				key === 'criticalSuccess' ? 'Critical Success' :
+				key === 'failure' ? 'Failure' : 'Success';
+			appendedOutcomeLines.push(`${label}: ${outcomes[key].description}`);
+		}
+	}
+	return {
+		id: randomId(),
+		img: 'icons/svg/cowled.svg',
+		name: block.title,
+		position,
+		hidden: false,
+		individual: pointsMatch?.[2]?.toLowerCase() === 'individual',
+		infiltrationPoints: {
+			current: 0,
+			max: Number(pointsMatch?.[1] ?? 1),
+		},
+		infiltrationPointData: {},
+		skillChecks: {
+			[randomId()]: {
+				id: randomId(),
+				skills: makeOrderedCollection(skillOptions, (option) => ({
+					id: randomId(),
+					lore: option.lore,
+					difficulty: { leveledDC: false, DC: option.dc },
+					skill: option.skill,
+				})),
+				hidden: true,
+				description: '',
+				dcAdjustments: [],
+				difficulty: { leveledDC: false, DC: skillOptions[0]?.dc ?? null },
+			},
+		},
+		description: wrapParagraphs([...descriptionLines, ...appendedOutcomeLines]),
+	};
+}
+
+function parseInfiltrationComplicationBlock(block, position) {
+	const triggerLine = block.lines.find((line) => /^Trigger\s+/i.test(line)) ?? '';
+	const overcomeLine = block.lines.find((line) => /^Overcome\s+/i.test(line)) ?? '';
+	const skillOptions = parseSkillOptions(overcomeLine.replace(/^Overcome\s*/i, ''));
+	const narrativeLines = block.lines.filter((line) =>
+		!/^Trigger\s+/i.test(line) &&
+		!/^Overcome\s+/i.test(line)
+	);
+	const outcomes = parseOutcomeLines(narrativeLines);
+	const descriptionLines = narrativeLines.filter((line) =>
+		!/^Success\s+/i.test(line) &&
+		!/^Failure\s+/i.test(line) &&
+		!/^Critical Failure\s+/i.test(line) &&
+		!/^Critical Success\s+/i.test(line)
+	);
+	const complicationId = randomId();
+	const skillCheckId = randomId();
+	return {
+		id: complicationId,
+		position,
+		hidden: true,
+		name: block.title,
+		infiltrationPoints: { current: 0, max: 0 },
+		trigger: triggerLine.replace(/^Trigger\s*/i, ''),
+		skillChecks: {
+			[skillCheckId]: {
+				id: skillCheckId,
+				skills: makeOrderedCollection(skillOptions, (option) => ({
+					id: randomId(),
+					skill: option.skill,
+					lore: option.lore,
+					difficulty: { leveledDC: false, DC: option.dc },
+				})),
+				hidden: true,
+				description: '',
+				dcAdjustments: [],
+				difficulty: { leveledDC: false, DC: skillOptions[0]?.dc ?? null },
+			},
+		},
+		description: wrapParagraphs(descriptionLines),
+		results: outcomes,
+		resultsOutcome: '',
+	};
+}
+
+function parseInfiltrationOpportunityBlock(block, position) {
+	const triggerLine = block.lines.find((line) => /^Trigger\s+/i.test(line)) ?? '';
+	const overcomeLine = block.lines.find((line) => /^Overcome\s+/i.test(line)) ?? '';
+	const narrativeLines = block.lines.filter((line) =>
+		!/^Trigger\s+/i.test(line) &&
+		!/^Overcome\s+/i.test(line)
+	);
+	return {
+		id: randomId(),
+		position,
+		hidden: true,
+		name: block.title,
+		requirements: triggerLine.replace(/^Trigger\s*/i, ''),
+		description: wrapParagraphs([
+			overcomeLine ? `Overcome ${overcomeLine.replace(/^Overcome\s*/i, '')}` : '',
+			...narrativeLines,
+		]),
+	};
 }
 
 function buildInfluenceExportFromJournalText(text) {
@@ -383,8 +986,94 @@ function buildResearchExportFromJournalText(text) {
 	};
 }
 
+function buildInfiltrationExportFromJournalText(text) {
+	const lines = splitPlainTextLines(text);
+	if (!lines.length) throw new Error('PF2 Director | Paste journal text first.');
+
+	const obstaclesIndex = lines.findIndex((line) => /^Obstacles$/i.test(line));
+	if (obstaclesIndex === -1) {
+		throw new Error('PF2 Director | Could not find the Obstacles section in pasted infiltration text.');
+	}
+	const complicationsIndex = lines.findIndex((line) => /^Complications$/i.test(line));
+	const opportunitiesIndex = lines.findIndex((line) => /^Opportunities$/i.test(line));
+
+	const awarenessLines = lines.slice(0, obstaclesIndex).filter((line) => /Awareness Points:/i.test(line) || !/^Track Awareness Point thresholds/i.test(line));
+	const awarenessBreakpoints = parseInfiltrationBreakpointLines(awarenessLines);
+
+	const objectiveIntroLines = lines.slice(obstaclesIndex + 1, complicationsIndex > -1 ? complicationsIndex : lines.length);
+	const objectiveDescriptionLines = [];
+	for (const line of objectiveIntroLines) {
+		if (line.endsWith('Obstacle')) break;
+		objectiveDescriptionLines.push(line);
+	}
+	const objectiveName = objectiveDescriptionLines.length > 0
+		? normalizeWhitespace(objectiveDescriptionLines[0].replace(/^The PCs’ objective is to\s*/i, '').replace(/^The PCs' objective is to\s*/i, ''))
+		: 'Main Objective';
+
+	const obstacleBlocks = collectSectionBlocks(
+		lines.slice(obstaclesIndex + 1, complicationsIndex > -1 ? complicationsIndex : lines.length),
+		' Obstacle',
+	);
+	const complicationBlocks = complicationsIndex > -1
+		? collectSectionBlocks(lines.slice(complicationsIndex + 1, opportunitiesIndex > -1 ? opportunitiesIndex : lines.length), ' Complication')
+		: [];
+	const opportunityBlocks = opportunitiesIndex > -1
+		? collectSectionBlocks(lines.slice(opportunitiesIndex + 1), ' Opportunity')
+		: [];
+
+	const firstLine = lines[0] ?? '';
+	const nameCandidate = /^Track Awareness Point thresholds/i.test(firstLine) ? 'New Infiltration' : firstLine || 'New Infiltration';
+	const objectiveId = randomId();
+	const record = {
+		id: randomId(),
+		position: 1,
+		name: nameCandidate,
+		version: '0.8.9',
+		background: '',
+		awarenessPoints: {
+			current: 0,
+			hidden: 0,
+			breakpoints: awarenessBreakpoints,
+		},
+		objectives: {
+			[objectiveId]: {
+				id: objectiveId,
+				name: objectiveName || 'Main Objective',
+				position: 1,
+				hidden: false,
+				obstacles: makeOrderedCollection(obstacleBlocks, (block, index) => parseInfiltrationObstacleBlock(block, index + 1)),
+			},
+		},
+		preparations: {
+			activities: {},
+		},
+		complications: makeOrderedCollection(complicationBlocks, (block, index) => parseInfiltrationComplicationBlock(block, index + 1)),
+		opportunities: makeOrderedCollection(opportunityBlocks, (block, index) => parseInfiltrationOpportunityBlock(block, index + 1)),
+		pins: {
+			sidebar: 'premise',
+		},
+		premise: '',
+		gmNotes: '',
+		hidden: false,
+		started: false,
+		edgePoints: {},
+	};
+
+	return {
+		influence: {},
+		chase: {},
+		research: {},
+		infiltration: {
+			[record.id]: record,
+		},
+	};
+}
+
 function buildSubsystemExportFromJournalText(text) {
 	const normalized = String(text ?? '');
+	if (/\bAwareness Points\b/i.test(normalized) && /\bObstacles\b/i.test(normalized)) {
+		return buildInfiltrationExportFromJournalText(text);
+	}
 	if (/\bResearch Checks\b/i.test(normalized) && /\bResearch\s+\d+\b/i.test(normalized)) {
 		return buildResearchExportFromJournalText(text);
 	}
@@ -395,12 +1084,31 @@ function hasLiveSubsystemModule() {
 	return game.modules.get(SUBSYSTEMS_MODULE_ID)?.active === true;
 }
 
-async function createLiveSubsystemFromJournalText(text) {
+function getPrimarySubsystemRecord(data) {
+	for (const key of ['influence', 'research', 'infiltration']) {
+		const record = Object.values(data?.[key] ?? {})[0];
+		if (record) return { type: key, record };
+	}
+	return null;
+}
+
+function getSubsystemExportFilename(data) {
+	const primary = getPrimarySubsystemRecord(data);
+	const name = primary?.record?.name || game.world.id || 'subsystems';
+	const slug = name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'subsystems';
+	return `${slug}.subsystems.json`;
+}
+
+function downloadSubsystemExportData(data) {
+	const json = JSON.stringify(data, null, 2);
+	saveDataToFile(json, 'application/json', getSubsystemExportFilename(data));
+	ui.notifications.info('PF2 Director | Subsystem export downloaded.');
+}
+
+async function createLiveSubsystemFromExportData(data) {
 	if (!hasLiveSubsystemModule()) {
 		throw new Error('PF2 Director | PF2e Subsystems must be enabled to create live subsystem data.');
 	}
-
-	const data = buildSubsystemExportFromJournalText(text);
 
 	if (Object.keys(data.influence ?? {}).length > 0) {
 		const sourceInfluence = Object.values(data.influence)[0];
@@ -523,14 +1231,98 @@ async function createLiveSubsystemFromJournalText(text) {
 		return;
 	}
 
+	if (Object.keys(data.infiltration ?? {}).length > 0) {
+		const sourceInfiltration = Object.values(data.infiltration)[0];
+		const setting = game.settings.get(SUBSYSTEMS_MODULE_ID, 'infiltration');
+		const eventId = randomId();
+		await setting.updateSource({
+			events: {
+				[eventId]: {
+					...sourceInfiltration,
+					id: eventId,
+					awarenessPoints: {
+						...sourceInfiltration.awarenessPoints,
+						breakpoints: Object.values(sourceInfiltration.awarenessPoints.breakpoints).reduce((acc, breakpoint) => {
+							const id = randomId();
+							acc[id] = { ...breakpoint, id, inUse: false };
+							return acc;
+						}, {}),
+					},
+					objectives: Object.values(sourceInfiltration.objectives).reduce((objectiveAcc, objective) => {
+						const objectiveId = randomId();
+						objectiveAcc[objectiveId] = {
+							...objective,
+							id: objectiveId,
+							obstacles: Object.values(objective.obstacles).reduce((obstacleAcc, obstacle) => {
+								const obstacleId = randomId();
+								obstacleAcc[obstacleId] = {
+									...obstacle,
+									id: obstacleId,
+									infiltrationPoints: { current: 0, max: obstacle.infiltrationPoints.max },
+									infiltrationPointData: {},
+									skillChecks: Object.values(obstacle.skillChecks).reduce((skillCheckAcc, skillCheck) => {
+										const skillCheckId = randomId();
+										skillCheckAcc[skillCheckId] = {
+											...skillCheck,
+											id: skillCheckId,
+											skills: Object.values(skillCheck.skills).reduce((skillAcc, skill) => {
+												const skillId = randomId();
+												skillAcc[skillId] = { ...skill, id: skillId };
+												return skillAcc;
+											}, {}),
+										};
+										return skillCheckAcc;
+									}, {}),
+								};
+								return obstacleAcc;
+							}, {}),
+						};
+						return objectiveAcc;
+					}, {}),
+					complications: Object.values(sourceInfiltration.complications).reduce((acc, complication) => {
+						const id = randomId();
+						acc[id] = {
+							...complication,
+							id,
+							infiltrationPoints: { current: 0, max: complication.infiltrationPoints.max ?? 0 },
+							skillChecks: Object.values(complication.skillChecks).reduce((skillCheckAcc, skillCheck) => {
+								const skillCheckId = randomId();
+								skillCheckAcc[skillCheckId] = {
+									...skillCheck,
+									id: skillCheckId,
+									skills: Object.values(skillCheck.skills).reduce((skillAcc, skill) => {
+										const skillId = randomId();
+										skillAcc[skillId] = { ...skill, id: skillId };
+										return skillAcc;
+									}, {}),
+								};
+								return skillCheckAcc;
+							}, {}),
+						};
+						return acc;
+					}, {}),
+					opportunities: Object.values(sourceInfiltration.opportunities).reduce((acc, opportunity) => {
+						const id = randomId();
+						acc[id] = { ...opportunity, id };
+						return acc;
+					}, {}),
+				},
+			},
+		});
+		await game.settings.set(SUBSYSTEMS_MODULE_ID, 'infiltration', setting);
+		ui.notifications.info(`PF2 Director | Created live Infiltration subsystem: ${sourceInfiltration.name}`);
+		return;
+	}
+
 	throw new Error('PF2 Director | No supported subsystem data was found to create live.');
 }
 
+async function createLiveSubsystemFromJournalText(text) {
+	return createLiveSubsystemFromExportData(buildSubsystemExportFromJournalText(text));
+}
+
 function downloadSubsystemExport(text) {
-	const json = JSON.stringify(buildSubsystemExportFromJournalText(text), null, 2);
-	const name = splitPlainTextLines(text)[0] || game.world.id || 'subsystems';
-	saveDataToFile(json, 'application/json', `${name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'subsystems'}.subsystems.json`);
-	ui.notifications.info('PF2 Director | Subsystem export downloaded.');
+	downloadSubsystemExportData(buildSubsystemExportFromJournalText(text));
 }
 
 class JournalTransferApp extends FormApplication {
@@ -550,12 +1342,26 @@ class JournalTransferApp extends FormApplication {
 	getData() {
 		return {
 			journalText: '',
+			generatedLevel: getSuggestedPartyLevel(),
+			generatedName: '',
+			generatorTypes: [
+				{ value: 'influence', label: 'Influence' },
+				{ value: 'research', label: 'Research' },
+				{ value: 'infiltration', label: 'Infiltration' },
+			],
 			subsystemsEnabled: hasLiveSubsystemModule(),
 		};
 	}
 
 	activateListeners(html) {
 		super.activateListeners(html);
+
+		const buildGeneratedData = () => {
+			const type = String(html.find('[name="generatedType"]').val() ?? 'influence');
+			const name = String(html.find('[name="generatedName"]').val() ?? '').trim();
+			const level = Number(html.find('[name="generatedLevel"]').val() ?? getSuggestedPartyLevel());
+			return buildGeneratedSubsystemExport(type, name, level);
+		};
 
 		html.find('[data-action="export-journal-text"]').on('click', (event) => {
 			event.preventDefault();
@@ -583,6 +1389,34 @@ class JournalTransferApp extends FormApplication {
 			const journalText = String(html.find('[name="journalText"]').val() ?? '').trim();
 			try {
 				await createLiveSubsystemFromJournalText(journalText);
+			} catch (error) {
+				ui.notifications.error(error.message || 'PF2 Director | Could not create live subsystem data.');
+			}
+		});
+
+		html.find('[data-action="preview-generated-json"]').on('click', (event) => {
+			event.preventDefault();
+			const output = html.find('[name="generatedJson"]').get(0);
+			try {
+				output.value = JSON.stringify(buildGeneratedData(), null, 2);
+			} catch (error) {
+				ui.notifications.error(error.message || 'PF2 Director | Could not generate subsystem data.');
+			}
+		});
+
+		html.find('[data-action="download-generated-subsystem"]').on('click', (event) => {
+			event.preventDefault();
+			try {
+				downloadSubsystemExportData(buildGeneratedData());
+			} catch (error) {
+				ui.notifications.error(error.message || 'PF2 Director | Could not generate subsystem export.');
+			}
+		});
+
+		html.find('[data-action="create-generated-live-subsystem"]').on('click', async (event) => {
+			event.preventDefault();
+			try {
+				await createLiveSubsystemFromExportData(buildGeneratedData());
 			} catch (error) {
 				ui.notifications.error(error.message || 'PF2 Director | Could not create live subsystem data.');
 			}

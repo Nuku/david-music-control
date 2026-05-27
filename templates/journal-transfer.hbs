@@ -2,7 +2,7 @@
 	<section class="dmc-transfer-section">
 		<header>
 			<h2>Journal Text to Subsystem Export</h2>
-			<p>Paste plain text copied from a journal entry and convert it into a PF2e subsystem export file. The parser can currently recognize influence-style and research-style subsystem text.</p>
+			<p>Paste plain text copied from a journal entry and convert it into a PF2e subsystem export file. The parser can recognize influence, research, and infiltration style text.</p>
 		</header>
 		<p class="hint">Recommended workflow: copy the journal text, paste it into Journal Text, click Preview Export JSON to sanity-check the result, then click Download Subsystem Export to save the file to your computer.</p>
 		<div class="dmc-transfer-actions">
@@ -30,6 +30,53 @@
 		<label class="dmc-transfer-textarea">
 			<span>Generated Export JSON</span>
 			<textarea name="journalJson" spellcheck="false" readonly></textarea>
+		</label>
+	</section>
+	<section class="dmc-transfer-section">
+		<header>
+			<h2>Generate New Subsystem</h2>
+			<p>Build a fresh subsystem event from curated PF2e-flavored prompts. The generator uses the party's average level as the default, applies the GM Core level-based DC table, and varies checks slightly around that baseline.</p>
+		</header>
+		<p class="hint">Use this when you want a ready-to-edit starting point instead of copying from a journal. Generated checks only use Pathfinder 2e skills and common Lore skills.</p>
+		<div class="dmc-generator-fields">
+			<label>
+				<span>Subsystem Type</span>
+				<select name="generatedType">
+					{{#each generatorTypes}}
+					<option value="{{this.value}}">{{this.label}}</option>
+					{{/each}}
+				</select>
+			</label>
+			<label>
+				<span>Name</span>
+				<input type="text" name="generatedName" value="{{generatedName}}" placeholder="Optional custom name">
+			</label>
+			<label>
+				<span>Level</span>
+				<input type="number" name="generatedLevel" value="{{generatedLevel}}" min="-1" max="26" step="1">
+			</label>
+		</div>
+		<div class="dmc-transfer-actions">
+			<button type="button" data-action="preview-generated-json">
+				<i class="fas fa-wand-magic-sparkles"></i> Preview Generated JSON
+			</button>
+			{{#if subsystemsEnabled}}
+			<button type="button" data-action="create-generated-live-subsystem">
+				<i class="fas fa-plus"></i> Create Live Generated Subsystem
+			</button>
+			{{/if}}
+			<button type="button" data-action="download-generated-subsystem">
+				<i class="fas fa-download"></i> Download Generated Export
+			</button>
+		</div>
+		{{#if subsystemsEnabled}}
+		<p class="hint">Create Live Generated Subsystem sends the generated event directly into PF2e Subsystems as a new editable live entry.</p>
+		{{else}}
+		<p class="hint">Enable the PF2e Subsystems module to create generated subsystem entries directly from this window.</p>
+		{{/if}}
+		<label class="dmc-transfer-textarea">
+			<span>Generated Subsystem JSON</span>
+			<textarea name="generatedJson" spellcheck="false" readonly></textarea>
 		</label>
 	</section>
 </form>

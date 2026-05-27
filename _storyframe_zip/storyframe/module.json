@@ -1,0 +1,46 @@
+{
+  "id": "storyframe",
+  "title": "Storyframe",
+  "description": "Journal-integrated speaker and skill check manager with synchronized player portraits",
+  "version": "3.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "RoiLeaf",
+      "discord": "RoiLeaf",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "storyframe.mjs"
+  ],
+  "styles": [
+    "styles/design-tokens.css",
+    "styles/dc-preset-dropdown.css"
+  ],
+  "socket": true,
+  "relationships": {
+    "requires": [
+      {
+        "id": "socketlib",
+        "type": "module"
+      }
+    ]
+  },
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "flags": {
+    "canUpload": true
+  },
+  "url": "https://github.com/roi007leaf/storyframe",
+  "manifest": "https://github.com/roi007leaf/storyframe/releases/latest/download/module.json",
+  "download": "https://github.com/roi007leaf/storyframe/releases/download/3.0.0/module.zip"
+}
