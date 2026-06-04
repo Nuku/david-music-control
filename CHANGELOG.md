@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.108] - 2026-06-04
+
+### Fixed
+- **PF2e tools**: Half damage now works from spell cards and other PF2e cards that already expose a normal Damage button, by reusing the same underlying damage action before rewriting the created card to half damage.
+
 ## [2.4.107] - 2026-06-04
 
 ### Fixed

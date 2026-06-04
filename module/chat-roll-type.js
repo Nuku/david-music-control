@@ -47,9 +47,8 @@ function getPrimaryRoll(message) {
 	return getMessageRolls(message)[0] ?? null;
 }
 
-function isPf2eAttackMessage(message) {
-	const type = message?.flags?.pf2e?.context?.type;
-	return (type === 'attack-roll' || type === 'spell-attack-roll') && message?._strike;
+function isPf2eDamageSourceMessage(message) {
+	return message?.flags?.pf2e?.context?.type !== 'damage-roll';
 }
 
 function getRollFormula(roll) {
@@ -322,11 +321,17 @@ async function resolveCreatedDamageMessage(sourceMessage, result) {
 	return null;
 }
 
-async function createHalfDamageFromAttackMessage(message) {
-	if (!message?._strike?.damage) return null;
+function getSourceDamageButton(root) {
+	return root.querySelector('.message-buttons .damage:not(.dmc-half-damage-button), .message-buttons [data-action="damage"]:not(.dmc-half-damage-button)');
+}
+
+async function createHalfDamageFromSourceMessage(message, root) {
+	const damageButton = getSourceDamageButton(root);
+	if (!(damageButton instanceof HTMLElement)) return null;
 
 	const pendingMessage = waitForNextDamageMessage(message);
-	const created = await message._strike.damage();
+	damageButton.click();
+	const created = null;
 	const damageMessage = await resolveCreatedDamageMessage(message, created) ?? await pendingMessage;
 	if (!damageMessage) return null;
 
@@ -349,13 +354,14 @@ async function createHalfDamageFromAttackMessage(message) {
 
 function injectHalfDamageButton(message, root) {
 	if (!isHalfDamageEnabled()) return;
-	if (!isPf2eAttackMessage(message)) return;
+	if (!isPf2eDamageSourceMessage(message)) return;
 	if (!canInteractWithMessage(message)) return;
 	if (message.getFlag(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.derivedFromMessageId) return;
 	if (root.querySelector('.dmc-half-damage-button')) return;
 
 	const actionRow = root.querySelector('.message-buttons');
 	if (!actionRow) return;
+	if (!getSourceDamageButton(root)) return;
 
 	const button = document.createElement('button');
 	button.type = 'button';
@@ -365,9 +371,9 @@ function injectHalfDamageButton(message, root) {
 		event.preventDefault();
 		event.stopPropagation();
 
-		const derived = await createHalfDamageFromAttackMessage(message);
+		const derived = await createHalfDamageFromSourceMessage(message, root);
 		if (!derived) {
-			ui.notifications.warn('Half damage could not be rolled from that attack.');
+			ui.notifications.warn('Half damage could not be rolled from that card.');
 			return;
 		}
 
