@@ -27,7 +27,7 @@ PF2 Director currently includes:
 - Creature ambience using `pf2e-creature-sounds`, including audibility checks, distance and door muffling, and player-aware playback
 - Victory music and Foundry V14 victory fireworks
 - PF2e party utilities such as Full Rest, Cult tracking, and clustered party token art
-- PF2e chat tools including roll retyping, villain-point rerolls, and half-damage shortcuts for cards that can roll damage
+- PF2e chat tools including roll retyping, villain-point rerolls, and explicit Half buttons for strikes, spells, impulses, and other cards that can roll damage
 - Dramatic health display overlays with optional damage and healing sounds
 - PF2e subsystem export and generation tools, including live creation support when `pf2e-subsystems` is installed
 - Integrated end credits with configurable music, background media, and GM start or stop controls
@@ -73,6 +73,7 @@ When enabled, PF2 Director adds several PF2e-specific chat actions:
 
 - Roll retyping for eligible non-d20 chat cards, allowing typed damage or healing follow-up cards
 - Half-damage buttons for PF2e cards that already expose a damage action, including strikes, spells, and impulses
+- Half uses the same underlying PF2e damage action as the normal damage button, then rewrites the created damage card to half damage so traits and context carry over cleanly
 - Villain-point reroll buttons on eligible d20 chat messages
 
 ### Cluster Party
