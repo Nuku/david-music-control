@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.107] - 2026-06-04
+
+### Fixed
+- **PF2e tools**: Half damage now captures the strike's created damage card even when PF2e does not return a direct chat message object, preventing a normal damage roll from being left behind.
+
 ## [2.4.106] - 2026-06-04
 
 ### Fixed

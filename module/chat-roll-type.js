@@ -289,13 +289,45 @@ function getHalfDamageFlavor(message) {
 	return existingFlavor ? `${existingFlavor}${note}` : note;
 }
 
+function waitForNextDamageMessage(sourceMessage, timeoutMs = 2000) {
+	return new Promise((resolve) => {
+		let settled = false;
+		let timeoutId = null;
+
+		const finish = (message) => {
+			if (settled) return;
+			settled = true;
+			Hooks.off('createChatMessage', onCreateChatMessage);
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
+			resolve(message ?? null);
+		};
+
+		const onCreateChatMessage = (createdMessage) => {
+			const contextType = createdMessage?.flags?.pf2e?.context?.type;
+			const sameActor = createdMessage?.speaker?.actor && sourceMessage?.speaker?.actor
+				? createdMessage.speaker.actor === sourceMessage.speaker.actor
+				: true;
+			if (contextType === 'damage-roll' && sameActor) finish(createdMessage);
+		};
+
+		Hooks.on('createChatMessage', onCreateChatMessage);
+		timeoutId = window.setTimeout(() => finish(null), timeoutMs);
+	});
+}
+
+async function resolveCreatedDamageMessage(sourceMessage, result) {
+	if (result?.id) return game.messages?.get?.(result.id) ?? result;
+	if (result?.message?.id) return game.messages?.get?.(result.message.id) ?? result.message;
+	if (result?.chatMessage?.id) return game.messages?.get?.(result.chatMessage.id) ?? result.chatMessage;
+	return null;
+}
+
 async function createHalfDamageFromAttackMessage(message) {
 	if (!message?._strike?.damage) return null;
 
+	const pendingMessage = waitForNextDamageMessage(message);
 	const created = await message._strike.damage();
-	if (!created?.id) return null;
-
-	const damageMessage = game.messages?.get?.(created.id) ?? created;
+	const damageMessage = await resolveCreatedDamageMessage(message, created) ?? await pendingMessage;
 	if (!damageMessage) return null;
 
 	const roll = getPrimaryRoll(damageMessage);
