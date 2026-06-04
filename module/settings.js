@@ -157,6 +157,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enableHalfDamageButton: {
+		name: 'Enable Half Damage Button',
+		hint: 'Adds a Half button to PF2e damage chat cards and creates a follow-up damage card that preserves the original context as closely as possible.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	creatureAmbienceDebug: {
 		name: 'Creature Ambience Debug Logging',
 		hint: 'Log creature ambience scheduling, pathfinding, and per-user playback decisions to the browser console.',
@@ -435,7 +443,7 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'PF2e Tools',
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
+			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 		},
 		{
 			title: 'Villain Points',

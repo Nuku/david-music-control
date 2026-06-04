@@ -2,6 +2,7 @@ import { MODULE_ID } from './settings.js';
 
 const FLAG_SCOPE = MODULE_ID;
 const RETYPE_FLAG = 'rollRetyping';
+const HALF_DAMAGE_FLAG = 'halfDamage';
 const DAMAGE_TYPES = [
 	'acid',
 	'bludgeoning',
@@ -32,6 +33,10 @@ function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableUntypedRollRetyping');
 }
 
+function isHalfDamageEnabled() {
+	return game.settings.get(MODULE_ID, 'enableHalfDamageButton');
+}
+
 function getMessageRolls(message) {
 	if (Array.isArray(message.rolls) && message.rolls.length > 0) return message.rolls.filter(Boolean);
 	if (message.roll) return [message.roll];
@@ -40,6 +45,10 @@ function getMessageRolls(message) {
 
 function getPrimaryRoll(message) {
 	return getMessageRolls(message)[0] ?? null;
+}
+
+function isPf2eDamageMessage(message) {
+	return message?.flags?.pf2e?.context?.type === 'damage-roll';
 }
 
 function getRollFormula(roll) {
@@ -198,6 +207,111 @@ function getDamageRollClass() {
 		?? Roll;
 }
 
+function halveFormulaPreservingSuffix(formula) {
+	const text = String(formula ?? '').trim();
+	if (!text) return '(0)[untyped]';
+
+	const match = text.match(/^(.*?)(\s*\[[^\]]+\])$/);
+	if (!match) return `(${text}) / 2`;
+
+	const [, body, suffix] = match;
+	return `((${body.trim()}) / 2)${suffix}`;
+}
+
+function getDamageInstanceFormulas(roll) {
+	const instances = Array.isArray(roll?.instances) ? roll.instances : [];
+	const formulas = instances
+		.map((instance) => String(instance?._formula ?? instance?.formula ?? '').trim())
+		.filter(Boolean);
+	if (formulas.length > 0) return formulas;
+
+	const fallback = getRollFormula(roll);
+	return fallback ? [fallback] : [];
+}
+
+function buildHalfDamageFormula(roll) {
+	const instanceFormulas = getDamageInstanceFormulas(roll);
+	if (instanceFormulas.length === 0) return null;
+	if (instanceFormulas.length === 1) return halveFormulaPreservingSuffix(instanceFormulas[0]);
+	return `{${instanceFormulas.map((formula) => halveFormulaPreservingSuffix(formula)).join(', ')}}`;
+}
+
+function clonePf2eDamageFlags(message) {
+	const original = foundry.utils.deepClone(message.flags ?? {});
+	const pf2e = foundry.utils.deepClone(original.pf2e ?? {});
+	const context = foundry.utils.deepClone(pf2e.context ?? {});
+
+	context.type = 'damage-roll';
+	if (context.outcome === 'criticalSuccess') context.outcome = 'success';
+	if (context.unadjustedOutcome === 'criticalSuccess') context.unadjustedOutcome = 'success';
+
+	pf2e.context = context;
+	original.pf2e = pf2e;
+	original[FLAG_SCOPE] = {
+		...(original[FLAG_SCOPE] ?? {}),
+		[HALF_DAMAGE_FLAG]: {
+			derivedFromMessageId: message.id,
+			createdBy: game.user.id,
+		},
+	};
+
+	return original;
+}
+
+function getHalfDamageFlavor(message) {
+	const existingFlavor = String(message.flavor ?? '').trim();
+	const note = '<p class="dmc-roll-retag-status">Half damage</p>';
+	return existingFlavor ? `${existingFlavor}${note}` : note;
+}
+
+async function createHalfDamageMessage(message) {
+	const roll = getPrimaryRoll(message);
+	if (!roll) return null;
+
+	const DamageRollClass = getDamageRollClass();
+	const formula = buildHalfDamageFormula(roll);
+	if (!formula) return null;
+
+	const halfRoll = await new DamageRollClass(formula).evaluate({ async: true });
+	return await halfRoll.toMessage({
+		speaker: foundry.utils.deepClone(message.speaker ?? {}),
+		whisper: [...(message.whisper ?? [])],
+		blind: !!message.blind,
+		flavor: getHalfDamageFlavor(message),
+		flags: clonePf2eDamageFlags(message),
+	});
+}
+
+function injectHalfDamageButton(message, root) {
+	if (!isHalfDamageEnabled()) return;
+	if (!isPf2eDamageMessage(message)) return;
+	if (!canInteractWithMessage(message)) return;
+	if (message.getFlag(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.derivedFromMessageId) return;
+	if (root.querySelector('.dmc-half-damage-button')) return;
+
+	const actionRow = root.querySelector('.message-buttons, .damage-application');
+	if (!actionRow) return;
+
+	const button = document.createElement('button');
+	button.type = 'button';
+	button.className = 'dmc-half-damage-button';
+	button.textContent = 'Half';
+	button.addEventListener('click', async (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		const derived = await createHalfDamageMessage(message);
+		if (!derived) {
+			ui.notifications.warn('That damage roll could not be halved.');
+			return;
+		}
+
+		ui.notifications.info('Created half-damage card.');
+	});
+
+	actionRow.appendChild(button);
+}
+
 function getStandardDamageFormula(total, mode, damageType) {
 	const numericTotal = Math.abs(Number(total) || 0);
 	if (mode === 'healing') {
@@ -266,6 +380,7 @@ Hooks.on('renderChatMessage', (message, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
 
-	if (!isEligibleMessage(message)) return;
-	injectRetypingControls(message, root.querySelector('.message-content') ?? root);
+	const contentRoot = root.querySelector('.message-content') ?? root;
+	if (isEligibleMessage(message)) injectRetypingControls(message, contentRoot);
+	injectHalfDamageButton(message, root);
 });

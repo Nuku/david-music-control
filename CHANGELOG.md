@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.104] - 2026-06-04
+
+### Fixed
+- **PF2e tools**: Half-damage follow-up cards now preserve the original PF2e damage context, flags, and trait typing much more reliably.
+
 ## [2.4.103] - 2026-05-27
 
 ### Changed
