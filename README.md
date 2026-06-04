@@ -4,7 +4,7 @@
 ![GitHub Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/latest/pf2-david-music-control.zip)
 ![GitHub All Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/pf2-david-music-control.zip?label=downloads)
 
-Control combat music, scene music, victory cues, PF2e party tools, and cinematic end credits in Foundry VTT.
+PF2 Director is a Foundry VTT module for encounter music control, scene presentation, PF2e table utilities, dramatic overlays, subsystem export tools, and cinematic end credits.
 
 ## Installation
 
@@ -17,50 +17,63 @@ Compatibility:
 - Minimum Foundry version: `13`
 - Verified Foundry version: `14`
 
-## Core Music Features
+## Feature Overview
 
-- Marks playlists as combat playlists and selects encounter music when combat starts.
-- Supports a default combat playlist when nothing else has higher priority.
-- Lets tokens define their own combat playlist, track, and priority.
-- Supports token rules such as HP or resource thresholds, turn-only tracks, and combat theme tokens.
-- Lets the GM set encounter music directly from the combat tracker.
-- Supports PF2e trait-based encounter music rules.
-- Pauses and restores non-combat ambience around combat.
-- Plays optional victory music after combat.
-- After victory music ends, automatically resumes the saved pre-combat ambience.
-- On Foundry V14+, can display colorful victory fireworks scaled from the same XP logic used for victory music.
+PF2 Director currently includes:
 
-## Scene Music
+- Combat music selection with per-token music, priorities, combat themes, encounter overrides, and a default combat playlist fallback
+- Scene music lookup and manual scene-music playback from the playlists sidebar
+- PF2e trait-based combat music rules
+- Creature ambience using `pf2e-creature-sounds`, including audibility checks, distance and door muffling, and player-aware playback
+- Victory music and Foundry V14 victory fireworks
+- PF2e party utilities such as Full Rest, Cult tracking, and clustered party token art
+- PF2e chat tools including roll retyping, villain-point rerolls, and half-damage shortcuts for cards that can roll damage
+- Dramatic health display overlays with optional damage and healing sounds
+- PF2e subsystem export and generation tools, including live creation support when `pf2e-subsystems` is installed
+- Integrated end credits with configurable music, background media, and GM start or stop controls
 
-- `Play Scene Music` can automatically look for music when a scene is activated.
-- A matching playlist by scene name is treated as a strong candidate, but the search continues for matching folders and other playlist options.
-- If multiple candidates are found, the GM gets a chooser.
-- If one candidate is found, it plays directly.
-- If no replacement is found, current music is left alone.
-- A manual `Play Scene Music` button is added to the playlists sidebar.
+## Music
 
-## Configuration
+### Combat Music
 
-Module Settings include:
+- Marks playlists as combat playlists and selects encounter music when combat starts
+- Supports a default combat playlist when nothing else has higher priority
+- Lets tokens define their own combat playlist, track, and priority
+- Supports token rules such as HP or resource thresholds, turn-only tracks, and combat theme tokens
+- Lets the GM set encounter music directly from the combat tracker
+- Supports PF2e trait-based encounter music rules
+- Pauses and restores non-combat ambience around combat
+- Plays optional victory music after combat
+- After victory music ends, automatically resumes the saved pre-combat ambience
+- On Foundry V14+, can display colorful victory fireworks scaled from encounter difficulty
 
-- `Pause Ambience Sounds`
-- `Pause Tracks`
-- `Play Scene Music`
-- `Fireworks on Victory`
-- `Enable PF2e Cult System`
-- `Enable Full Rest`
-- `Enable At-Will Recharge`
-- `Enable Villain Points`
+### Scene Music
 
-The settings UI also includes:
+- `Play Scene Music` can automatically look for music when a scene is activated
+- A matching playlist by scene name is treated as a strong candidate, but the search continues through folders and other playlist options
+- If multiple candidates are found, the GM gets a chooser
+- If one candidate is found, it plays directly
+- If no replacement is found, current music is left alone
+- A manual `Play Scene Music` button is added to the playlists sidebar
 
-- Export / Import for music configuration and trait rules
-- End credits music configuration
-- End credits background image or video configuration
-- End credits In Memoriam folder override
-- End credits start / stop control
+### Creature Ambience
 
-## PF2e Party Tools
+When `Enable Creature Ambience` is on:
+
+- ambient creature noises are sourced from `pf2e-creature-sounds`
+- audibility is checked to each player's nearest suitable token
+- doors and distance reduce what each player hears
+- the GM can enable debug logging and a local test override when no players are connected
+
+## PF2e Tools
+
+### Chat Tools
+
+When enabled, PF2 Director adds several PF2e-specific chat actions:
+
+- Roll retyping for eligible non-d20 chat cards, allowing typed damage or healing follow-up cards
+- Half-damage buttons for PF2e cards that already expose a damage action, including strikes, spells, and impulses
+- Villain-point reroll buttons on eligible d20 chat messages
 
 ### Cluster Party
 
@@ -83,10 +96,12 @@ When `Enable At-Will Recharge` is on, PF2e items with `(at will)` in their name 
 
 When `Enable Villain Points` is on:
 
-- every time a PF2e character's hero point total drops, the module counts that as hero point use
-- every configured number of tracked hero point uses grant the GM 1 villain point, defaulting to 2
-- if the most recent 5 chat messages include a gap of 12 hours or more between consecutive messages, tracked hero point uses and villain points both reset to 0
-- the GM gets a `Villain Point` button on d20 chat messages and can spend 1 point to post a reroll of that check
+- every time a PF2e character's hero or mythic point total drops, the module tracks that spend
+- every configured number of tracked point spends grants the GM 1 villain point, defaulting to 2
+- if the most recent 5 chat messages include a gap of 12 hours or more between consecutive messages, tracked point uses and villain points reset to 0
+- the GM gets a villain-point reroll button on eligible d20 chat messages
+- the GM gets a floating villain-point widget for manual adjustment
+- the module can play an optional synchronized dread sound and overlay when villain points are gained or spent
 
 ### Cult System
 
@@ -98,6 +113,47 @@ When `Enable PF2e Cult System` is on, PF2e party sheets gain a `Cult` tab for tr
 - phase notes and current event state
 - cult level checks and related rolls
 
+### Subsystem Export And Generation
+
+PF2 Director includes subsystem tools for PF2e journals and GM prep:
+
+- parses subsystem-style journal text into exportable subsystem JSON
+- supports Influence, Research, and Infiltration style data
+- can generate new subsystem content from a chosen level
+- can download generated subsystem data as JSON
+- can create live subsystem entries directly when `pf2e-subsystems` is installed and enabled
+
+## Dramatic Health Display
+
+The module includes a dramatic health overlay system that can:
+
+- show large transient damage or healing panels when visible tokens lose or gain HP
+- animate HP bars and deltas with configurable thresholds
+- optionally show numbers or rely more on visual presentation
+- play separate configurable audio for damage and healing
+
+## Settings
+
+The settings UI is grouped into sections for:
+
+- Music
+- PF2e Tools
+- Villain Points
+- Dramatic Health Display
+- End Credits
+
+Additional settings menus include:
+
+- trait music rule configuration
+- victory music configuration
+- victory fireworks image configuration
+- villain point dread sound configuration
+- dramatic health sound configuration
+- end credits music configuration
+- end credits background image or video configuration
+- end credits In Memoriam folder override
+- end credits start or stop control
+
 ## End Credits
 
 The module includes integrated end credits tools for campaign finales and session wrap-ups.
@@ -107,6 +163,7 @@ GMs can configure:
 - optional credits music
 - optional background image or video
 - background opacity
+- In Memoriam source folder
 
 Credits can then be:
 
