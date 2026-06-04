@@ -47,8 +47,9 @@ function getPrimaryRoll(message) {
 	return getMessageRolls(message)[0] ?? null;
 }
 
-function isPf2eDamageMessage(message) {
-	return message?.flags?.pf2e?.context?.type === 'damage-roll';
+function isPf2eAttackMessage(message) {
+	const type = message?.flags?.pf2e?.context?.type;
+	return (type === 'attack-roll' || type === 'spell-attack-roll') && message?._strike;
 }
 
 function getRollFormula(roll) {
@@ -236,14 +237,38 @@ function buildHalfDamageFormula(roll) {
 	return `{${instanceFormulas.map((formula) => halveFormulaPreservingSuffix(formula)).join(', ')}}`;
 }
 
-function clonePf2eDamageFlags(message) {
+function getHalfDamageTarget(message) {
+	if (message?.target?.actor && message?.target?.token) {
+		return {
+			actor: message.target.actor.uuid,
+			token: message.target.token.uuid,
+		};
+	}
+
+	const selectedTarget = game.user.targets?.first?.()?.document;
+	if (selectedTarget?.actor && selectedTarget?.uuid) {
+		return {
+			actor: selectedTarget.actor.uuid,
+			token: selectedTarget.uuid,
+		};
+	}
+
+	return null;
+}
+
+function cloneAttackFlagsAsHalfDamage(message) {
 	const original = foundry.utils.deepClone(message.flags ?? {});
 	const pf2e = foundry.utils.deepClone(original.pf2e ?? {});
 	const context = foundry.utils.deepClone(pf2e.context ?? {});
+	const target = getHalfDamageTarget(message);
 
 	context.type = 'damage-roll';
 	if (context.outcome === 'criticalSuccess') context.outcome = 'success';
 	if (context.unadjustedOutcome === 'criticalSuccess') context.unadjustedOutcome = 'success';
+	if (target) {
+		context.target = target;
+		pf2e.target = target;
+	}
 
 	pf2e.context = context;
 	original.pf2e = pf2e;
@@ -264,8 +289,10 @@ function getHalfDamageFlavor(message) {
 	return existingFlavor ? `${existingFlavor}${note}` : note;
 }
 
-async function createHalfDamageMessage(message) {
-	const roll = getPrimaryRoll(message);
+async function createHalfDamageFromAttackMessage(message) {
+	if (!message?._strike?.damage) return null;
+
+	const roll = await message._strike.damage({ createMessage: false });
 	if (!roll) return null;
 
 	const DamageRollClass = getDamageRollClass();
@@ -278,18 +305,18 @@ async function createHalfDamageMessage(message) {
 		whisper: [...(message.whisper ?? [])],
 		blind: !!message.blind,
 		flavor: getHalfDamageFlavor(message),
-		flags: clonePf2eDamageFlags(message),
+		flags: cloneAttackFlagsAsHalfDamage(message),
 	});
 }
 
 function injectHalfDamageButton(message, root) {
 	if (!isHalfDamageEnabled()) return;
-	if (!isPf2eDamageMessage(message)) return;
+	if (!isPf2eAttackMessage(message)) return;
 	if (!canInteractWithMessage(message)) return;
 	if (message.getFlag(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.derivedFromMessageId) return;
 	if (root.querySelector('.dmc-half-damage-button')) return;
 
-	const actionRow = root.querySelector('.message-buttons, .damage-application');
+	const actionRow = root.querySelector('.message-buttons');
 	if (!actionRow) return;
 
 	const button = document.createElement('button');
@@ -300,16 +327,21 @@ function injectHalfDamageButton(message, root) {
 		event.preventDefault();
 		event.stopPropagation();
 
-		const derived = await createHalfDamageMessage(message);
+		const derived = await createHalfDamageFromAttackMessage(message);
 		if (!derived) {
-			ui.notifications.warn('That damage roll could not be halved.');
+			ui.notifications.warn('Half damage could not be rolled from that attack.');
 			return;
 		}
 
 		ui.notifications.info('Created half-damage card.');
 	});
 
-	actionRow.appendChild(button);
+	const successButton = actionRow.querySelector('.success');
+	if (successButton?.parentElement === actionRow) {
+		successButton.insertAdjacentElement('afterend', button);
+	} else {
+		actionRow.appendChild(button);
+	}
 }
 
 function getStandardDamageFormula(total, mode, damageType) {

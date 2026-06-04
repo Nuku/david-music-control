@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.105] - 2026-06-04
+
+### Fixed
+- **PF2e tools**: The Half button now appears on attack cards and rolls half damage directly from the strike, preserving the original one-roll damage flow while keeping PF2e traits and context more reliably intact.
+
 ## [2.4.104] - 2026-06-04
 
 ### Fixed
