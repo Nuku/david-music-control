@@ -256,11 +256,11 @@ function getHalfDamageTarget(message) {
 	return null;
 }
 
-function cloneAttackFlagsAsHalfDamage(message) {
+function cloneDamageFlagsAsHalfDamage(message, sourceMessage) {
 	const original = foundry.utils.deepClone(message.flags ?? {});
 	const pf2e = foundry.utils.deepClone(original.pf2e ?? {});
 	const context = foundry.utils.deepClone(pf2e.context ?? {});
-	const target = getHalfDamageTarget(message);
+	const target = getHalfDamageTarget(sourceMessage);
 
 	context.type = 'damage-roll';
 	if (context.outcome === 'criticalSuccess') context.outcome = 'success';
@@ -292,7 +292,13 @@ function getHalfDamageFlavor(message) {
 async function createHalfDamageFromAttackMessage(message) {
 	if (!message?._strike?.damage) return null;
 
-	const roll = await message._strike.damage({ createMessage: false });
+	const created = await message._strike.damage();
+	if (!created?.id) return null;
+
+	const damageMessage = game.messages?.get?.(created.id) ?? created;
+	if (!damageMessage) return null;
+
+	const roll = getPrimaryRoll(damageMessage);
 	if (!roll) return null;
 
 	const DamageRollClass = getDamageRollClass();
@@ -300,13 +306,13 @@ async function createHalfDamageFromAttackMessage(message) {
 	if (!formula) return null;
 
 	const halfRoll = await new DamageRollClass(formula).evaluate({ async: true });
-	return await halfRoll.toMessage({
-		speaker: foundry.utils.deepClone(message.speaker ?? {}),
-		whisper: [...(message.whisper ?? [])],
-		blind: !!message.blind,
-		flavor: getHalfDamageFlavor(message),
-		flags: cloneAttackFlagsAsHalfDamage(message),
+	await damageMessage.update({
+		rolls: [halfRoll],
+		content: `${halfRoll.total}`,
+		flavor: getHalfDamageFlavor(damageMessage),
+		flags: cloneDamageFlagsAsHalfDamage(damageMessage, message),
 	});
+	return damageMessage;
 }
 
 function injectHalfDamageButton(message, root) {

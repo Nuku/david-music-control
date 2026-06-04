@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.106] - 2026-06-04
+
+### Fixed
+- **PF2e tools**: Half damage now reuses the real PF2e damage card generated from the strike, so damage-only traits and flags such as adamantine carry over correctly.
+
 ## [2.4.105] - 2026-06-04
 
 ### Fixed
