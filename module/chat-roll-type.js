@@ -322,7 +322,13 @@ async function resolveCreatedDamageMessage(sourceMessage, result) {
 }
 
 function getSourceDamageButton(root) {
-	return root.querySelector('.message-buttons .damage:not(.dmc-half-damage-button), .message-buttons [data-action="damage"]:not(.dmc-half-damage-button)');
+	const buttons = Array.from(root.querySelectorAll('button'));
+	return buttons.find((button) => {
+		if (button.classList.contains('dmc-half-damage-button')) return false;
+		const action = String(button.dataset?.action ?? '').toLowerCase();
+		const text = String(button.textContent ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+		return action === 'damage' || text === 'damage' || text === 'roll damage';
+	}) ?? null;
 }
 
 async function createHalfDamageFromSourceMessage(message, root) {
@@ -359,9 +365,10 @@ function injectHalfDamageButton(message, root) {
 	if (message.getFlag(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.derivedFromMessageId) return;
 	if (root.querySelector('.dmc-half-damage-button')) return;
 
-	const actionRow = root.querySelector('.message-buttons');
-	if (!actionRow) return;
-	if (!getSourceDamageButton(root)) return;
+	const damageButton = getSourceDamageButton(root);
+	if (!(damageButton instanceof HTMLElement)) return;
+	const actionRow = damageButton.parentElement;
+	if (!(actionRow instanceof HTMLElement)) return;
 
 	const button = document.createElement('button');
 	button.type = 'button';
@@ -380,12 +387,7 @@ function injectHalfDamageButton(message, root) {
 		ui.notifications.info('Created half-damage card.');
 	});
 
-	const successButton = actionRow.querySelector('.success');
-	if (successButton?.parentElement === actionRow) {
-		successButton.insertAdjacentElement('afterend', button);
-	} else {
-		actionRow.appendChild(button);
-	}
+	damageButton.insertAdjacentElement('afterend', button);
 }
 
 function getStandardDamageFormula(total, mode, damageType) {

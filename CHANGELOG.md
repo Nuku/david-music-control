@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.109] - 2026-06-04
+
+### Fixed
+- **PF2e tools**: Half damage now detects rendered `Damage` and `Roll Damage` buttons by label, so the Half button appears reliably on strike cards and spell cards that can roll damage.
+
+### Changed
+- **Release files**: Removed old versioned zip archives from the repository so only the canonical `pf2-david-music-control.zip` remains tracked.
+
 ## [2.4.108] - 2026-06-04
 
 ### Fixed
