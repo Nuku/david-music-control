@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.110] - 2026-06-05
+
+### Fixed
+- **PF2e tools**: Half damage now creates a fresh half-damage chat card from the real PF2e damage roll instead of mutating the original full-damage card in place, so the displayed value and applied damage stay in sync.
+
 ## [2.4.109] - 2026-06-04
 
 ### Fixed

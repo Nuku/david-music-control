@@ -349,13 +349,16 @@ async function createHalfDamageFromSourceMessage(message, root) {
 	if (!formula) return null;
 
 	const halfRoll = await new DamageRollClass(formula).evaluate({ async: true });
-	await damageMessage.update({
-		rolls: [halfRoll],
-		content: `${halfRoll.total}`,
+	const halfMessage = await halfRoll.toMessage({
+		speaker: foundry.utils.deepClone(damageMessage.speaker ?? {}),
+		whisper: [...(damageMessage.whisper ?? [])],
+		blind: !!damageMessage.blind,
 		flavor: getHalfDamageFlavor(damageMessage),
 		flags: cloneDamageFlagsAsHalfDamage(damageMessage, message),
 	});
-	return damageMessage;
+
+	await damageMessage.delete();
+	return halfMessage;
 }
 
 function injectHalfDamageButton(message, root) {
@@ -363,6 +366,7 @@ function injectHalfDamageButton(message, root) {
 	if (!isPf2eDamageSourceMessage(message)) return;
 	if (!canInteractWithMessage(message)) return;
 	if (message.getFlag(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.derivedFromMessageId) return;
+	if (root.querySelector('.damage-application')) return;
 	if (root.querySelector('.dmc-half-damage-button')) return;
 
 	const damageButton = getSourceDamageButton(root);
