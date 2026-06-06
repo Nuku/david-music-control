@@ -311,15 +311,35 @@ function getHalfDamageTarget(message) {
 }
 
 async function getDamageTargetActor(message) {
+	if (message?.target?.actor) return message.target.actor;
+
 	const target = message?.flags?.pf2e?.target ?? message?.flags?.pf2e?.context?.target ?? null;
-	if (!target?.actor) return null;
-	try {
-		const resolved = await fromUuid(target.actor);
-		if (resolved?.actor) return resolved.actor;
-		return resolved ?? null;
-	} catch (_error) {
-		return null;
+	if (!target) return null;
+
+	const actorCandidates = [target.actor].filter(Boolean);
+	for (const actorRef of actorCandidates) {
+		try {
+			const resolved = await fromUuid(actorRef);
+			if (resolved?.actor) return resolved.actor;
+			if (resolved?.type) return resolved;
+		} catch (_error) {
+			// Fall through to token-based resolution.
+		}
 	}
+
+	const tokenCandidates = [target.token].filter(Boolean);
+	for (const tokenRef of tokenCandidates) {
+		try {
+			const resolved = await fromUuid(tokenRef);
+			if (resolved?.actor) return resolved.actor;
+		} catch (_error) {
+			const scene = canvas?.scene ?? null;
+			const tokenDoc = scene?.tokens?.get?.(tokenRef) ?? null;
+			if (tokenDoc?.actor) return tokenDoc.actor;
+		}
+	}
+
+	return null;
 }
 
 function cloneDamageFlagsAsHalfDamage(message, sourceMessage) {

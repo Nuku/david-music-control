@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.115] - 2026-06-06
+
+### Fixed
+- **PF2e tools**: `Apply Damage Automatically: Only to NPCs` now resolves PF2e damage-card targets more reliably from actor refs, token UUIDs, and token ids.
+
 ## [2.4.114] - 2026-06-06
 
 ### Added
