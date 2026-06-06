@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.113] - 2026-06-06
+
+### Fixed
+- **PF2e tools**: Half damage now derives from the already-rolled damage totals when available, instead of re-rolling the original damage formula to produce the halved card.
+
 ## [2.4.112] - 2026-06-05
 
 ### Fixed

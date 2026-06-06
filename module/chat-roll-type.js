@@ -229,8 +229,34 @@ function getDamageInstanceFormulas(roll) {
 	return fallback ? [fallback] : [];
 }
 
+function splitDamageFormulaSuffix(formula) {
+	const text = String(formula ?? '').trim();
+	const match = text.match(/^(.*?)(\s*\[[^\]]+\])$/);
+	if (!match) return { body: text, suffix: '' };
+	return { body: match[1].trim(), suffix: match[2] };
+}
+
 function buildHalfDamageFormula(roll) {
+	const instances = Array.isArray(roll?.instances) ? roll.instances : [];
 	const instanceFormulas = getDamageInstanceFormulas(roll);
+	if (instances.length > 0 && instances.length === instanceFormulas.length) {
+		const formulas = instances.map((instance, index) => {
+			const total = Number(instance?.total);
+			const { suffix } = splitDamageFormulaSuffix(instanceFormulas[index]);
+			if (!Number.isFinite(total)) return null;
+			return `((${total}) / 2)${suffix}`;
+		}).filter(Boolean);
+		if (formulas.length === 1) return formulas[0];
+		if (formulas.length > 1) return `{${formulas.join(', ')}}`;
+	}
+
+	const total = Number(roll?.total);
+	if (Number.isFinite(total)) {
+		const fallbackFormula = getRollFormula(roll);
+		const { suffix } = splitDamageFormulaSuffix(fallbackFormula);
+		return `((${total}) / 2)${suffix}`;
+	}
+
 	if (instanceFormulas.length === 0) return null;
 	if (instanceFormulas.length === 1) return halveFormulaPreservingSuffix(instanceFormulas[0]);
 	return `{${instanceFormulas.map((formula) => halveFormulaPreservingSuffix(formula)).join(', ')}}`;
