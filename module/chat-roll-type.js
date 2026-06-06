@@ -465,6 +465,43 @@ function getApplyDamageButton(root) {
 	}) ?? null;
 }
 
+function getDamageButtonByMultiplier(root, multiplier) {
+	const normalized = String(multiplier);
+	return Array.from(root.querySelectorAll('button')).find((button) => {
+		if (button.classList.contains('dmc-half-damage-button')) return false;
+		if (button.disabled) return false;
+		return String(button.dataset?.action ?? '') === 'applyDamage'
+			&& String(button.dataset?.multiplier ?? '') === normalized;
+	}) ?? null;
+}
+
+function getOutcomeAutoApplyButton(section) {
+	const outcome = String(section.dataset?.outcome ?? '').trim();
+	switch (outcome) {
+		case 'criticalFailure':
+			return getDamageButtonByMultiplier(section, 2);
+		case 'failure':
+			return getDamageButtonByMultiplier(section, 1);
+		case 'success':
+			return getDamageButtonByMultiplier(section, 0.5);
+		case 'criticalSuccess':
+			return null;
+		default:
+			return getApplyDamageButton(section);
+	}
+}
+
+function shouldUseOutcomeBasedAutoApply(_root, targetSections) {
+	if (!Array.isArray(targetSections) || targetSections.length === 0) return false;
+	return targetSections.some((section) => {
+		const outcome = String(section.dataset?.outcome ?? '').trim();
+		return outcome === 'criticalFailure'
+			|| outcome === 'failure'
+			|| outcome === 'success'
+			|| outcome === 'criticalSuccess';
+	});
+}
+
 async function shouldAutoApplyTargetSection(section, mode) {
 	if (!(section instanceof HTMLElement)) return false;
 	if (mode === 'always') return true;
@@ -486,10 +523,13 @@ async function shouldAutoApplyTargetSection(section, mode) {
 async function getAutoApplyDamageButtons(message, root, mode) {
 	const targetSections = await waitForTargetDamageApplications(root);
 	if (targetSections.length > 0) {
+		const useOutcomeButtons = shouldUseOutcomeBasedAutoApply(root, targetSections);
 		const buttons = [];
 		for (const section of targetSections) {
 			if (!(await shouldAutoApplyTargetSection(section, mode))) continue;
-			const button = getApplyDamageButton(section);
+			const button = useOutcomeButtons
+				? getOutcomeAutoApplyButton(section)
+				: getApplyDamageButton(section);
 			if (button instanceof HTMLElement) buttons.push(button);
 		}
 		if (buttons.length > 0) return buttons;
