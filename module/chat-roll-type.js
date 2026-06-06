@@ -3,6 +3,7 @@ import { MODULE_ID } from './settings.js';
 const FLAG_SCOPE = MODULE_ID;
 const RETYPE_FLAG = 'rollRetyping';
 const HALF_DAMAGE_FLAG = 'halfDamage';
+const AUTO_APPLY_SUPPRESS_MS = 4000;
 const DAMAGE_TYPES = [
 	'acid',
 	'bludgeoning',
@@ -28,6 +29,7 @@ const DAMAGE_TYPES = [
 ];
 
 const HEALING_TYPES = ['healing', 'vitality', 'void'];
+const suppressedAutoApplyActors = new Map();
 
 function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableUntypedRollRetyping');
@@ -35,6 +37,10 @@ function isFeatureEnabled() {
 
 function isHalfDamageEnabled() {
 	return game.settings.get(MODULE_ID, 'enableHalfDamageButton');
+}
+
+function getAutoApplyDamageMode() {
+	return game.settings.get(MODULE_ID, 'autoApplyDamage') || 'none';
 }
 
 function getMessageRolls(message) {
@@ -83,6 +89,29 @@ function getSourceActor(message) {
 	const flags = message.getFlag(FLAG_SCOPE, RETYPE_FLAG);
 	if (flags?.source?.actorId) return game.actors?.get(flags.source.actorId) ?? null;
 	return getActorFromSpeaker(message.speaker);
+}
+
+function getSpeakerActorId(message) {
+	return message?.speaker?.actor ?? null;
+}
+
+function suppressNextAutoApplyForSpeaker(message) {
+	const actorId = getSpeakerActorId(message);
+	if (!actorId) return;
+	suppressedAutoApplyActors.set(actorId, Date.now() + AUTO_APPLY_SUPPRESS_MS);
+}
+
+function consumeAutoApplySuppression(message) {
+	const actorId = getSpeakerActorId(message);
+	if (!actorId) return false;
+	const expiresAt = suppressedAutoApplyActors.get(actorId);
+	if (!expiresAt) return false;
+	if (expiresAt < Date.now()) {
+		suppressedAutoApplyActors.delete(actorId);
+		return false;
+	}
+	suppressedAutoApplyActors.delete(actorId);
+	return true;
 }
 
 function canInteractWithMessage(message) {
@@ -281,6 +310,18 @@ function getHalfDamageTarget(message) {
 	return null;
 }
 
+async function getDamageTargetActor(message) {
+	const target = message?.flags?.pf2e?.target ?? message?.flags?.pf2e?.context?.target ?? null;
+	if (!target?.actor) return null;
+	try {
+		const resolved = await fromUuid(target.actor);
+		if (resolved?.actor) return resolved.actor;
+		return resolved ?? null;
+	} catch (_error) {
+		return null;
+	}
+}
+
 function cloneDamageFlagsAsHalfDamage(message, sourceMessage) {
 	const original = foundry.utils.deepClone(message.flags ?? {});
 	const pf2e = foundry.utils.deepClone(original.pf2e ?? {});
@@ -362,6 +403,7 @@ async function createHalfDamageFromSourceMessage(message, root) {
 	if (!(damageButton instanceof HTMLElement)) return null;
 
 	const pendingMessage = waitForNextDamageMessage(message);
+	suppressNextAutoApplyForSpeaker(message);
 	damageButton.click();
 	const created = null;
 	const damageMessage = await resolveCreatedDamageMessage(message, created) ?? await pendingMessage;
@@ -385,6 +427,42 @@ async function createHalfDamageFromSourceMessage(message, root) {
 
 	await damageMessage.delete();
 	return halfMessage;
+}
+
+function getApplyDamageButton(root) {
+	const buttons = Array.from(root.querySelectorAll('button'));
+	return buttons.find((button) => {
+		const text = String(button.textContent ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+		return text === 'damage' && !button.classList.contains('dmc-half-damage-button');
+	}) ?? null;
+}
+
+async function shouldAutoApplyDamage(message) {
+	if (!game.user.isGM || game.user !== game.user.activeGM) return false;
+	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
+	if (consumeAutoApplySuppression(message)) return false;
+
+	const mode = getAutoApplyDamageMode();
+	if (mode === 'none') return false;
+	if (mode === 'always') return true;
+	if (mode !== 'npc') return false;
+
+	const targetActor = await getDamageTargetActor(message);
+	return targetActor?.type === 'npc';
+}
+
+async function maybeAutoApplyDamage(message, root) {
+	if (!(await shouldAutoApplyDamage(message))) return;
+
+	const damageApplication = root.querySelector('.damage-application');
+	if (!damageApplication) return;
+	const damageButton = getApplyDamageButton(damageApplication);
+	if (!(damageButton instanceof HTMLElement)) return;
+
+	window.setTimeout(() => {
+		if (!document.body.contains(damageButton)) return;
+		damageButton.click();
+	}, 0);
 }
 
 function injectHalfDamageButton(message, root) {
@@ -491,4 +569,5 @@ Hooks.on('renderChatMessage', (message, html) => {
 	const contentRoot = root.querySelector('.message-content') ?? root;
 	if (isEligibleMessage(message)) injectRetypingControls(message, contentRoot);
 	injectHalfDamageButton(message, root);
+	void maybeAutoApplyDamage(message, root);
 });

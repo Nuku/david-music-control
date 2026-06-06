@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.114] - 2026-06-06
+
+### Added
+- **PF2e tools**: Added a GM-controlled `Apply Damage Automatically` setting for PF2e damage cards with `None`, `Only to NPCs`, and `Always` modes.
+
+### Fixed
+- **PF2e tools**: Automatic damage application now skips the temporary full-damage card created during the Half flow, so only the final half-damage card can auto-apply.
+
 ## [2.4.113] - 2026-06-06
 
 ### Fixed

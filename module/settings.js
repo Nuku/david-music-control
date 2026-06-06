@@ -165,6 +165,19 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	autoApplyDamage: {
+		name: 'Apply Damage Automatically',
+		hint: 'For PF2e damage cards, automatically click the damage-application button for no targets, only NPC targets, or all targets.',
+		scope: 'world',
+		config: true,
+		type: String,
+		choices: {
+			none: 'None',
+			npc: 'Only to NPCs',
+			always: 'Always',
+		},
+		default: 'none',
+	},
 	creatureAmbienceDebug: {
 		name: 'Creature Ambience Debug Logging',
 		hint: 'Log creature ambience scheduling, pathfinding, and per-user playback decisions to the browser console.',
@@ -443,7 +456,8 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'PF2e Tools',
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
+			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
+			gmOnlyKeys: ['autoApplyDamage'],
 		},
 		{
 			title: 'Villain Points',
@@ -475,6 +489,11 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		const section = createSection(config.title, config.description);
 		const body = section.querySelector('.dmc-settings-section-body');
 		appendRows(root, body, config.keys);
+		if (!game.user.isGM && config.gmOnlyKeys?.length) {
+			for (const key of config.gmOnlyKeys) {
+				findSettingsRow(body, key)?.remove();
+			}
+		}
 		if (config.extraRow) body.appendChild(config.extraRow);
 		if (body.childElementCount) fragment.appendChild(section);
 	}
