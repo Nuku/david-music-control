@@ -453,8 +453,35 @@ function getApplyDamageButton(root) {
 	const buttons = Array.from(root.querySelectorAll('button'));
 	return buttons.find((button) => {
 		const text = String(button.textContent ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-		return text === 'damage' && !button.classList.contains('dmc-half-damage-button');
+		if (button.classList.contains('dmc-half-damage-button')) return false;
+		if (button.disabled) return false;
+		return text === 'damage' || text === 'full damage' || text === 'apply damage';
 	}) ?? null;
+}
+
+function waitForDamageApplication(root, timeoutMs = 2000) {
+	return new Promise((resolve) => {
+		const immediate = root.querySelector('.damage-application');
+		if (immediate instanceof HTMLElement) {
+			resolve(immediate);
+			return;
+		}
+
+		const observer = new MutationObserver(() => {
+			const found = root.querySelector('.damage-application');
+			if (!(found instanceof HTMLElement)) return;
+			observer.disconnect();
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
+			resolve(found);
+		});
+
+		let timeoutId = window.setTimeout(() => {
+			observer.disconnect();
+			resolve(null);
+		}, timeoutMs);
+
+		observer.observe(root, { childList: true, subtree: true });
+	});
 }
 
 async function shouldAutoApplyDamage(message) {
@@ -474,15 +501,14 @@ async function shouldAutoApplyDamage(message) {
 async function maybeAutoApplyDamage(message, root) {
 	if (!(await shouldAutoApplyDamage(message))) return;
 
-	const damageApplication = root.querySelector('.damage-application');
-	if (!damageApplication) return;
+	const damageApplication = await waitForDamageApplication(root);
+	if (!(damageApplication instanceof HTMLElement)) return;
 	const damageButton = getApplyDamageButton(damageApplication);
 	if (!(damageButton instanceof HTMLElement)) return;
 
 	window.setTimeout(() => {
-		if (!document.body.contains(damageButton)) return;
 		damageButton.click();
-	}, 0);
+	}, 50);
 }
 
 function injectHalfDamageButton(message, root) {
