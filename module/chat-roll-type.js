@@ -122,6 +122,10 @@ function canInteractWithMessage(message) {
 	return actor?.isOwner ?? false;
 }
 
+function isCurrentUserActiveGM() {
+	return game.user?.isGM && game.users?.activeGM?.id === game.user.id;
+}
+
 function getSelectedTargets() {
 	return Array.from(game.user.targets ?? []).map((token) => ({
 		actorId: token.actor?.id ?? null,
@@ -527,7 +531,7 @@ function waitForDamageApplication(root, timeoutMs = 2000) {
 }
 
 async function shouldAutoApplyDamage(message) {
-	if (!game.user.isGM || game.user !== game.user.activeGM) return false;
+	if (!isCurrentUserActiveGM()) return false;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
 	if (consumeAutoApplySuppression(message)) return false;
 
@@ -541,7 +545,7 @@ async function shouldAutoApplyDamage(message) {
 }
 
 async function maybeAutoApplyDamage(message, root) {
-	if (!game.user.isGM || game.user !== game.user.activeGM) return;
+	if (!isCurrentUserActiveGM()) return;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
 	if (consumeAutoApplySuppression(message)) return;
 
