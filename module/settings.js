@@ -1,6 +1,10 @@
 export const MODULE_ID = 'pf2-david-music-control';
 import { exportMusicConfig, importMusicConfig } from './transfer.js';
 
+function hasPf2eTargetHelper() {
+	return !!game.modules?.get('pf2e-target-helper')?.active;
+}
+
 class VictoryFireworksImageConfig extends FormApplication {
 	static get defaultOptions() {
 		return foundry.utils.mergeObject(super.defaultOptions, {
@@ -167,9 +171,9 @@ const settings = {
 	},
 	autoApplyDamage: {
 		name: 'Apply Damage Automatically',
-		hint: 'For PF2e damage cards, automatically click the damage-application button for no targets, only NPC targets, or all targets.',
+		hint: 'Requires PF2e Target Helper. For PF2e damage cards, automatically click the target-aware damage-application button for only NPC targets or all targets.',
 		scope: 'world',
-		config: true,
+		config: false,
 		type: String,
 		choices: {
 			none: 'None',
@@ -341,7 +345,10 @@ export function setSetting(name, value) {
 Hooks.once('setup', () => {
 	for (const [key, setting] of Object.entries(settings)) {
 		try {
-			game.settings.register(MODULE_ID, key, setting);
+			const registration = key === 'autoApplyDamage'
+				? { ...setting, config: hasPf2eTargetHelper() }
+				: setting;
+			game.settings.register(MODULE_ID, key, registration);
 		} catch (error) {
 			console.error(`PF2 Director | Failed to register setting ${key}`, error);
 		}
@@ -456,7 +463,7 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'PF2e Tools',
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
+			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', ...(hasPf2eTargetHelper() ? ['autoApplyDamage'] : []), 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 			gmOnlyKeys: ['autoApplyDamage'],
 		},
 		{

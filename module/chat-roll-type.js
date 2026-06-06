@@ -40,6 +40,7 @@ function isHalfDamageEnabled() {
 }
 
 function getAutoApplyDamageMode() {
+	if (!game.modules?.get('pf2e-target-helper')?.active) return 'none';
 	return game.settings.get(MODULE_ID, 'autoApplyDamage') || 'none';
 }
 
@@ -459,6 +460,47 @@ function getApplyDamageButton(root) {
 	}) ?? null;
 }
 
+async function shouldAutoApplyTargetSection(section, mode) {
+	if (!(section instanceof HTMLElement)) return false;
+	if (mode === 'always') return true;
+	if (mode !== 'npc') return false;
+
+	const isNpcFlag = String(section.dataset?.isnpc ?? '').toLowerCase();
+	if (isNpcFlag === 'true') return true;
+	if (isNpcFlag === 'false') return false;
+
+	const actorId = section.dataset?.actorid ?? null;
+	if (actorId) {
+		const actor = game.actors?.get?.(actorId) ?? null;
+		if (actor) return actor.type === 'npc';
+	}
+
+	return false;
+}
+
+async function getAutoApplyDamageButtons(message, root, mode) {
+	const targetSections = Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
+	if (targetSections.length > 0) {
+		const buttons = [];
+		for (const section of targetSections) {
+			if (!(await shouldAutoApplyTargetSection(section, mode))) continue;
+			const button = getApplyDamageButton(section);
+			if (button instanceof HTMLElement) buttons.push(button);
+		}
+		if (buttons.length > 0) return buttons;
+	}
+
+	if (mode === 'npc') {
+		const targetActor = await getDamageTargetActor(message);
+		if (targetActor?.type !== 'npc') return [];
+	}
+
+	const damageApplication = await waitForDamageApplication(root);
+	if (!(damageApplication instanceof HTMLElement)) return [];
+	const button = getApplyDamageButton(damageApplication);
+	return button instanceof HTMLElement ? [button] : [];
+}
+
 function waitForDamageApplication(root, timeoutMs = 2000) {
 	return new Promise((resolve) => {
 		const immediate = root.querySelector('.damage-application');
@@ -499,15 +541,18 @@ async function shouldAutoApplyDamage(message) {
 }
 
 async function maybeAutoApplyDamage(message, root) {
-	if (!(await shouldAutoApplyDamage(message))) return;
+	if (!game.user.isGM || game.user !== game.user.activeGM) return;
+	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	if (consumeAutoApplySuppression(message)) return;
 
-	const damageApplication = await waitForDamageApplication(root);
-	if (!(damageApplication instanceof HTMLElement)) return;
-	const damageButton = getApplyDamageButton(damageApplication);
-	if (!(damageButton instanceof HTMLElement)) return;
+	const mode = getAutoApplyDamageMode();
+	if (mode === 'none') return;
+
+	const damageButtons = await getAutoApplyDamageButtons(message, root, mode);
+	if (damageButtons.length === 0) return;
 
 	window.setTimeout(() => {
-		damageButton.click();
+		for (const button of damageButtons) button.click();
 	}, 50);
 }
 
