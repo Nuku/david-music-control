@@ -483,7 +483,7 @@ async function shouldAutoApplyTargetSection(section, mode) {
 }
 
 async function getAutoApplyDamageButtons(message, root, mode) {
-	const targetSections = Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
+	const targetSections = await waitForTargetDamageApplications(root);
 	if (targetSections.length > 0) {
 		const buttons = [];
 		for (const section of targetSections) {
@@ -524,6 +524,32 @@ function waitForDamageApplication(root, timeoutMs = 2000) {
 		let timeoutId = window.setTimeout(() => {
 			observer.disconnect();
 			resolve(null);
+		}, timeoutMs);
+
+		observer.observe(root, { childList: true, subtree: true });
+	});
+}
+
+function waitForTargetDamageApplications(root, timeoutMs = 2000) {
+	return new Promise((resolve) => {
+		const getSections = () => Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
+		const immediate = getSections();
+		if (immediate.length > 0) {
+			resolve(immediate);
+			return;
+		}
+
+		const observer = new MutationObserver(() => {
+			const found = getSections();
+			if (found.length === 0) return;
+			observer.disconnect();
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
+			resolve(found);
+		});
+
+		let timeoutId = window.setTimeout(() => {
+			observer.disconnect();
+			resolve([]);
 		}, timeoutMs);
 
 		observer.observe(root, { childList: true, subtree: true });
