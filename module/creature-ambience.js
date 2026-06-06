@@ -17,6 +17,7 @@ const BASE_VOLUME = 0.65;
 const DOOR_ATTENUATION = 0.5;
 const DISTANCE_ATTENUATION = 0.99;
 const MIN_AUDIBLE_VOLUME = 0.1;
+const PLAYBACK_VOLUME_EXPONENT = 2;
 const SHORT_RETRY_MIN_SECONDS = 1;
 const SHORT_RETRY_MAX_SECONDS = 10;
 const NORMAL_RETRY_MIN_SECONDS = 31;
@@ -529,13 +530,21 @@ function computeVolume(pathResult) {
 	return BASE_VOLUME * Math.pow(DOOR_ATTENUATION, pathResult.closedDoors) * Math.pow(DISTANCE_ATTENUATION, pathResult.squares);
 }
 
+function computePlaybackVolume(volume) {
+	const clamped = Math.max(0, Math.min(1, Number(volume) || 0));
+	return Math.pow(clamped, PLAYBACK_VOLUME_EXPONENT);
+}
+
 function triggerLocalSoundPlayback({ src, volume }) {
 	try {
-		logDebug(`Local playback requested for ${src} at volume ${Math.max(0, Math.min(1, volume)).toFixed(4)}.`);
+		const playbackVolume = computePlaybackVolume(volume);
+		logDebug(
+			`Local playback requested for ${src} at computed volume ${Math.max(0, Math.min(1, volume)).toFixed(4)} and playback volume ${playbackVolume.toFixed(4)}.`
+		);
 		foundry.audio.AudioHelper.play(
 			{
 				src,
-				volume: Math.max(0, Math.min(1, volume)),
+				volume: playbackVolume,
 				autoplay: true,
 				loop: false,
 			},

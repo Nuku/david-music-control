@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.111] - 2026-06-05
+
+### Changed
+- **Music**: Creature ambience now applies a stronger playback-volume curve so distance and door muffling produce a more noticeable loudness drop in practice.
+
 ## [2.4.110] - 2026-06-05
 
 ### Fixed
