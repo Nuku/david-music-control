@@ -4,6 +4,7 @@ const FLAG_SCOPE = MODULE_ID;
 const RETYPE_FLAG = 'rollRetyping';
 const HALF_DAMAGE_FLAG = 'halfDamage';
 const AUTO_APPLY_SUPPRESS_MS = 4000;
+const autoAppliedMessageIds = new Set();
 const DAMAGE_TYPES = [
 	'acid',
 	'bludgeoning',
@@ -559,6 +560,7 @@ function waitForTargetDamageApplications(root, timeoutMs = 2000) {
 async function shouldAutoApplyDamage(message) {
 	if (!isCurrentUserActiveGM()) return false;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
+	if (autoAppliedMessageIds.has(message.id)) return false;
 	if (consumeAutoApplySuppression(message)) return false;
 
 	const mode = getAutoApplyDamageMode();
@@ -573,6 +575,7 @@ async function shouldAutoApplyDamage(message) {
 async function maybeAutoApplyDamage(message, root) {
 	if (!isCurrentUserActiveGM()) return;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	if (autoAppliedMessageIds.has(message.id)) return;
 	if (consumeAutoApplySuppression(message)) return;
 
 	const mode = getAutoApplyDamageMode();
@@ -580,6 +583,7 @@ async function maybeAutoApplyDamage(message, root) {
 
 	const damageButtons = await getAutoApplyDamageButtons(message, root, mode);
 	if (damageButtons.length === 0) return;
+	autoAppliedMessageIds.add(message.id);
 
 	window.setTimeout(() => {
 		for (const button of damageButtons) button.click();
