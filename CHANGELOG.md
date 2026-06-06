@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.112] - 2026-06-05
+
+### Fixed
+- **Music**: Creature ambience now ignores PF2e `loot` actors, so chests and loot-bundle actors are never selected as ambient sound sources.
+
 ## [2.4.111] - 2026-06-05
 
 ### Changed

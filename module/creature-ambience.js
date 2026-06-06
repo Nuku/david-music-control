@@ -96,6 +96,7 @@ function actorIsPlayerObserved(actor) {
 
 function actorCanMakeAmbientSound(actor) {
 	if (!actor) return false;
+	if (actor.type === 'loot') return false;
 	const hpValue = Number(actor.system?.attributes?.hp?.value);
 	if (Number.isFinite(hpValue) && hpValue <= 0) return false;
 	return true;
