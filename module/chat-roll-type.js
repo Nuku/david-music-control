@@ -5,6 +5,7 @@ const RETYPE_FLAG = 'rollRetyping';
 const HALF_DAMAGE_FLAG = 'halfDamage';
 const AUTO_APPLY_SUPPRESS_MS = 4000;
 const autoAppliedMessageIds = new Set();
+const suppressedAutoApplyMessageIds = new Set();
 const DAMAGE_TYPES = [
 	'acid',
 	'bludgeoning',
@@ -113,6 +114,18 @@ function consumeAutoApplySuppression(message) {
 		return false;
 	}
 	suppressedAutoApplyActors.delete(actorId);
+	return true;
+}
+
+function suppressAutoApplyForMessageId(messageId) {
+	if (!messageId) return;
+	suppressedAutoApplyMessageIds.add(messageId);
+}
+
+function consumeAutoApplyMessageSuppression(message) {
+	if (!message?.id) return false;
+	if (!suppressedAutoApplyMessageIds.has(message.id)) return false;
+	suppressedAutoApplyMessageIds.delete(message.id);
 	return true;
 }
 
@@ -381,7 +394,7 @@ function getHalfDamageFlavor(message) {
 	return existingFlavor ? `${existingFlavor}${note}` : note;
 }
 
-function waitForNextDamageMessage(sourceMessage, timeoutMs = 2000) {
+function waitForNextDamageMessage(sourceMessage, timeoutMs = 2000, onMatch = null) {
 	return new Promise((resolve) => {
 		let settled = false;
 		let timeoutId = null;
@@ -399,7 +412,10 @@ function waitForNextDamageMessage(sourceMessage, timeoutMs = 2000) {
 			const sameActor = createdMessage?.speaker?.actor && sourceMessage?.speaker?.actor
 				? createdMessage.speaker.actor === sourceMessage.speaker.actor
 				: true;
-			if (contextType === 'damage-roll' && sameActor) finish(createdMessage);
+			if (contextType === 'damage-roll' && sameActor) {
+				onMatch?.(createdMessage);
+				finish(createdMessage);
+			}
 		};
 
 		Hooks.on('createChatMessage', onCreateChatMessage);
@@ -428,7 +444,9 @@ async function createHalfDamageFromSourceMessage(message, root) {
 	const damageButton = getSourceDamageButton(root);
 	if (!(damageButton instanceof HTMLElement)) return null;
 
-	const pendingMessage = waitForNextDamageMessage(message);
+	const pendingMessage = waitForNextDamageMessage(message, 2000, (createdMessage) => {
+		suppressAutoApplyForMessageId(createdMessage?.id);
+	});
 	suppressNextAutoApplyForSpeaker(message);
 	damageButton.click();
 	const created = null;
@@ -601,6 +619,7 @@ async function shouldAutoApplyDamage(message) {
 	if (!isCurrentUserActiveGM()) return false;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
 	if (autoAppliedMessageIds.has(message.id)) return false;
+	if (consumeAutoApplyMessageSuppression(message)) return false;
 	if (consumeAutoApplySuppression(message)) return false;
 
 	const mode = getAutoApplyDamageMode();
@@ -616,6 +635,7 @@ async function maybeAutoApplyDamage(message, root) {
 	if (!isCurrentUserActiveGM()) return;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
 	if (autoAppliedMessageIds.has(message.id)) return;
+	if (consumeAutoApplyMessageSuppression(message)) return;
 	if (consumeAutoApplySuppression(message)) return;
 
 	const mode = getAutoApplyDamageMode();
