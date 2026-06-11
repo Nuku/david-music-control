@@ -394,6 +394,61 @@ function getHalfDamageFlavor(message) {
 	return existingFlavor ? `${existingFlavor}${note}` : note;
 }
 
+function forceHalfDamageContextOnSource(source) {
+	const originalFlags = foundry.utils.deepClone(source.flags ?? {});
+	const pf2e = foundry.utils.deepClone(originalFlags.pf2e ?? {});
+	const context = foundry.utils.deepClone(pf2e.context ?? {});
+
+	context.outcome = 'success';
+	context.unadjustedOutcome = 'success';
+	context.type ??= 'damage-roll';
+	pf2e.context = context;
+	originalFlags.pf2e = pf2e;
+	originalFlags[FLAG_SCOPE] = {
+		...(originalFlags[FLAG_SCOPE] ?? {}),
+		[HALF_DAMAGE_FLAG]: {
+			...(originalFlags[FLAG_SCOPE]?.[HALF_DAMAGE_FLAG] ?? {}),
+			forcedOutcome: 'success',
+			createdBy: game.user.id,
+		},
+	};
+
+	return originalFlags;
+}
+
+function registerNextHalfDamageMessageMutation(sourceMessage, timeoutMs = 2000) {
+	return new Promise((resolve) => {
+		let settled = false;
+		let timeoutId = null;
+
+		const finish = (matched) => {
+			if (settled) return;
+			settled = true;
+			Hooks.off('preCreateChatMessage', onPreCreateChatMessage);
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
+			resolve(matched);
+		};
+
+		const onPreCreateChatMessage = (createdMessage) => {
+			const contextType = createdMessage?.flags?.pf2e?.context?.type;
+			const sameActor = createdMessage?.speaker?.actor && sourceMessage?.speaker?.actor
+				? createdMessage.speaker.actor === sourceMessage.speaker.actor
+				: true;
+			if (contextType !== 'damage-roll' || !sameActor) return;
+
+			const nextFlags = forceHalfDamageContextOnSource(createdMessage.toObject());
+			createdMessage.updateSource({
+				flags: nextFlags,
+				flavor: getHalfDamageFlavor(createdMessage),
+			});
+			finish(true);
+		};
+
+		Hooks.on('preCreateChatMessage', onPreCreateChatMessage);
+		timeoutId = window.setTimeout(() => finish(false), timeoutMs);
+	});
+}
+
 function waitForNextDamageMessage(sourceMessage, timeoutMs = 2000, onMatch = null) {
 	return new Promise((resolve) => {
 		let settled = false;
@@ -444,33 +499,10 @@ async function createHalfDamageFromSourceMessage(message, root) {
 	const damageButton = getSourceDamageButton(root);
 	if (!(damageButton instanceof HTMLElement)) return null;
 
-	const pendingMessage = waitForNextDamageMessage(message, 2000, (createdMessage) => {
-		suppressAutoApplyForMessageId(createdMessage?.id);
-	});
-	suppressNextAutoApplyForSpeaker(message);
+	const mutationReady = registerNextHalfDamageMessageMutation(message);
 	damageButton.click();
-	const created = null;
-	const damageMessage = await resolveCreatedDamageMessage(message, created) ?? await pendingMessage;
-	if (!damageMessage) return null;
-
-	const roll = getPrimaryRoll(damageMessage);
-	if (!roll) return null;
-
-	const DamageRollClass = getDamageRollClass();
-	const formula = buildHalfDamageFormula(roll);
-	if (!formula) return null;
-
-	const halfRoll = await new DamageRollClass(formula).evaluate({ async: true });
-	const halfMessage = await halfRoll.toMessage({
-		speaker: foundry.utils.deepClone(damageMessage.speaker ?? {}),
-		whisper: [...(damageMessage.whisper ?? [])],
-		blind: !!damageMessage.blind,
-		flavor: getHalfDamageFlavor(damageMessage),
-		flags: cloneDamageFlagsAsHalfDamage(damageMessage, message),
-	});
-
-	await damageMessage.delete();
-	return halfMessage;
+	const mutated = await mutationReady;
+	return mutated ? true : null;
 }
 
 function getApplyDamageButton(root) {
