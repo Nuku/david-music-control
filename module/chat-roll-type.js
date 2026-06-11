@@ -422,6 +422,25 @@ function normalizeHalfDamageOutcomes(value) {
 	return value;
 }
 
+function forceTargetHelperHalfDamage(flags) {
+	const helper = foundry.utils.deepClone(flags?.['pf2e-target-helper'] ?? {});
+	const damageRows = foundry.utils.deepClone(helper.damageRows ?? {});
+
+	for (const collectionKey of ['targets', 'splashTargets']) {
+		const collection = damageRows[collectionKey];
+		if (!collection || typeof collection !== 'object') continue;
+		for (const entry of Object.values(collection)) {
+			if (!entry || typeof entry !== 'object') continue;
+			entry.outcome = 'success';
+			if ('unadjustedOutcome' in entry) entry.unadjustedOutcome = 'success';
+			if ('degreeOfSuccess' in entry) entry.degreeOfSuccess = 'success';
+		}
+	}
+
+	helper.damageRows = damageRows;
+	return helper;
+}
+
 function forceHalfDamageContextOnSource(source) {
 	const originalFlags = foundry.utils.deepClone(source.flags ?? {});
 	const pf2e = normalizeHalfDamageOutcomes(foundry.utils.deepClone(originalFlags.pf2e ?? {}));
@@ -432,6 +451,9 @@ function forceHalfDamageContextOnSource(source) {
 	context.type ??= 'damage-roll';
 	pf2e.context = context;
 	originalFlags.pf2e = pf2e;
+	if (originalFlags['pf2e-target-helper']) {
+		originalFlags['pf2e-target-helper'] = forceTargetHelperHalfDamage(originalFlags);
+	}
 	originalFlags[FLAG_SCOPE] = {
 		...(originalFlags[FLAG_SCOPE] ?? {}),
 		[HALF_DAMAGE_FLAG]: {
@@ -574,6 +596,16 @@ function isForcedHalfDamageMessage(message) {
 }
 
 function normalizeRenderedHalfDamageCard(root) {
+	const allDamageSections = Array.from(root.querySelectorAll('.damage-application'));
+	for (const section of allDamageSections) {
+		const fullButton = getDamageButtonByMultiplier(section, 1);
+		const halfButton = getDamageButtonByMultiplier(section, 0.5);
+		const doubleButton = getDamageButtonByMultiplier(section, 2);
+		fullButton?.classList?.remove?.('dmc-forced-half-active');
+		halfButton?.classList?.add?.('dmc-forced-half-active');
+		doubleButton?.classList?.remove?.('dmc-forced-half-active');
+	}
+
 	const targetSections = Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
 	for (const section of targetSections) {
 		section.dataset.outcome = 'success';
