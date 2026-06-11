@@ -394,9 +394,37 @@ function getHalfDamageFlavor(message) {
 	return existingFlavor ? `${existingFlavor}${note}` : note;
 }
 
+function normalizeOutcomeValue(value) {
+	if (value === 'criticalSuccess') return 'success';
+	if (value === 'success') return 'success';
+	if (value === 'failure') return 'success';
+	if (value === 'criticalFailure') return 'success';
+	return value;
+}
+
+function normalizeHalfDamageOutcomes(value) {
+	if (Array.isArray(value)) {
+		return value.map((entry) => normalizeHalfDamageOutcomes(entry));
+	}
+
+	if (value && typeof value === 'object') {
+		const clone = foundry.utils.deepClone(value);
+		for (const [key, nested] of Object.entries(clone)) {
+			if (key === 'outcome' || key === 'unadjustedOutcome' || key === 'degreeOfSuccess') {
+				clone[key] = normalizeOutcomeValue(nested);
+			} else {
+				clone[key] = normalizeHalfDamageOutcomes(nested);
+			}
+		}
+		return clone;
+	}
+
+	return value;
+}
+
 function forceHalfDamageContextOnSource(source) {
 	const originalFlags = foundry.utils.deepClone(source.flags ?? {});
-	const pf2e = foundry.utils.deepClone(originalFlags.pf2e ?? {});
+	const pf2e = normalizeHalfDamageOutcomes(foundry.utils.deepClone(originalFlags.pf2e ?? {}));
 	const context = foundry.utils.deepClone(pf2e.context ?? {});
 
 	context.outcome = 'success';
