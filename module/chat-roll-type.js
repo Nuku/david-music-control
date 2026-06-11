@@ -569,6 +569,17 @@ function getOutcomeAutoApplyButton(section) {
 	}
 }
 
+function isForcedHalfDamageMessage(message) {
+	return message?.getFlag?.(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.forcedOutcome === 'success';
+}
+
+function normalizeRenderedHalfDamageCard(root) {
+	const targetSections = Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
+	for (const section of targetSections) {
+		section.dataset.outcome = 'success';
+	}
+}
+
 function shouldUseOutcomeBasedAutoApply(_root, targetSections) {
 	if (!Array.isArray(targetSections) || targetSections.length === 0) return false;
 	return targetSections.some((section) => {
@@ -601,13 +612,16 @@ async function shouldAutoApplyTargetSection(section, mode) {
 async function getAutoApplyDamageButtons(message, root, mode) {
 	const targetSections = await waitForTargetDamageApplications(root);
 	if (targetSections.length > 0) {
+		const forceHalf = isForcedHalfDamageMessage(message);
 		const useOutcomeButtons = shouldUseOutcomeBasedAutoApply(root, targetSections);
 		const buttons = [];
 		for (const section of targetSections) {
 			if (!(await shouldAutoApplyTargetSection(section, mode))) continue;
-			const button = useOutcomeButtons
-				? getOutcomeAutoApplyButton(section)
-				: getApplyDamageButton(section);
+			const button = forceHalf
+				? getDamageButtonByMultiplier(section, 0.5)
+				: (useOutcomeButtons
+					? getOutcomeAutoApplyButton(section)
+					: getApplyDamageButton(section));
 			if (button instanceof HTMLElement) buttons.push(button);
 		}
 		if (buttons.length > 0) return buttons;
@@ -810,6 +824,7 @@ async function createDerivedRollMessage(message, { mode, damageType }) {
 Hooks.on('renderChatMessage', (message, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
+	if (isForcedHalfDamageMessage(message)) normalizeRenderedHalfDamageCard(root);
 
 	const contentRoot = root.querySelector('.message-content') ?? root;
 	if (isEligibleMessage(message)) injectRetypingControls(message, contentRoot);
