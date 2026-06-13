@@ -62,6 +62,17 @@ function applyBarEffect(panel, isDamage) {
 	track.classList.add(isDamage ? 'dhb-bar-track-damage' : 'dhb-bar-track-heal');
 }
 
+function animateBarFill(fill, fromPct, toPct) {
+	fill.style.transition = 'none';
+	fill.style.width = `${fromPct * 100}%`;
+	void fill.getBoundingClientRect();
+	requestAnimationFrame(() => {
+		fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.4,0,0.2,1), background-color 0.4s ease`;
+		fill.style.width = `${toPct * 100}%`;
+		fill.className = `dhb-bar-fill ${dhdHpClass(toPct)}`;
+	});
+}
+
 function buildPanel(actor, oldPct, newPct, delta) {
 	const isDamage = delta < 0;
 
@@ -79,9 +90,7 @@ function buildPanel(actor, oldPct, newPct, delta) {
 		requestAnimationFrame(() => {
 			const fill = element.querySelector('.dhb-bar-fill');
 			if (!fill) return;
-			fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.4,0,0.2,1), background-color 0.4s ease`;
-			fill.style.width = `${newPct * 100}%`;
-			fill.className = `dhb-bar-fill ${dhdHpClass(newPct)}`;
+			animateBarFill(fill, oldPct, newPct);
 			applyBarEffect(element, isDamage);
 		});
 	});
@@ -135,12 +144,7 @@ function showHealthBar(actor, oldHp, newHp, maxHp) {
 		if (fill && ghost) {
 			const fromPct = entry.currentPct;
 			ghost.style.width = `${fromPct * 100}%`;
-			fill.style.transition = 'none';
-			fill.style.width = `${fromPct * 100}%`;
-			void fill.offsetWidth;
-			fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.4,0,0.2,1), background-color 0.4s ease`;
-			fill.style.width = `${newPct * 100}%`;
-			fill.className = `dhb-bar-fill ${dhdHpClass(newPct)}`;
+			animateBarFill(fill, fromPct, newPct);
 		}
 		applyBarEffect(panel, isDamage);
 
