@@ -4,8 +4,11 @@ const FLAG_SCOPE = MODULE_ID;
 const RETYPE_FLAG = 'rollRetyping';
 const HALF_DAMAGE_FLAG = 'halfDamage';
 const AUTO_APPLY_SUPPRESS_MS = 4000;
+const HALF_DAMAGE_REQUEST_MS = 5000;
+const SOCKET_EVENT = `module.${MODULE_ID}`;
 const autoAppliedMessageIds = new Set();
 const suppressedAutoApplyMessageIds = new Set();
+const pendingHalfDamageRequests = [];
 const DAMAGE_TYPES = [
 	'acid',
 	'bludgeoning',
@@ -96,6 +99,12 @@ function getSourceActor(message) {
 
 function getSpeakerActorId(message) {
 	return message?.speaker?.actor ?? null;
+}
+
+function getMessageItemIdentifier(message) {
+	const itemUuid = message?.item?.uuid ?? message?.flags?.pf2e?.origin?.uuid ?? message?.flags?.pf2e?.context?.item?.uuid ?? null;
+	if (itemUuid) return itemUuid;
+	return message?.item?.id ?? message?.flags?.pf2e?.origin?.id ?? message?.flags?.pf2e?.context?.item?.id ?? null;
 }
 
 function suppressNextAutoApplyForSpeaker(message) {
@@ -394,6 +403,41 @@ function getHalfDamageFlavor(message) {
 	return existingFlavor ? `${existingFlavor}${note}` : note;
 }
 
+function prunePendingHalfDamageRequests() {
+	const now = Date.now();
+	for (let index = pendingHalfDamageRequests.length - 1; index >= 0; index -= 1) {
+		if ((pendingHalfDamageRequests[index]?.expiresAt ?? 0) < now) {
+			pendingHalfDamageRequests.splice(index, 1);
+		}
+	}
+}
+
+function queueHalfDamageRequest(request) {
+	prunePendingHalfDamageRequests();
+	pendingHalfDamageRequests.push({
+		...request,
+		expiresAt: Date.now() + HALF_DAMAGE_REQUEST_MS,
+	});
+}
+
+function findPendingHalfDamageRequest(message) {
+	prunePendingHalfDamageRequests();
+	const actorId = getSpeakerActorId(message);
+	const itemId = getMessageItemIdentifier(message);
+	const userId = message?.user?.id ?? null;
+
+	for (let index = 0; index < pendingHalfDamageRequests.length; index += 1) {
+		const request = pendingHalfDamageRequests[index];
+		if (request.actorId && actorId && request.actorId !== actorId) continue;
+		if (request.itemId && itemId && request.itemId !== itemId) continue;
+		if (request.userId && userId && request.userId !== userId) continue;
+		pendingHalfDamageRequests.splice(index, 1);
+		return request;
+	}
+
+	return null;
+}
+
 function normalizeOutcomeValue(value) {
 	if (value === 'criticalSuccess') return 'success';
 	if (value === 'success') return 'success';
@@ -466,39 +510,6 @@ function forceHalfDamageContextOnSource(source) {
 	return originalFlags;
 }
 
-function registerNextHalfDamageMessageMutation(sourceMessage, timeoutMs = 2000) {
-	return new Promise((resolve) => {
-		let settled = false;
-		let timeoutId = null;
-
-		const finish = (matched) => {
-			if (settled) return;
-			settled = true;
-			Hooks.off('preCreateChatMessage', onPreCreateChatMessage);
-			if (timeoutId !== null) window.clearTimeout(timeoutId);
-			resolve(matched);
-		};
-
-		const onPreCreateChatMessage = (createdMessage) => {
-			const contextType = createdMessage?.flags?.pf2e?.context?.type;
-			const sameActor = createdMessage?.speaker?.actor && sourceMessage?.speaker?.actor
-				? createdMessage.speaker.actor === sourceMessage.speaker.actor
-				: true;
-			if (contextType !== 'damage-roll' || !sameActor) return;
-
-			const nextFlags = forceHalfDamageContextOnSource(createdMessage.toObject());
-			createdMessage.updateSource({
-				flags: nextFlags,
-				flavor: getHalfDamageFlavor(createdMessage),
-			});
-			finish(true);
-		};
-
-		Hooks.on('preCreateChatMessage', onPreCreateChatMessage);
-		timeoutId = window.setTimeout(() => finish(false), timeoutMs);
-	});
-}
-
 function waitForNextDamageMessage(sourceMessage, timeoutMs = 2000, onMatch = null) {
 	return new Promise((resolve) => {
 		let settled = false;
@@ -549,10 +560,19 @@ async function createHalfDamageFromSourceMessage(message, root) {
 	const damageButton = getSourceDamageButton(root);
 	if (!(damageButton instanceof HTMLElement)) return null;
 
-	const mutationReady = registerNextHalfDamageMessageMutation(message);
+	queueHalfDamageRequest({
+		actorId: getSpeakerActorId(message),
+		itemId: getMessageItemIdentifier(message),
+		userId: game.user.id,
+	});
+	game.socket?.emit?.(SOCKET_EVENT, {
+		type: 'dmc-half-damage-request',
+		actorId: getSpeakerActorId(message),
+		itemId: getMessageItemIdentifier(message),
+		userId: game.user.id,
+	});
 	damageButton.click();
-	const mutated = await mutationReady;
-	return mutated ? true : null;
+	return true;
 }
 
 function getApplyDamageButton(root) {
@@ -862,4 +882,27 @@ Hooks.on('renderChatMessage', (message, html) => {
 	if (isEligibleMessage(message)) injectRetypingControls(message, contentRoot);
 	injectHalfDamageButton(message, root);
 	void maybeAutoApplyDamage(message, root);
+});
+
+Hooks.on('preCreateChatMessage', (message) => {
+	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	const request = findPendingHalfDamageRequest(message);
+	if (!request) return;
+
+	const nextFlags = forceHalfDamageContextOnSource(message.toObject());
+	message.updateSource({
+		flags: nextFlags,
+		flavor: getHalfDamageFlavor(message),
+	});
+});
+
+Hooks.once('ready', () => {
+	game.socket?.on?.(SOCKET_EVENT, (payload) => {
+		if (payload?.type !== 'dmc-half-damage-request') return;
+		queueHalfDamageRequest({
+			actorId: payload.actorId ?? null,
+			itemId: payload.itemId ?? null,
+			userId: payload.userId ?? null,
+		});
+	});
 });
