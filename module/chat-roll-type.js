@@ -690,7 +690,7 @@ async function getAutoApplyDamageButtons(message, root, mode) {
 	return button instanceof HTMLElement ? [button] : [];
 }
 
-function waitForDamageApplication(root, timeoutMs = 2000) {
+function waitForDamageApplication(root, timeoutMs = 500) {
 	return new Promise((resolve) => {
 		const immediate = root.querySelector('.damage-application');
 		if (immediate instanceof HTMLElement) {
@@ -715,7 +715,7 @@ function waitForDamageApplication(root, timeoutMs = 2000) {
 	});
 }
 
-function waitForTargetDamageApplications(root, timeoutMs = 2000) {
+function waitForTargetDamageApplications(root, timeoutMs = 500) {
 	return new Promise((resolve) => {
 		const getSections = () => Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
 		const immediate = getSections();

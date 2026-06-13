@@ -42,87 +42,6 @@ function sceneTokensFor(actor) {
 	return canvas.tokens.placeables.filter((token) => token.actor?.id === actor.id);
 }
 
-function playAudio(src, volume) {
-	if (!src?.trim()) return;
-	try {
-		AudioHelper.play({ src, volume: volume ?? 0.7, autoplay: true, loop: false }, false);
-	} catch (error) {
-		console.warn(`[PF2 Director: DHD] Could not play audio "${src}":`, error);
-	}
-}
-
-function maybePlayDamageSound() {
-	if (!game.settings.get(MODULE_ID, 'dramaticHealthEnableSounds')) return;
-	playAudio(
-		game.settings.get(MODULE_ID, 'dramaticHealthDamageSound'),
-		game.settings.get(MODULE_ID, 'dramaticHealthSoundVolume')
-	);
-}
-
-function maybePlayHealSound() {
-	if (!game.settings.get(MODULE_ID, 'dramaticHealthEnableSounds')) return;
-	playAudio(
-		game.settings.get(MODULE_ID, 'dramaticHealthHealSound'),
-		game.settings.get(MODULE_ID, 'dramaticHealthSoundVolume')
-	);
-}
-
-class DramaticHealthSoundConfig extends FormApplication {
-	static get defaultOptions() {
-		return foundry.utils.mergeObject(super.defaultOptions, {
-			id: 'pf2-director-dhb-sound-config',
-			title: 'Dramatic Health Display - Sound Settings',
-			template: `modules/${MODULE_ID}/templates/dramatic-health-sound-config.hbs`,
-			width: 520,
-			height: 'auto',
-			closeOnSubmit: true,
-		});
-	}
-
-	async getData() {
-		const volume = game.settings.get(MODULE_ID, 'dramaticHealthSoundVolume');
-		return {
-			enableSounds: game.settings.get(MODULE_ID, 'dramaticHealthEnableSounds'),
-			damageSound: game.settings.get(MODULE_ID, 'dramaticHealthDamageSound'),
-			healSound: game.settings.get(MODULE_ID, 'dramaticHealthHealSound'),
-			soundVolume: volume,
-			volumePct: Math.round(volume * 100),
-		};
-	}
-
-	activateListeners(html) {
-		super.activateListeners(html);
-
-		html.find('.dhb-btn-browse').on('click', (event) => {
-			const target = event.currentTarget.dataset.target;
-			new FilePicker({
-				type: 'audio',
-				current: html.find(`[name="${target}"]`).val(),
-				callback: (path) => html.find(`[name="${target}"]`).val(path),
-			}).browse();
-		});
-
-		html.find('.dhb-btn-test').on('click', (event) => {
-			const target = event.currentTarget.dataset.target;
-			const src = html.find(`[name="${target}"]`).val()?.trim();
-			const volume = parseFloat(html.find('[name="soundVolume"]').val()) || 0.7;
-			playAudio(src, volume);
-		});
-
-		html.find('[name="soundVolume"]').on('input', (event) => {
-			html.find('.dhb-vol-label').text(`${Math.round(event.target.value * 100)}%`);
-		});
-	}
-
-	async _updateObject(_event, formData) {
-		await game.settings.set(MODULE_ID, 'dramaticHealthEnableSounds', !!formData.enableSounds);
-		await game.settings.set(MODULE_ID, 'dramaticHealthDamageSound', formData.damageSound ?? '');
-		await game.settings.set(MODULE_ID, 'dramaticHealthHealSound', formData.healSound ?? '');
-		await game.settings.set(MODULE_ID, 'dramaticHealthSoundVolume', parseFloat(formData.soundVolume) || 0.7);
-		ui.notifications.info('Dramatic Health Display: sound settings saved.');
-	}
-}
-
 function getContainer() {
 	let element = document.getElementById('dhb-container');
 	if (!element) {
@@ -143,33 +62,17 @@ function applyBarEffect(panel, isDamage) {
 	track.classList.add(isDamage ? 'dhb-bar-track-damage' : 'dhb-bar-track-heal');
 }
 
-function buildPanel(actor, oldPct, newPct, newHp, maxHp, delta, showNumbers) {
+function buildPanel(actor, oldPct, newPct, delta) {
 	const isDamage = delta < 0;
-	const sign = isDamage ? '' : '+';
-	const portrait = actor.img || 'icons/svg/mystery-man.svg';
-	const numStyle = showNumbers ? '' : ' style="display:none"';
 
 	const element = document.createElement('div');
 	element.className = `dhb-panel ${isDamage ? 'dhb-is-damage' : 'dhb-is-heal'}`;
 	element.dataset.aid = actor.id;
 	element.innerHTML = `
-		<div class="dhb-portrait">
-			<img src="${portrait}" alt="" />
-			<div class="dhb-portrait-flash"></div>
-		</div>
-		<div class="dhb-info">
-			<div class="dhb-name">${actor.name}</div>
 			<div class="dhb-bar-track">
 				<div class="dhb-bar-ghost" style="width:${oldPct * 100}%"></div>
 				<div class="dhb-bar-fill ${dhdHpClass(oldPct)}" style="width:${oldPct * 100}%"></div>
 			</div>
-			<div class="dhb-hp-text"${numStyle}>
-				${newHp} <span class="dhb-hp-sep">/</span> ${maxHp}
-			</div>
-		</div>
-		<div class="dhb-delta ${isDamage ? 'dhb-delta-damage' : 'dhb-delta-heal'}"${numStyle}>
-			${sign}${delta}
-		</div>
 	`;
 
 	requestAnimationFrame(() => {
@@ -219,13 +122,11 @@ function showHealthBar(actor, oldHp, newHp, maxHp) {
 	const oldPct = Math.max(0, Math.min(1, oldHp / safeMax));
 	const newPct = Math.max(0, Math.min(1, newHp / safeMax));
 	const isDamage = delta < 0;
-	const showNumbers = game.settings.get(MODULE_ID, 'dramaticHealthShowNumbers');
 	const container = getContainer();
 
 	if (activePanels.has(actor.id)) {
 		const entry = activePanels.get(actor.id);
 		const panel = entry.element;
-		const sign = isDamage ? '' : '+';
 
 		panel.className = `dhb-panel ${isDamage ? 'dhb-is-damage' : 'dhb-is-heal'}`;
 
@@ -243,42 +144,14 @@ function showHealthBar(actor, oldHp, newHp, maxHp) {
 		}
 		applyBarEffect(panel, isDamage);
 
-		const hpText = panel.querySelector('.dhb-hp-text');
-		if (hpText) {
-			hpText.style.display = showNumbers ? '' : 'none';
-			if (showNumbers) hpText.innerHTML = `${newHp} <span class="dhb-hp-sep">/</span> ${maxHp}`;
-		}
-
-		const deltaEl = panel.querySelector('.dhb-delta');
-		if (deltaEl) {
-			deltaEl.style.display = showNumbers ? '' : 'none';
-			if (showNumbers) {
-				deltaEl.textContent = `${sign}${delta}`;
-				deltaEl.className = `dhb-delta ${isDamage ? 'dhb-delta-damage' : 'dhb-delta-heal'}`;
-				deltaEl.style.animation = 'none';
-				void deltaEl.offsetWidth;
-				deltaEl.style.animation = '';
-			}
-		}
-
-		const flash = panel.querySelector('.dhb-portrait-flash');
-		if (flash) {
-			flash.style.animation = 'none';
-			void flash.offsetWidth;
-			flash.style.animation = '';
-		}
-
 		entry.currentPct = newPct;
 	} else {
-		const panel = buildPanel(actor, oldPct, newPct, newHp, maxHp, delta, showNumbers);
+		const panel = buildPanel(actor, oldPct, newPct, delta);
 		container.appendChild(panel);
 		activePanels.set(actor.id, { element: panel, timeoutId: null, currentPct: newPct });
 	}
 
 	scheduleDismiss(actor.id);
-
-	if (isDamage) maybePlayDamageSound();
-	else maybePlayHealSound();
 
 	dhdLog(`[${actor.name}] ${oldHp} -> ${newHp} (${delta > 0 ? '+' : ''}${delta}) | ${Math.round(newPct * 100)}%`);
 }
@@ -300,11 +173,11 @@ Hooks.once('init', () => {
 
 	game.settings.register(MODULE_ID, 'dramaticHealthShowNumbers', {
 		name: 'Show Number Change',
-		hint: 'Display the HP delta and current HP values on the health bar. Uncheck to show only the bar graphic.',
+		hint: 'Internal setting retained for compatibility.',
 		scope: 'world',
-		config: true,
+		config: false,
 		type: Boolean,
-		default: true,
+		default: false,
 	});
 
 	game.settings.register(MODULE_ID, 'dramaticHealthShowAlways', {
@@ -335,20 +208,6 @@ Hooks.once('init', () => {
 		default: false,
 	});
 
-	const hidden = { scope: 'client', config: false };
-	game.settings.register(MODULE_ID, 'dramaticHealthEnableSounds', { ...hidden, type: Boolean, default: false });
-	game.settings.register(MODULE_ID, 'dramaticHealthDamageSound', { ...hidden, type: String, default: '' });
-	game.settings.register(MODULE_ID, 'dramaticHealthHealSound', { ...hidden, type: String, default: '' });
-	game.settings.register(MODULE_ID, 'dramaticHealthSoundVolume', { ...hidden, type: Number, default: 0.7 });
-
-	game.settings.registerMenu(MODULE_ID, 'dramaticHealthSoundConfig', {
-		name: 'Dramatic Health Sounds',
-		label: 'Configure Sounds',
-		hint: 'Choose audio files to play on damage and healing for this player.',
-		icon: 'fas fa-heart-pulse',
-		type: DramaticHealthSoundConfig,
-		restricted: false,
-	});
 });
 
 Hooks.once('ready', async () => {

@@ -475,7 +475,7 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'Dramatic Health Display',
 			description: 'Overlay position, visibility rules, and per-user sound feedback for HP changes.',
-			keys: ['dramaticHealthBarPosition', 'dramaticHealthShowNumbers', 'dramaticHealthShowAlways', 'dramaticHealthMinChangePercent', 'dramaticHealthDebugMode', 'dramaticHealthSoundConfig'],
+			keys: ['dramaticHealthBarPosition', 'dramaticHealthShowAlways', 'dramaticHealthMinChangePercent', 'dramaticHealthDebugMode'],
 		},
 		{
 			title: 'End Credits',

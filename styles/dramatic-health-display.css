@@ -84,59 +84,6 @@
 		0 0 22px rgba(40, 180, 100, 0.18);
 }
 
-.dhb-portrait {
-	position: relative;
-	width: 58px;
-	height: 58px;
-	flex-shrink: 0;
-	border-radius: 50%;
-	overflow: hidden;
-	border: 2px solid rgba(255, 255, 255, 0.22);
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-}
-
-.dhb-portrait img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	display: block;
-}
-
-.dhb-portrait-flash {
-	position: absolute;
-	inset: 0;
-	border-radius: 50%;
-	opacity: 0;
-	pointer-events: none;
-}
-
-.dhb-is-damage .dhb-portrait-flash {
-	animation: dhb-flash-red 0.55s ease-out forwards;
-}
-
-.dhb-is-heal .dhb-portrait-flash {
-	animation: dhb-flash-green 0.55s ease-out forwards;
-}
-
-.dhb-info {
-	flex: 1;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 5px;
-}
-
-.dhb-name {
-	font-size: 13px;
-	font-weight: 700;
-	color: rgba(255, 255, 255, 0.94);
-	text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
-	letter-spacing: 0.35px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
 .dhb-bar-track {
 	height: 15px;
 	background: rgba(0, 0, 0, 0.72);
@@ -215,44 +162,6 @@
 	box-shadow: 0 0 6px rgba(200, 40, 40, 0.5) inset;
 }
 
-.dhb-hp-text {
-	font-size: 11px;
-	color: rgba(255, 255, 255, 0.5);
-	font-variant-numeric: tabular-nums;
-	letter-spacing: 0.4px;
-}
-
-.dhb-hp-sep {
-	color: rgba(255, 255, 255, 0.25);
-}
-
-.dhb-delta {
-	font-size: 28px;
-	font-weight: 900;
-	flex-shrink: 0;
-	min-width: 58px;
-	text-align: right;
-	letter-spacing: -1px;
-	font-variant-numeric: tabular-nums;
-	animation: dhb-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.dhb-delta-damage {
-	color: #ff5252;
-	text-shadow:
-		0 0 18px rgba(255, 60, 60, 0.95),
-		0 0 6px rgba(255, 60, 60, 0.6),
-		0 2px 4px rgba(0, 0, 0, 0.85);
-}
-
-.dhb-delta-heal {
-	color: #52ffaa;
-	text-shadow:
-		0 0 18px rgba(60, 255, 130, 0.95),
-		0 0 6px rgba(60, 255, 130, 0.6),
-		0 2px 4px rgba(0, 0, 0, 0.85);
-}
-
 @keyframes dhb-enter {
 	from {
 		opacity: 0;
@@ -272,17 +181,6 @@
 	to {
 		opacity: 0;
 		transform: translateY(22px) scale(0.96);
-	}
-}
-
-@keyframes dhb-pop {
-	from {
-		opacity: 0;
-		transform: scale(0.3);
-	}
-	to {
-		opacity: 1;
-		transform: scale(1);
 	}
 }
 
@@ -310,18 +208,6 @@
 		opacity: 0;
 		transform: translateX(115%) skewX(-18deg);
 	}
-}
-
-@keyframes dhb-flash-red {
-	0% { opacity: 0; background: rgba(255, 60, 60, 0.75); }
-	25% { opacity: 1; }
-	100% { opacity: 0; background: rgba(255, 60, 60, 0); }
-}
-
-@keyframes dhb-flash-green {
-	0% { opacity: 0; background: rgba(60, 255, 130, 0.75); }
-	25% { opacity: 1; }
-	100% { opacity: 0; background: rgba(60, 255, 130, 0); }
 }
 
 @keyframes dhb-shimmer {
