@@ -91,20 +91,7 @@
 	overflow: hidden;
 	position: relative;
 	border: 1px solid rgba(255, 255, 255, 0.07);
-	transform-origin: center;
 	isolation: isolate;
-}
-
-.dhb-bar-ghost {
-	position: absolute;
-	top: 0;
-	left: 0;
-	height: 100%;
-	border-radius: 8px;
-	background: rgba(255, 255, 255, 0.11);
-	pointer-events: none;
-	transition: none;
-	z-index: 1;
 }
 
 .dhb-bar-fill {
@@ -112,9 +99,10 @@
 	top: 0;
 	left: 0;
 	height: 100%;
+	min-width: 2px;
 	border-radius: 8px;
 	pointer-events: none;
-	z-index: 2;
+	z-index: 1;
 }
 
 .dhb-bar-fill::after {

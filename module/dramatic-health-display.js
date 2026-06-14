@@ -2,7 +2,7 @@ import { MODULE_ID } from './settings.js';
 
 const SHOW_MS = 3800;
 const FADE_MS = 580;
-const BAR_MOVE_MS = 700;
+const BAR_MOVE_MS = 850;
 
 const hpCache = new Map();
 const activePanels = new Map();
@@ -62,16 +62,21 @@ function applyBarEffect(panel, isDamage) {
 	track.classList.add(isDamage ? 'dhb-bar-track-damage' : 'dhb-bar-track-heal');
 }
 
+function setFillWidth(fill, pct) {
+	fill.style.width = `${Math.max(pct, 0.01) * 100}%`;
+}
+
 function animateBarFill(fill, fromPct, toPct) {
-	fill.dataset.fromPct = String(fromPct);
-	fill.dataset.toPct = String(toPct);
+	fill.className = `dhb-bar-fill ${dhdHpClass(fromPct)}`;
 	fill.style.transition = 'none';
-	fill.style.width = `${Math.max(fromPct, 0.01) * 100}%`;
+	setFillWidth(fill, fromPct);
 	void fill.getBoundingClientRect();
 	requestAnimationFrame(() => {
-		fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.4,0,0.2,1), background-color 0.4s ease`;
-		fill.style.width = `${Math.max(toPct, 0.01) * 100}%`;
-		fill.className = `dhb-bar-fill ${dhdHpClass(toPct)}`;
+		requestAnimationFrame(() => {
+			fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.22, 1, 0.36, 1), background-color 0.35s ease`;
+			fill.className = `dhb-bar-fill ${dhdHpClass(toPct)}`;
+			setFillWidth(fill, toPct);
+		});
 	});
 }
 
@@ -83,7 +88,6 @@ function buildPanel(actor, oldPct, newPct, delta) {
 	element.dataset.aid = actor.id;
 	element.innerHTML = `
 			<div class="dhb-bar-track">
-				<div class="dhb-bar-ghost" style="width:${oldPct * 100}%"></div>
 				<div class="dhb-bar-fill ${dhdHpClass(oldPct)}" style="width:${oldPct * 100}%"></div>
 			</div>
 	`;
@@ -142,10 +146,8 @@ function showHealthBar(actor, oldHp, newHp, maxHp) {
 		panel.className = `dhb-panel ${isDamage ? 'dhb-is-damage' : 'dhb-is-heal'}`;
 
 		const fill = panel.querySelector('.dhb-bar-fill');
-		const ghost = panel.querySelector('.dhb-bar-ghost');
-		if (fill && ghost) {
+		if (fill) {
 			const fromPct = entry.currentPct;
-			ghost.style.width = `${fromPct * 100}%`;
 			animateBarFill(fill, fromPct, newPct);
 		}
 		applyBarEffect(panel, isDamage);
