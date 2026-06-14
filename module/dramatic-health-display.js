@@ -67,13 +67,10 @@ function animateBarFill(fill, fromPct, toPct) {
 	fill.dataset.toPct = String(toPct);
 	fill.style.transition = 'none';
 	fill.style.width = `${Math.max(fromPct, 0.01) * 100}%`;
-	fill.style.transformOrigin = 'left center';
-	fill.style.transform = 'scaleX(1)';
 	void fill.getBoundingClientRect();
 	requestAnimationFrame(() => {
-		fill.style.transition = `transform ${BAR_MOVE_MS}ms cubic-bezier(0.4,0,0.2,1), width 0ms linear, background-color 0.4s ease`;
+		fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.4,0,0.2,1), background-color 0.4s ease`;
 		fill.style.width = `${Math.max(toPct, 0.01) * 100}%`;
-		fill.style.transform = `scaleX(${Math.max(toPct / Math.max(fromPct, 0.01), 0.01)})`;
 		fill.className = `dhb-bar-fill ${dhdHpClass(toPct)}`;
 	});
 }
