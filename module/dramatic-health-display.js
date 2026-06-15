@@ -62,6 +62,18 @@ function applyBarEffect(panel, isDamage) {
 	track.classList.add(isDamage ? 'dhb-bar-track-damage' : 'dhb-bar-track-heal');
 }
 
+function showTrackSweep(panel, isDamage) {
+	const track = panel.querySelector('.dhb-bar-track');
+	if (!track) return;
+
+	const sweep = track.querySelector('.dhb-bar-sweep');
+	if (!sweep) return;
+
+	sweep.classList.remove('dhb-bar-sweep-damage', 'dhb-bar-sweep-heal');
+	void sweep.offsetWidth;
+	sweep.classList.add(isDamage ? 'dhb-bar-sweep-damage' : 'dhb-bar-sweep-heal');
+}
+
 function setFillWidth(fill, pct) {
 	fill.style.width = `${Math.max(pct, 0.01) * 100}%`;
 }
@@ -88,7 +100,9 @@ function buildPanel(actor, oldPct, newPct, delta) {
 	element.dataset.aid = actor.id;
 	element.innerHTML = `
 			<div class="dhb-bar-track">
+				<div class="dhb-bar-base"></div>
 				<div class="dhb-bar-fill" data-hp-class="${dhdHpClass(oldPct)}" style="width:${oldPct * 100}%"></div>
+				<div class="dhb-bar-sweep"></div>
 			</div>
 	`;
 
@@ -98,6 +112,7 @@ function buildPanel(actor, oldPct, newPct, delta) {
 			if (!fill) return;
 			animateBarFill(fill, oldPct, newPct);
 			applyBarEffect(element, isDamage);
+			showTrackSweep(element, isDamage);
 		});
 	});
 
@@ -151,6 +166,7 @@ function showHealthBar(actor, oldHp, newHp, maxHp) {
 			animateBarFill(fill, fromPct, newPct);
 		}
 		applyBarEffect(panel, isDamage);
+		showTrackSweep(panel, isDamage);
 
 		entry.currentPct = newPct;
 	} else {
