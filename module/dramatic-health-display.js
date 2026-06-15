@@ -67,14 +67,14 @@ function setFillWidth(fill, pct) {
 }
 
 function animateBarFill(fill, fromPct, toPct) {
-	fill.className = `dhb-bar-fill ${dhdHpClass(fromPct)}`;
+	fill.dataset.hpClass = dhdHpClass(toPct);
 	fill.style.transition = 'none';
 	setFillWidth(fill, fromPct);
 	void fill.getBoundingClientRect();
 	requestAnimationFrame(() => {
 		requestAnimationFrame(() => {
 			fill.style.transition = `width ${BAR_MOVE_MS}ms cubic-bezier(0.22, 1, 0.36, 1), background-color 0.35s ease`;
-			fill.className = `dhb-bar-fill ${dhdHpClass(toPct)}`;
+			fill.dataset.hpClass = dhdHpClass(toPct);
 			setFillWidth(fill, toPct);
 		});
 	});
@@ -88,7 +88,7 @@ function buildPanel(actor, oldPct, newPct, delta) {
 	element.dataset.aid = actor.id;
 	element.innerHTML = `
 			<div class="dhb-bar-track">
-				<div class="dhb-bar-fill ${dhdHpClass(oldPct)}" style="width:${oldPct * 100}%"></div>
+				<div class="dhb-bar-fill" data-hp-class="${dhdHpClass(oldPct)}" style="width:${oldPct * 100}%"></div>
 			</div>
 	`;
 
