@@ -92,6 +92,28 @@ function animateBarFill(fill, fromPct, toPct) {
 	});
 }
 
+function logBarState(panel, actor, oldPct, newPct, label) {
+	if (!game.settings.get(MODULE_ID, 'dramaticHealthDebugMode')) return;
+
+	const track = panel.querySelector('.dhb-bar-track');
+	const fill = panel.querySelector('.dhb-bar-fill');
+	const sweep = panel.querySelector('.dhb-bar-sweep');
+	const panelRect = panel.getBoundingClientRect();
+	const trackRect = track?.getBoundingClientRect();
+	const fillRect = fill?.getBoundingClientRect();
+	console.log('[PF2 Director: DHD]', label, {
+		actor: actor.name,
+		oldPct,
+		newPct,
+		panelRect: panelRect && { width: panelRect.width, height: panelRect.height },
+		trackRect: trackRect && { width: trackRect.width, height: trackRect.height },
+		fillRect: fillRect && { width: fillRect.width, height: fillRect.height },
+		fillStyleWidth: fill?.style.width,
+		fillClass: fill?.dataset?.hpClass,
+		sweepClass: sweep?.className,
+	});
+}
+
 function buildPanel(actor, oldPct, newPct, delta) {
 	const isDamage = delta < 0;
 
@@ -113,6 +135,7 @@ function buildPanel(actor, oldPct, newPct, delta) {
 			animateBarFill(fill, oldPct, newPct);
 			applyBarEffect(element, isDamage);
 			showTrackSweep(element, isDamage);
+			logBarState(element, actor, oldPct, newPct, 'panel-created');
 		});
 	});
 
@@ -167,6 +190,7 @@ function showHealthBar(actor, oldHp, newHp, maxHp) {
 		}
 		applyBarEffect(panel, isDamage);
 		showTrackSweep(panel, isDamage);
+		logBarState(panel, actor, entry.currentPct, newPct, 'panel-updated');
 
 		entry.currentPct = newPct;
 	} else {
