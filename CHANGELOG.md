@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.139] - 2026-06-15
+
+### Fixed
+- **Villain Points**: Friendly alliance villain rerolls now use a normal reroll path that keeps the worse result, while enemy and other alliances keep the better result.
+
 ## [2.4.138] - 2026-06-15
 
 ### Changed

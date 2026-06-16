@@ -611,6 +611,19 @@ function getHeroPointResourceClone(actor) {
 	};
 }
 
+function isFriendlyAllianceMessage(message) {
+	const actor = message?.actor;
+	const tokenDocument = message?.speaker?.token ? canvas?.tokens?.get?.(message.speaker.token) : null;
+	const alliance = String(
+		tokenDocument?.alliance ??
+			tokenDocument?.document?.alliance ??
+			actor?.alliance ??
+			actor?.system?.details?.alliance ??
+			''
+	).trim().toLowerCase();
+	return alliance === 'party';
+}
+
 async function performPf2eVillainReroll(message) {
 	const rerollApi = game.pf2e?.Check?.rerollFromMessage;
 	const actor = message.actor?.isOfType?.('familiar') ? message.actor.master : message.actor;
@@ -646,7 +659,10 @@ async function performPf2eVillainReroll(message) {
 
 	try {
 		pendingVillainRerolls.push(pendingVillainReroll);
-		const rerollResult = await rerollApi.call(game.pf2e.Check, message, { keep: 'new', resource: 'hero-points' });
+		const rerollOptions = isFriendlyAllianceMessage(message)
+			? { keep: 'lower' }
+			: { keep: 'higher' };
+		const rerollResult = await rerollApi.call(game.pf2e.Check, message, rerollOptions);
 		const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
 		if (returnedMessage && !pendingVillainReroll.resolved) {
 			await applyVillainRerollDecoration(returnedMessage, pendingVillainReroll);
