@@ -53,6 +53,11 @@ function getContainer() {
 	return element;
 }
 
+function getActorPortrait(actor) {
+	const token = sceneTokensFor(actor).find((placeable) => placeable?.document?.texture?.src);
+	return token?.document?.texture?.src ?? actor.img ?? '';
+}
+
 function applyBarEffect(panel, isDamage) {
 	const track = panel.querySelector('.dhb-bar-track');
 	if (!track) return;
@@ -116,15 +121,21 @@ function logBarState(panel, actor, oldPct, newPct, label) {
 
 function buildPanel(actor, oldPct, newPct, delta) {
 	const isDamage = delta < 0;
+	const portrait = getActorPortrait(actor);
 
 	const element = document.createElement('div');
 	element.className = `dhb-panel ${isDamage ? 'dhb-is-damage' : 'dhb-is-heal'}`;
 	element.dataset.aid = actor.id;
 	element.innerHTML = `
+			<div class="dhb-portrait-wrap">
+				${portrait ? `<img class="dhb-portrait" src="${portrait}" alt="">` : `<div class="dhb-portrait dhb-portrait-fallback"></div>`}
+			</div>
+			<div class="dhb-panel-body">
 			<div class="dhb-bar-track">
 				<div class="dhb-bar-base"></div>
 				<div class="dhb-bar-fill" data-hp-class="${dhdHpClass(oldPct)}" style="width:${oldPct * 100}%"></div>
 				<div class="dhb-bar-sweep"></div>
+			</div>
 			</div>
 	`;
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.138] - 2026-06-15
+
+### Changed
+- **Dramatic health overlays**: Added the token portrait beside the bar and enlarged the display so the target is easier to identify during damage and healing.
+
 ## [2.4.115] - 2026-06-06
 
 ### Fixed
