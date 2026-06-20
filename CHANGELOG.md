@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.140] - 2026-06-20
+
+### Removed
+- **Music**: Removed the playlist playback sync system and its related settings so Foundry handles playback normally again.
+
 ## [2.4.139] - 2026-06-15
 
 ### Fixed

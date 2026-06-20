@@ -11,7 +11,6 @@ import './module/villain-points.js';
 import './module/scene-music.js';
 import './module/end-credits.js';
 import './module/dramatic-health-display.js';
-import './module/playback-sync.js';
 import './module/journal-transfer.js';
 import './module/creature-ambience.js';
 import { migrate } from './module/migrate.js';

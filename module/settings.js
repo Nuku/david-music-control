@@ -223,14 +223,6 @@ const settings = {
 		type: Boolean,
 		default: true,
 	},
-	syncPlaylistPlayback: {
-		name: 'Sync Playlist Playback',
-		hint: 'When a playlist track starts, pauses, or resumes, wait briefly for connected clients and snap them to the same playback position.',
-		scope: 'world',
-		config: true,
-		type: Boolean,
-		default: false,
-	},
 	fireworksOnVictory: {
 		name: 'Fireworks on Victory',
 		hint: 'On Foundry V14+, show colorful victory fireworks based on encounter XP when combat ends.',
@@ -455,8 +447,8 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 	const sectionConfigs = [
 		{
 			title: 'Music',
-			description: 'Combat playlists, scene matching, synchronization, and victory audio behavior.',
-			keys: ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'enableCreatureAmbience', 'pauseTrack', 'syncPlaylistPlayback', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
+			description: 'Combat playlists, scene matching, and victory audio behavior.',
+			keys: ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'enableCreatureAmbience', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
 			gmOnly: true,
 			extraRow: game.user.isGM ? buildTransferRow() : null,
 		},
