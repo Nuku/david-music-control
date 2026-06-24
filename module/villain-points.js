@@ -634,6 +634,10 @@ function isFriendlyAllianceMessage(message) {
 	return alliance === 'party';
 }
 
+function getVillainRerollKeepMode(message) {
+	return isFriendlyAllianceMessage(message) ? 'lower' : 'higher';
+}
+
 async function performPf2eVillainReroll(message) {
 	const rerollApi = game.pf2e?.Check?.rerollFromMessage;
 	const actor = message.actor?.isOfType?.('familiar') ? message.actor.master : message.actor;
@@ -670,9 +674,13 @@ async function performPf2eVillainReroll(message) {
 
 	try {
 		pendingVillainRerolls.push(pendingVillainReroll);
-		const rerollOptions = isFriendlyAllianceMessage(message)
-			? { keep: 'lower', resource: 'hero-points' }
-			: { keep: 'higher', resource: 'hero-points' };
+		const rerollOptions = { resource: 'hero-points' };
+		const hookKeepMode = getVillainRerollKeepMode(message);
+		Hooks.once('pf2e.reroll', (_oldRoll, _newRoll, resource, hookOptions) => {
+			if (resource !== undefined && hookOptions.keep === undefined) {
+				hookOptions.keep = hookKeepMode;
+			}
+		});
 		const rerollResult = await rerollApi.call(game.pf2e.Check, message, rerollOptions);
 		const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
 		if (returnedMessage && !pendingVillainReroll.resolved) {
