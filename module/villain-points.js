@@ -601,16 +601,6 @@ function injectVillainRerollControl(message, root) {
 	root.appendChild(wrapper);
 }
 
-function getHeroPointResourceClone(actor) {
-	const resource = actor?.getResource?.('hero-points');
-	if (!resource) return null;
-	return {
-		...resource,
-		slug: 'hero-points',
-		value: Math.max(1, Number(resource.value) || 0),
-	};
-}
-
 function createSyntheticHeroPointResource() {
 	return {
 		slug: 'hero-points',
@@ -647,8 +637,7 @@ async function performPf2eVillainReroll(message) {
 
 	const originalGetResource = actor.getResource.bind(actor);
 	const originalUpdateResource = actor.updateResource.bind(actor);
-	const originalHeroPoints = originalGetResource('hero-points');
-	const fakeHeroPointResource = getHeroPointResourceClone(actor) ?? createSyntheticHeroPointResource();
+	const fakeHeroPointResource = createSyntheticHeroPointResource();
 
 	actor.getResource = function getResourceProxy(slug, ...args) {
 		if (slug === 'hero-points' && fakeHeroPointResource) return { ...fakeHeroPointResource };
@@ -657,8 +646,7 @@ async function performPf2eVillainReroll(message) {
 
 	actor.updateResource = async function updateResourceProxy(slug, value, ...args) {
 		if (slug === 'hero-points' && fakeHeroPointResource) {
-			// Preserve the actor's actual hero points; this only satisfies PF2e's reroll resource check.
-			return originalHeroPoints ?? { ...fakeHeroPointResource, value };
+			return { ...fakeHeroPointResource, value };
 		}
 		return originalUpdateResource(slug, value, ...args);
 	};
