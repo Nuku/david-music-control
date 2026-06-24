@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.141] - 2026-06-24
+
+### Fixed
+- **Villain Points**: Villain rerolls now preserve the actor's real hero points while still honoring the chosen keep mode for friendly and enemy alliances.
+
 ## [2.4.140] - 2026-06-20
 
 ### Removed

@@ -611,6 +611,16 @@ function getHeroPointResourceClone(actor) {
 	};
 }
 
+function createSyntheticHeroPointResource() {
+	return {
+		slug: 'hero-points',
+		label: 'Hero Points',
+		type: 'attribute',
+		value: 1,
+		max: 1,
+	};
+}
+
 function isFriendlyAllianceMessage(message) {
 	const actor = message?.actor;
 	const tokenDocument = message?.speaker?.token ? canvas?.tokens?.get?.(message.speaker.token) : null;
@@ -634,7 +644,7 @@ async function performPf2eVillainReroll(message) {
 	const originalGetResource = actor.getResource.bind(actor);
 	const originalUpdateResource = actor.updateResource.bind(actor);
 	const originalHeroPoints = originalGetResource('hero-points');
-	const fakeHeroPointResource = getHeroPointResourceClone(actor);
+	const fakeHeroPointResource = getHeroPointResourceClone(actor) ?? createSyntheticHeroPointResource();
 
 	actor.getResource = function getResourceProxy(slug, ...args) {
 		if (slug === 'hero-points' && fakeHeroPointResource) return { ...fakeHeroPointResource };
@@ -643,6 +653,7 @@ async function performPf2eVillainReroll(message) {
 
 	actor.updateResource = async function updateResourceProxy(slug, value, ...args) {
 		if (slug === 'hero-points' && fakeHeroPointResource) {
+			// Preserve the actor's actual hero points; this only satisfies PF2e's reroll resource check.
 			return originalHeroPoints ?? { ...fakeHeroPointResource, value };
 		}
 		return originalUpdateResource(slug, value, ...args);
@@ -660,8 +671,8 @@ async function performPf2eVillainReroll(message) {
 	try {
 		pendingVillainRerolls.push(pendingVillainReroll);
 		const rerollOptions = isFriendlyAllianceMessage(message)
-			? { keep: 'lower' }
-			: { keep: 'higher' };
+			? { keep: 'lower', resource: 'hero-points' }
+			: { keep: 'higher', resource: 'hero-points' };
 		const rerollResult = await rerollApi.call(game.pf2e.Check, message, rerollOptions);
 		const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
 		if (returnedMessage && !pendingVillainReroll.resolved) {
