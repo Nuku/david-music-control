@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.144] - 2026-06-26
+
+### Fixed
+- **Villain Points**: Rerolls now follow PF2e's native keep-lower / keep-higher path directly, based on alliance.
+
 ## [2.4.141] - 2026-06-24
 
 ### Fixed

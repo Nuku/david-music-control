@@ -601,16 +601,6 @@ function injectVillainRerollControl(message, root) {
 	root.appendChild(wrapper);
 }
 
-function createSyntheticHeroPointResource() {
-	return {
-		slug: 'hero-points',
-		label: 'Hero Points',
-		type: 'attribute',
-		value: 1,
-		max: 1,
-	};
-}
-
 function isFriendlyAllianceMessage(message) {
 	const actor = message?.actor;
 	const tokenDocument = message?.speaker?.token ? canvas?.tokens?.get?.(message.speaker.token) : null;
@@ -631,25 +621,9 @@ function getVillainRerollKeepMode(message) {
 async function performPf2eVillainReroll(message) {
 	const rerollApi = game.pf2e?.Check?.rerollFromMessage;
 	const actor = message.actor?.isOfType?.('familiar') ? message.actor.master : message.actor;
-	if (typeof rerollApi !== 'function' || !actor?.updateResource || !actor?.getResource) {
+	if (typeof rerollApi !== 'function' || !actor) {
 		throw new Error('PF2e reroll API is unavailable.');
 	}
-
-	const originalGetResource = actor.getResource.bind(actor);
-	const originalUpdateResource = actor.updateResource.bind(actor);
-	const fakeHeroPointResource = createSyntheticHeroPointResource();
-
-	actor.getResource = function getResourceProxy(slug, ...args) {
-		if (slug === 'hero-points' && fakeHeroPointResource) return { ...fakeHeroPointResource };
-		return originalGetResource(slug, ...args);
-	};
-
-	actor.updateResource = async function updateResourceProxy(slug, value, ...args) {
-		if (slug === 'hero-points' && fakeHeroPointResource) {
-			return { ...fakeHeroPointResource, value };
-		}
-		return originalUpdateResource(slug, value, ...args);
-	};
 
 	const pendingVillainReroll = {
 		sourceMessageId: message.id,
@@ -662,13 +636,7 @@ async function performPf2eVillainReroll(message) {
 
 	try {
 		pendingVillainRerolls.push(pendingVillainReroll);
-		const rerollOptions = { resource: 'hero-points' };
-		const hookKeepMode = getVillainRerollKeepMode(message);
-		Hooks.once('pf2e.reroll', (_oldRoll, _newRoll, resource, hookOptions) => {
-			if (resource !== undefined && hookOptions.keep === undefined) {
-				hookOptions.keep = hookKeepMode;
-			}
-		});
+		const rerollOptions = { keep: getVillainRerollKeepMode(message) };
 		const rerollResult = await rerollApi.call(game.pf2e.Check, message, rerollOptions);
 		const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
 		if (returnedMessage && !pendingVillainReroll.resolved) {
@@ -679,9 +647,6 @@ async function performPf2eVillainReroll(message) {
 			await applyVillainRerollDecoration(updatedSourceMessage, pendingVillainReroll);
 		}
 		await finalizePendingVillainReroll(pendingVillainReroll);
-	} finally {
-		actor.getResource = originalGetResource;
-		actor.updateResource = originalUpdateResource;
 	}
 }
 
