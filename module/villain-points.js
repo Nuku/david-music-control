@@ -634,20 +634,18 @@ async function performPf2eVillainReroll(message) {
 		resolved: false,
 	};
 
-	try {
-		pendingVillainRerolls.push(pendingVillainReroll);
-		const rerollOptions = { keep: getVillainRerollKeepMode(message) };
-		const rerollResult = await rerollApi.call(game.pf2e.Check, message, rerollOptions);
-		const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
-		if (returnedMessage && !pendingVillainReroll.resolved) {
-			await applyVillainRerollDecoration(returnedMessage, pendingVillainReroll);
-		}
-		const updatedSourceMessage = game.messages.get(message.id);
-		if (updatedSourceMessage && !pendingVillainReroll.resolved && messageLooksLikeReroll(updatedSourceMessage)) {
-			await applyVillainRerollDecoration(updatedSourceMessage, pendingVillainReroll);
-		}
-		await finalizePendingVillainReroll(pendingVillainReroll);
+	pendingVillainRerolls.push(pendingVillainReroll);
+	const rerollOptions = { keep: getVillainRerollKeepMode(message) };
+	const rerollResult = await rerollApi.call(game.pf2e.Check, message, rerollOptions);
+	const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
+	if (returnedMessage && !pendingVillainReroll.resolved) {
+		await applyVillainRerollDecoration(returnedMessage, pendingVillainReroll);
 	}
+	const updatedSourceMessage = game.messages.get(message.id);
+	if (updatedSourceMessage && !pendingVillainReroll.resolved && messageLooksLikeReroll(updatedSourceMessage)) {
+		await applyVillainRerollDecoration(updatedSourceMessage, pendingVillainReroll);
+	}
+	await finalizePendingVillainReroll(pendingVillainReroll);
 }
 
 async function decorateVillainRerollMessage(message) {

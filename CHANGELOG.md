@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.145] - 2026-06-26
+
+### Fixed
+- **Module load**: Fixed a syntax error in the villain point reroll path that prevented the module settings and floating villain point bar from loading.
+
 ## [2.4.144] - 2026-06-26
 
 ### Fixed
