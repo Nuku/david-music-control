@@ -48,6 +48,14 @@ function isCombatActive() {
 	return !!game.combat?.started;
 }
 
+function isEndCreditsActive() {
+	try {
+		return !!game.settings.get(MODULE_ID, 'endCreditsActive');
+	} catch (_error) {
+		return false;
+	}
+}
+
 function isCreatureSoundsEnabled() {
 	const module = game.modules.get(CREATURE_SOUNDS_MODULE_ID);
 	if (!module?.active) return false;
@@ -71,6 +79,10 @@ function clearAmbienceTimer() {
 function scheduleNextCycle(kind = 'normal') {
 	clearAmbienceTimer();
 	if (!game.user.isGM || !isFeatureEnabled()) return;
+	if (isEndCreditsActive()) {
+		logDebug('Creature ambience is quiet while end credits are active.');
+		return;
+	}
 	const seconds = rollRetrySeconds(kind);
 	const token = ambienceCycleToken;
 	logDebug(`Scheduling next ${kind} creature ambience check in ${seconds}s.`);
@@ -538,6 +550,10 @@ function computePlaybackVolume(volume) {
 
 function triggerLocalSoundPlayback({ src, volume }) {
 	try {
+		if (isEndCreditsActive()) {
+			logDebug(`Ignoring creature ambience playback for ${src} because end credits are active.`);
+			return;
+		}
 		const playbackVolume = computePlaybackVolume(volume);
 		logDebug(
 			`Local playback requested for ${src} at computed volume ${Math.max(0, Math.min(1, volume)).toFixed(4)} and playback volume ${playbackVolume.toFixed(4)}.`
@@ -610,6 +626,10 @@ function findBestListenerResultAcrossTokens(sourceToken, listeners) {
 async function runCreatureAmbienceCycle() {
 	clearAmbienceTimer();
 	if (!game.user.isGM || !isFeatureEnabled()) return;
+	if (isEndCreditsActive()) {
+		logDebug('Skipping creature ambience because end credits are active.');
+		return;
+	}
 	if (isCombatActive()) {
 		logDebug('Skipping creature ambience because combat is active.');
 		scheduleNextCycle('normal');
@@ -729,6 +749,7 @@ function restartCreatureAmbience() {
 	ambienceCycleToken += 1;
 	clearAmbienceTimer();
 	if (!game.user.isGM || !isFeatureEnabled()) return;
+	if (isEndCreditsActive()) return;
 	scheduleNextCycle('normal');
 }
 
@@ -737,6 +758,10 @@ Hooks.once('ready', () => {
 		if (data?.type !== SOCKET_TYPE) return;
 		if (data.userId !== game.user.id) return;
 		if (typeof data.src !== 'string' || !data.src.trim()) return;
+		if (isEndCreditsActive()) {
+			logDebug(`Ignoring creature ambience playback for ${data.src} because end credits are active.`);
+			return;
+		}
 		logDebug(
 			`Socket playback received for source token ${data.sourceTokenId ?? '?'} to listener ${data.listenerTokenId ?? '?'} at volume ${Number(data.volume ?? 0).toFixed(4)}.`
 		);
@@ -762,6 +787,10 @@ Hooks.on('updateCombat', () => {
 });
 
 Hooks.on('updateSetting', (setting) => {
-	if (!setting?.key?.startsWith(`${MODULE_ID}.enableCreatureAmbience`) && !setting?.key?.startsWith(`${MODULE_ID}.creatureAmbienceDebug`)) return;
+	if (
+		!setting?.key?.startsWith(`${MODULE_ID}.enableCreatureAmbience`) &&
+		!setting?.key?.startsWith(`${MODULE_ID}.creatureAmbienceDebug`) &&
+		!setting?.key?.startsWith(`${MODULE_ID}.endCreditsActive`)
+	) return;
 	restartCreatureAmbience();
 });

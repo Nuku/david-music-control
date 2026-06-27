@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.4.146] - 2026-06-27
+
+### Fixed
+- **End credits**: Creature ambience now falls quiet while the credits are running, including already-queued ambient playback messages.
+- **Villain Points**: Alliance-based rerolls now resolve the original chat speaker's actor and token more reliably.
+
 ## [2.4.145] - 2026-06-26
 
 ### Fixed

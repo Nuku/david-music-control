@@ -47,6 +47,13 @@ function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableVillainPoints');
 }
 
+function getActorFromSpeaker(speaker) {
+	if (!speaker) return null;
+	const scene = speaker.scene ? game.scenes?.get(speaker.scene) : game.scenes?.current;
+	const token = scene?.tokens?.get?.(speaker.token) ?? canvas?.tokens?.placeables?.find((placeable) => placeable.document.id === speaker.token)?.document;
+	return token?.actor ?? (speaker.actor ? game.actors?.get(speaker.actor) : null);
+}
+
 function cloneState(state = {}) {
 	return {
 		heroPointUses: Math.max(0, Number(state.heroPointUses) || 0),
@@ -602,8 +609,9 @@ function injectVillainRerollControl(message, root) {
 }
 
 function isFriendlyAllianceMessage(message) {
-	const actor = message?.actor;
-	const tokenDocument = message?.speaker?.token ? canvas?.tokens?.get?.(message.speaker.token) : null;
+	const actor = message?.actor ?? getActorFromSpeaker(message?.speaker);
+	const scene = message?.speaker?.scene ? game.scenes?.get(message.speaker.scene) : game.scenes?.current;
+	const tokenDocument = message?.speaker?.token ? scene?.tokens?.get?.(message.speaker.token) ?? canvas?.tokens?.placeables?.find((placeable) => placeable.document.id === message.speaker.token)?.document : null;
 	const alliance = String(
 		tokenDocument?.alliance ??
 			tokenDocument?.document?.alliance ??
