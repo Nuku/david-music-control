@@ -1,5 +1,5 @@
 import { getSetting, MODULE_ID } from './settings.js';
-import { getTokenMusic } from './token.js';
+import { getEffectiveTokenMusicFlag, getTokenMusic } from './token.js';
 
 const VICTORY_FIREWORKS_SOCKET_TYPE = 'victoryFireworks';
 
@@ -150,7 +150,7 @@ async function switchTo(combat, music, token, { pausePrevious = false } = {}) {
 export async function updateTurnMusic(combat, changes) {
 	// Only fire on actual turn/round changes, not flag updates.
 	if (changes && !('turn' in changes) && !('round' in changes)) return;
-	if (!combat.started || getCombatMusic().length === 0) return;
+	if (!combat.started) return;
 
 	const combatantToken = combat.combatant?.token ?? null;
 
@@ -216,10 +216,10 @@ function getEncounterMusic(combat) {
 	for (const combatant of combat.combatants.contents) {
 		if (!combatant.token) continue;
 		const token = combatant.token;
-		if (!token.getFlag(MODULE_ID, 'combatTheme')) continue;
+		if (!getEffectiveTokenMusicFlag(token, 'combatTheme')) continue;
 		const music = getTokenMusic(token);
 		if (!music) continue;
-		themeMap.set({ token: token.id, music }, token.getFlag(MODULE_ID, 'priority') ?? 10);
+		themeMap.set({ token: token.id, music }, getEffectiveTokenMusicFlag(token, 'priority') ?? 10);
 	}
 	if (themeMap.size > 0) {
 		const highest = getHighestPriority(themeMap);
@@ -248,9 +248,9 @@ function getEncounterMusic(combat) {
 	for (const combatant of game.combat.combatants.contents) {
 		if (!combatant.token) continue;
 		const music = getTokenMusic(combatant.token);
-		const priority = combatant.token.getFlag(MODULE_ID, 'priority') ?? 10;
+		const priority = getEffectiveTokenMusicFlag(combatant.token, 'priority') ?? 10;
 		const token = combatant.token.id;
-		if (music && combatant.token.getFlag(MODULE_ID, 'turnOnly') === false)
+		if (music && getEffectiveTokenMusicFlag(combatant.token, 'turnOnly') === false)
 			combatPlaylists.set({ token, music }, priority);
 	}
 	const highest = getHighestPriority(combatPlaylists);
@@ -267,7 +267,6 @@ export function resolveEncounterMusic(combat) {
 /* -------------------------------------------- */
 
 async function playCombatMusic(combat) {
-	if (getCombatMusic().length === 0) return;
 	if (getSetting('pauseAmbience')) await pauseAllMusic(combat);
 	await updateTurnMusic(combat);
 }

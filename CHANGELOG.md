@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.147] - 2026-06-27
+
+### Fixed
+- **Combat Music**: Personal turn music now still triggers even when no generic combat playlists are marked, and linked tokens can fall back to prototype-token music flags when they do not carry their own local override.
+
 ## [2.4.146] - 2026-06-27
 
 ### Fixed

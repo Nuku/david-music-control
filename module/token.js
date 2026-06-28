@@ -45,12 +45,12 @@ class TokenMusicConfig extends HandlebarsApplicationMixin(ApplicationV2) {
 	_prepareData() {
 		const token = this.token;
 		return {
-			musicList: token.getFlag(MODULE_ID, 'musicList') ?? [['', 100]],
-			resource: token.getFlag(MODULE_ID, 'resource'),
-			priority: token.getFlag(MODULE_ID, 'priority') ?? 10,
-			active: token.getFlag(MODULE_ID, 'active') ?? false,
-			turnOnly: token.getFlag(MODULE_ID, 'turnOnly') ?? false,
-			combatTheme: token.getFlag(MODULE_ID, 'combatTheme') ?? false,
+			musicList: getEffectiveTokenMusicFlag(token, 'musicList') ?? [['', 100]],
+			resource: getEffectiveTokenMusicFlag(token, 'resource'),
+			priority: getEffectiveTokenMusicFlag(token, 'priority') ?? 10,
+			active: getEffectiveTokenMusicFlag(token, 'active') ?? false,
+			turnOnly: getEffectiveTokenMusicFlag(token, 'turnOnly') ?? false,
+			combatTheme: getEffectiveTokenMusicFlag(token, 'combatTheme') ?? false,
 		};
 	}
 
@@ -268,6 +268,18 @@ export function createOption(sound) {
 	}</option>`;
 }
 
+export function getEffectiveTokenMusicFlag(token, key) {
+	const tokenValue = token?.getFlag?.(MODULE_ID, key);
+	if (tokenValue !== undefined) return tokenValue;
+
+	if (token?.actorLink) {
+		const prototypeValue = token.actor?.prototypeToken?.getFlag?.(MODULE_ID, key);
+		if (prototypeValue !== undefined) return prototypeValue;
+	}
+
+	return undefined;
+}
+
 export function getTokenHeaderButtons(sheet, buttons) {
 	try {
 		if (!game.user.isGM) return;
@@ -292,7 +304,7 @@ function resourceTracker(actor) {
 
 	// If this token is a Combat Theme token, re-evaluate which theme track should
 	// be playing whenever their resource (e.g. HP) changes — even mid-turn.
-	if (token.getFlag(MODULE_ID, 'combatTheme') && !combat.getFlag(MODULE_ID, 'overrideMusic')) {
+	if (getEffectiveTokenMusicFlag(token, 'combatTheme') && !combat.getFlag(MODULE_ID, 'overrideMusic')) {
 		const encounterMusic = resolveEncounterMusic(combat);
 		if (!encounterMusic) return;
 
@@ -318,11 +330,11 @@ function resourceTracker(actor) {
 }
 
 export function getTokenMusic(token) {
-	const active = token.getFlag(MODULE_ID, 'active');
+	const active = getEffectiveTokenMusicFlag(token, 'active');
 	if (!active) return;
 
 	const attribute = token.actor?.system?.attributes?.hp ?? token.getBarAttribute('bar1');
-	const musicList = token.getFlag(MODULE_ID, 'musicList');
+	const musicList = getEffectiveTokenMusicFlag(token, 'musicList');
 	if (!musicList) return;
 
 	if (attribute.value > attribute.max) attribute.value = attribute.max;
