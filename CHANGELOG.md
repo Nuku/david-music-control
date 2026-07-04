@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.148] - 2026-07-04
+
+### Fixed
+- **PF2e tools**: Taunt now applies its Guardian taunt effect to every currently targeted creature instead of only the first target.
+
 ## [2.4.147] - 2026-06-27
 
 ### Fixed
