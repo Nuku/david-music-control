@@ -460,31 +460,51 @@ function makeOrderedCollection(items, mapper) {
 	}));
 }
 
+function parseDcEntries(segment) {
+	const text = String(segment ?? '');
+	const markerPattern = /(?:^|[\s,])(?:or\s+)?DC\s+(\d+)\s+/gi;
+	const markers = [...text.matchAll(markerPattern)];
+	return markers.map((match, index) => {
+		const start = match.index + match[0].length;
+		const end = index + 1 < markers.length ? markers[index + 1].index : text.length;
+		return {
+			dc: Number(match[1]),
+			text: normalizeWhitespace(text.slice(start, end).replace(/,\s*$/, '').replace(/\s+or\s*$/i, '')),
+		};
+	}).filter((entry) => entry.text);
+}
+
 function parseDcSkillList(segment) {
-	const matches = [...segment.matchAll(/DC\s+(\d+)\s+([^,]+?)(?=(?:,\s*DC\s+\d+\s+)|$)/gi)];
-	return matches.map((match) => {
-		const skillText = normalizeWhitespace(match[2]);
+	return parseDcEntries(segment).map((entry) => {
+		const skillText = entry.text;
 		const lore = /\blore\b/i.test(skillText);
 		return {
 			skill: normalizeSkillSlug(skillText),
-			dc: Number(match[1]),
+			dc: entry.dc,
 			lore,
 		};
 	});
 }
 
 function parseInfluenceSkillList(segment) {
-	const matches = [...segment.matchAll(/DC\s+(\d+)\s+([^,(]+?)(?:\s*\(([^)]*)\))?(?=(?:,\s*DC\s+\d+\s+)|$)/gi)];
-	return matches.map((match) => {
-		const skillText = normalizeWhitespace(match[2]);
+	const entries = parseDcEntries(segment).map((entry) => {
+		const text = entry.text;
+		const skillMatch = text.match(/^([^,(]+?)(?:\s*\(([^)]*)\))?$/);
+		const skillText = normalizeWhitespace(skillMatch?.[1] ?? text);
 		const lore = /\blore\b/i.test(skillText);
 		return {
-			name: normalizeWhitespace(match[3] ?? ''),
+			name: normalizeWhitespace(skillMatch?.[2] ?? ''),
 			skill: normalizeSkillSlug(skillText),
-			dc: Number(match[1]),
+			dc: entry.dc,
 			lore,
 		};
 	});
+	for (let index = 1; index < entries.length; index += 1) {
+		if (entries[index].name && entries[index - 1].dc === entries[index].dc && !entries[index - 1].name) {
+			entries[index - 1].name = entries[index].name;
+		}
+	}
+	return entries;
 }
 
 function parseSkillOptions(segment) {
@@ -507,7 +527,7 @@ function isIgnorableTraitLine(line) {
 function parseInfluenceThresholds(lines) {
 	const entries = [];
 	let current = null;
-	const stopLabels = new Set(['resistances', 'weaknesses', 'background', 'appearance', 'personality']);
+	const stopLabels = new Set(['resistances', 'weaknesses', 'background', 'appearance', 'personality', 'penalty']);
 
 	for (const line of lines) {
 		const influenceMatch = line.match(/^Influence\s+(\d+)\s*(.*)$/i);
@@ -848,7 +868,8 @@ function buildInfluenceExportFromJournalText(text) {
 	const influenceEntries = parseInfluenceThresholds(lines);
 
 	const resistanceText = extractLabeledSection(fullText, 'Resistances', ['Weaknesses', 'Background', 'Appearance', 'Personality']);
-	const weaknessText = extractLabeledSection(fullText, 'Weaknesses', ['Background', 'Appearance', 'Personality']);
+	const weaknessText = extractLabeledSection(fullText, 'Weaknesses', ['Penalty', 'Background', 'Appearance', 'Personality']);
+	const penaltyText = extractLabeledSection(fullText, 'Penalty', ['Background', 'Appearance', 'Personality']);
 	const background = extractLabeledSection(fullText, 'Background', ['Appearance', 'Personality']);
 	const appearance = extractLabeledSection(fullText, 'Appearance', ['Personality']);
 	const personality = extractLabeledSection(fullText, 'Personality', []);
@@ -929,7 +950,22 @@ function buildInfluenceExportFromJournalText(text) {
 				},
 			};
 		})() : {},
-		penalties: {},
+		penalties: penaltyText ? (() => {
+			const id = randomId();
+			return {
+				[id]: {
+					id,
+					position: 1,
+					name: 'Penalty',
+					hidden: true,
+					description: `<p>${penaltyText}</p>`,
+					modifier: {
+						used: false,
+						value: 0,
+					},
+				},
+			};
+		})() : {},
 	};
 
 	if (background || appearance || personality) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.149] - 2026-07-11
+
+### Fixed
+- **Subsystem tools**: Influence journal-text export now splits chained Discovery and Influence skill DC entries correctly, preserving alternate skills and preventing malformed subsystem events from crashing when opened.
+
 ## [2.4.148] - 2026-07-04
 
 ### Fixed
