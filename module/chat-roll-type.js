@@ -4,9 +4,11 @@ const FLAG_SCOPE = MODULE_ID;
 const RETYPE_FLAG = 'rollRetyping';
 const HALF_DAMAGE_FLAG = 'halfDamage';
 const AUTO_APPLY_SUPPRESS_MS = 4000;
+const AUTO_APPLY_CANDIDATE_MS = 10000;
 const HALF_DAMAGE_REQUEST_MS = 5000;
 const SOCKET_EVENT = `module.${MODULE_ID}`;
 const autoAppliedMessageIds = new Set();
+const pendingAutoApplyMessageIds = new Map();
 const suppressedAutoApplyMessageIds = new Set();
 const pendingHalfDamageRequests = [];
 const DAMAGE_TYPES = [
@@ -129,6 +131,32 @@ function consumeAutoApplySuppression(message) {
 function suppressAutoApplyForMessageId(messageId) {
 	if (!messageId) return;
 	suppressedAutoApplyMessageIds.add(messageId);
+}
+
+function prunePendingAutoApplyMessages() {
+	const now = Date.now();
+	for (const [messageId, expiresAt] of pendingAutoApplyMessageIds.entries()) {
+		if (expiresAt < now) pendingAutoApplyMessageIds.delete(messageId);
+	}
+}
+
+function markMessagePendingAutoApply(message) {
+	if (!message?.id) return;
+	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	prunePendingAutoApplyMessages();
+	pendingAutoApplyMessageIds.set(message.id, Date.now() + AUTO_APPLY_CANDIDATE_MS);
+}
+
+function isMessagePendingAutoApply(message) {
+	if (!message?.id) return false;
+	prunePendingAutoApplyMessages();
+	const expiresAt = pendingAutoApplyMessageIds.get(message.id);
+	if (!expiresAt) return false;
+	if (expiresAt < Date.now()) {
+		pendingAutoApplyMessageIds.delete(message.id);
+		return false;
+	}
+	return true;
 }
 
 function consumeAutoApplyMessageSuppression(message) {
@@ -761,6 +789,7 @@ async function maybeAutoApplyDamage(message, root) {
 	if (!isCurrentUserActiveGM()) return;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
 	if (autoAppliedMessageIds.has(message.id)) return;
+	if (!isMessagePendingAutoApply(message)) return;
 	if (consumeAutoApplyMessageSuppression(message)) return;
 	if (consumeAutoApplySuppression(message)) return;
 
@@ -882,6 +911,10 @@ Hooks.on('renderChatMessage', (message, html) => {
 	if (isEligibleMessage(message)) injectRetypingControls(message, contentRoot);
 	injectHalfDamageButton(message, root);
 	void maybeAutoApplyDamage(message, root);
+});
+
+Hooks.on('createChatMessage', (message) => {
+	markMessagePendingAutoApply(message);
 });
 
 Hooks.on('preCreateChatMessage', (message) => {

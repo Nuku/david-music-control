@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.150] - 2026-07-18
+
+### Fixed
+- **PF2e tools**: Automatic damage application now only triggers for newly created damage cards, so logging in no longer reapplies old damage from chat history.
+
 ## [2.4.149] - 2026-07-11
 
 ### Fixed
