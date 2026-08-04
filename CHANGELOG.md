@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.152] - 2026-08-04
+
+### Fixed
+- **PF2e tools**: Automatic damage no longer depends on a specific target-helper module ID and remains available for compatible target-aware damage cards.
+
 ## [2.4.151] - 2026-08-04
 
 ### Fixed

@@ -47,7 +47,6 @@ function isHalfDamageEnabled() {
 }
 
 function getAutoApplyDamageMode() {
-	if (!game.modules?.get('pf2e-target-helper')?.active) return 'none';
 	return game.settings.get(MODULE_ID, 'autoApplyDamage') || 'none';
 }
 
