@@ -617,13 +617,13 @@ function getDamageButtonByMultiplier(root, multiplier) {
 	return Array.from(root.querySelectorAll('button')).find((button) => {
 		if (button.classList.contains('dmc-half-damage-button')) return false;
 		if (button.disabled) return false;
-		return String(button.dataset?.action ?? '') === 'applyDamage'
+		return ['applyDamage', 'target-applyDamage'].includes(String(button.dataset?.action ?? ''))
 			&& String(button.dataset?.multiplier ?? '') === normalized;
 	}) ?? null;
 }
 
 function getOutcomeAutoApplyButton(section) {
-	const outcome = String(section.dataset?.outcome ?? '').trim();
+	const outcome = getTargetSectionOutcome(section);
 	switch (outcome) {
 		case 'criticalFailure':
 			return getDamageButtonByMultiplier(section, 2);
@@ -638,6 +638,13 @@ function getOutcomeAutoApplyButton(section) {
 	}
 }
 
+function getTargetSectionOutcome(section) {
+	const dataOutcome = String(section.dataset?.outcome ?? '').trim();
+	if (dataOutcome) return dataOutcome;
+	return ['criticalFailure', 'failure', 'success', 'criticalSuccess', 'healing']
+		.find((outcome) => section.classList?.contains(outcome)) ?? '';
+}
+
 function isForcedHalfDamageMessage(message) {
 	return message?.getFlag?.(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.forcedOutcome === 'success';
 }
@@ -645,7 +652,8 @@ function isForcedHalfDamageMessage(message) {
 function getTargetDamageSections(root) {
 	return Array.from(root.querySelectorAll(
 		'.all-main-targets-damage-application .damage-application, '
-		+ '.all-splash-targets-damage-application .damage-application'
+		+ '.all-splash-targets-damage-application .damage-application, '
+		+ '.pf2e-toolbelt-target-damage .damage-application[data-target-uuid]'
 	));
 }
 
@@ -660,13 +668,19 @@ function normalizeRenderedHalfDamageCard(root) {
 		doubleButton?.classList?.remove?.('dmc-forced-half-active');
 	}
 
-	for (const section of allDamageSections) section.dataset.outcome = 'success';
+	for (const section of allDamageSections) {
+		section.dataset.outcome = 'success';
+		for (const outcome of ['criticalFailure', 'failure', 'criticalSuccess', 'healing']) {
+			section.classList?.remove?.(outcome);
+		}
+		section.classList?.add?.('success');
+	}
 }
 
 function shouldUseOutcomeBasedAutoApply(_root, targetSections) {
 	if (!Array.isArray(targetSections) || targetSections.length === 0) return false;
 	return targetSections.some((section) => {
-		const outcome = String(section.dataset?.outcome ?? '').trim();
+		const outcome = getTargetSectionOutcome(section);
 		return outcome === 'criticalFailure'
 			|| outcome === 'failure'
 			|| outcome === 'success'
@@ -689,6 +703,17 @@ async function shouldAutoApplyTargetSection(section, mode) {
 		if (actor) return actor.type === 'npc';
 	}
 
+	const targetUuid = section.dataset?.targetUuid ?? null;
+	if (targetUuid) {
+		try {
+			const target = await fromUuid(targetUuid);
+			const actor = target?.actor ?? target;
+			if (actor) return actor.type === 'npc' || !actor.isOfType?.('character');
+		} catch (_error) {
+			// Fall through without applying the origin damage button.
+		}
+	}
+
 	return false;
 }
 
@@ -707,7 +732,7 @@ async function getAutoApplyDamageButtons(message, root, mode) {
 					: getApplyDamageButton(section));
 			if (button instanceof HTMLElement) buttons.push(button);
 		}
-		if (buttons.length > 0) return buttons;
+		return buttons;
 	}
 
 	if (mode === 'npc') {

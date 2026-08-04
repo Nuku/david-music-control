@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.153] - 2026-08-04
+
+### Fixed
+- **PF2e tools**: Half-damage and automatic damage now select PF2e Toolbelt target buttons using its outcome classes and target-specific actions.
+
 ## [2.4.152] - 2026-08-04
 
 ### Fixed
