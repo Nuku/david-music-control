@@ -643,8 +643,15 @@ function isForcedHalfDamageMessage(message) {
 	return message?.getFlag?.(FLAG_SCOPE, HALF_DAMAGE_FLAG)?.forcedOutcome === 'success';
 }
 
+function getTargetDamageSections(root) {
+	return Array.from(root.querySelectorAll(
+		'.all-main-targets-damage-application .damage-application, '
+		+ '.all-splash-targets-damage-application .damage-application'
+	));
+}
+
 function normalizeRenderedHalfDamageCard(root) {
-	const allDamageSections = Array.from(root.querySelectorAll('.damage-application'));
+	const allDamageSections = getTargetDamageSections(root);
 	for (const section of allDamageSections) {
 		const fullButton = getDamageButtonByMultiplier(section, 1);
 		const halfButton = getDamageButtonByMultiplier(section, 0.5);
@@ -654,10 +661,7 @@ function normalizeRenderedHalfDamageCard(root) {
 		doubleButton?.classList?.remove?.('dmc-forced-half-active');
 	}
 
-	const targetSections = Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
-	for (const section of targetSections) {
-		section.dataset.outcome = 'success';
-	}
+	for (const section of allDamageSections) section.dataset.outcome = 'success';
 }
 
 function shouldUseOutcomeBasedAutoApply(_root, targetSections) {
@@ -745,7 +749,7 @@ function waitForDamageApplication(root, timeoutMs = 500) {
 
 function waitForTargetDamageApplications(root, timeoutMs = 500) {
 	return new Promise((resolve) => {
-		const getSections = () => Array.from(root.querySelectorAll('.all-main-targets-damage-application .damage-application'));
+		const getSections = () => getTargetDamageSections(root);
 		const immediate = getSections();
 		if (immediate.length > 0) {
 			resolve(immediate);

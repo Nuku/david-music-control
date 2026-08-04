@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.151] - 2026-08-04
+
+### Fixed
+- **PF2e tools**: Automatic and half damage now support PF2e Target Helper's main and splash target rows.
+
 ## [2.4.150] - 2026-07-18
 
 ### Fixed
