@@ -933,7 +933,10 @@ async function createDerivedRollMessage(message, { mode, damageType }) {
 Hooks.on('renderChatMessage', (message, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
-	if (isForcedHalfDamageMessage(message)) normalizeRenderedHalfDamageCard(root);
+	if (isForcedHalfDamageMessage(message)) {
+		normalizeRenderedHalfDamageCard(root);
+		void waitForTargetDamageApplications(root, 1500).then(() => normalizeRenderedHalfDamageCard(root));
+	}
 
 	const contentRoot = root.querySelector('.message-content') ?? root;
 	if (isEligibleMessage(message)) injectRetypingControls(message, contentRoot);
