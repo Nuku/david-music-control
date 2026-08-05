@@ -62,14 +62,14 @@ function getTokenCenter(token) {
 }
 
 function getWallSafeCornerPoint(token, center, corner) {
-	const PointSourcePolygon = foundry.canvas.geometry?.PointSourcePolygon;
-	if (typeof PointSourcePolygon?.testCollision !== 'function') return { point: corner, collision: null };
+	const CollisionPolygon = foundry.canvas.geometry?.ClockwiseSweepPolygon;
+	if (typeof CollisionPolygon?.testCollision !== 'function') return { point: corner, collision: null };
 
 	const config = { mode: 'closest', type: 'sight' };
 	if (token.vision?.level) config.level = token.vision.level;
 	let collision;
 	try {
-		collision = PointSourcePolygon.testCollision(center, corner, config);
+		collision = CollisionPolygon.testCollision(center, corner, config);
 	} catch (error) {
 		console.warn(`[${MODULE_ID}] Enhanced Vision could not test the center-to-corner ray`, error);
 		return { point: corner, collision: null };
