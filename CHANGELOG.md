@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.156] - 2026-08-05
+
+### Added
+- **PF2e tools**: Added GM-controlled automatic rolling for PF2e Toolbelt saves, with Never, For NPCs, and For Everyone options.
+
 ## [2.4.155] - 2026-08-05
 
 ### Fixed

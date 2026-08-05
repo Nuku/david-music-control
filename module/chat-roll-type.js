@@ -7,7 +7,9 @@ const AUTO_APPLY_SUPPRESS_MS = 4000;
 const AUTO_APPLY_CANDIDATE_MS = 10000;
 const HALF_DAMAGE_REQUEST_MS = 5000;
 const SOCKET_EVENT = `module.${MODULE_ID}`;
+const TOOLBELT_MODULE_ID = 'pf2e-toolbelt';
 const autoAppliedMessageIds = new Set();
+const autoRolledToolbeltMessageIds = new Set();
 const pendingAutoApplyMessageIds = new Map();
 const suppressedAutoApplyMessageIds = new Set();
 const pendingHalfDamageRequests = [];
@@ -48,6 +50,10 @@ function isHalfDamageEnabled() {
 
 function getAutoApplyDamageMode() {
 	return game.settings.get(MODULE_ID, 'autoApplyDamage') || 'none';
+}
+
+function getAutoRollToolbeltSavesMode() {
+	return game.settings.get(MODULE_ID, 'autoRollToolbeltSaves') || 'none';
 }
 
 function getMessageRolls(message) {
@@ -825,6 +831,99 @@ function waitForToolbeltTargetSaves(root) {
 	});
 }
 
+function getToolbeltTargetRows(root) {
+	return Array.from(root.querySelectorAll('.pf2e-toolbelt-target-targetRows .target-row'));
+}
+
+function waitForToolbeltTargetRows(root, timeoutMs = 2000) {
+	return new Promise((resolve) => {
+		const immediate = getToolbeltTargetRows(root);
+		if (immediate.length > 0) {
+			resolve(immediate);
+			return;
+		}
+
+		const observer = new MutationObserver(() => {
+			const rows = getToolbeltTargetRows(root);
+			if (rows.length === 0) return;
+			observer.disconnect();
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
+			resolve(rows);
+		});
+
+		const timeoutId = window.setTimeout(() => {
+			observer.disconnect();
+			resolve([]);
+		}, timeoutMs);
+		observer.observe(root, { childList: true, subtree: true });
+	});
+}
+
+function getToolbeltTargetUuids(message) {
+	const flags = message?.flags?.[TOOLBELT_MODULE_ID] ?? {};
+	return (Array.isArray(flags.targets) ? flags.targets : [])
+		.map((target) => typeof target === 'string' ? target : target?.uuid)
+		.filter(Boolean);
+}
+
+async function getToolbeltTargetInfo(uuid) {
+	try {
+		const target = await fromUuid(uuid);
+		const actor = target?.actor ?? target;
+		return {
+			name: target?.name ?? actor?.name ?? '',
+			isNpc: !!actor && !actor.hasPlayerOwner,
+		};
+	} catch (_error) {
+		return null;
+	}
+}
+
+function normalizeToolbeltTargetName(name) {
+	return String(name ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+async function maybeAutoRollToolbeltSaves(message, root) {
+	if (!isCurrentUserActiveGM()) return;
+	if (autoRolledToolbeltMessageIds.has(message.id)) return;
+
+	const mode = getAutoRollToolbeltSavesMode();
+	if (mode === 'none') return;
+
+	const targetUuids = getToolbeltTargetUuids(message);
+	if (targetUuids.length === 0) return;
+	const rows = await waitForToolbeltTargetRows(root);
+	if (rows.length === 0) return;
+	const targetInfoByName = new Map();
+	if (mode === 'npc') {
+		for (const info of await Promise.all(targetUuids.map((uuid) => getToolbeltTargetInfo(uuid)))) {
+			if (!info) continue;
+			const name = normalizeToolbeltTargetName(info.name);
+			const targets = targetInfoByName.get(name) ?? [];
+			targets.push(info);
+			targetInfoByName.set(name, targets);
+		}
+	}
+
+	const buttons = [];
+	for (const row of rows) {
+		const button = row.querySelector('[data-action="roll-save"]');
+		if (!(button instanceof HTMLElement)) continue;
+		if (mode === 'npc') {
+			const name = normalizeToolbeltTargetName(row.querySelector('.target-header .name')?.textContent);
+			const target = targetInfoByName.get(name)?.shift();
+			if (!target?.isNpc) continue;
+		}
+		buttons.push(button);
+	}
+	if (buttons.length === 0) return;
+
+	autoRolledToolbeltMessageIds.add(message.id);
+	window.setTimeout(() => {
+		for (const button of buttons) button.click();
+	}, 50);
+}
+
 async function shouldAutoApplyDamage(message) {
 	if (!isCurrentUserActiveGM()) return false;
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
@@ -969,6 +1068,7 @@ Hooks.on('renderChatMessage', (message, html) => {
 	const contentRoot = root.querySelector('.message-content') ?? root;
 	if (isEligibleMessage(message)) injectRetypingControls(message, contentRoot);
 	injectHalfDamageButton(message, root);
+	void maybeAutoRollToolbeltSaves(message, root);
 	void maybeAutoApplyDamage(message, root);
 });
 

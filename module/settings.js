@@ -178,6 +178,19 @@ const settings = {
 		},
 		default: 'none',
 	},
+	autoRollToolbeltSaves: {
+		name: 'Roll Toolbelt Saves Automatically',
+		hint: 'For PF2e Toolbelt save cards, automatically roll saves for NPC targets, everyone, or nobody.',
+		scope: 'world',
+		config: true,
+		type: String,
+		choices: {
+			none: 'Never',
+			npc: 'For NPCs',
+			always: 'For Everyone',
+		},
+		default: 'none',
+	},
 	creatureAmbienceDebug: {
 		name: 'Creature Ambience Debug Logging',
 		hint: 'Log creature ambience scheduling, pathfinding, and per-user playback decisions to the browser console.',
@@ -448,8 +461,8 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'PF2e Tools',
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
-			gmOnlyKeys: ['autoApplyDamage'],
+			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
+			gmOnlyKeys: ['autoApplyDamage', 'autoRollToolbeltSaves'],
 		},
 		{
 			title: 'Villain Points',
