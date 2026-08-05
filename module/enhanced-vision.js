@@ -4,6 +4,7 @@ import { MODULE_ID, getSetting } from './settings.js';
 // additional sources complete the four-corner view without retaining a
 // center-anchored source.
 const CORNER_SOURCE_COUNT = 3;
+const CORNER_INSET_PIXELS = 1;
 const CORNER_SOURCE_KEY = Symbol('pf2DirectorEnhancedVisionSources');
 
 function isEnabled() {
@@ -19,11 +20,12 @@ function getCornerPoints(token) {
 	const y = Number(token.document?.y ?? token.y ?? 0);
 	const width = Number(token.w ?? 0);
 	const height = Number(token.h ?? 0);
+	const inset = Math.min(CORNER_INSET_PIXELS, Math.abs(width) / 2, Math.abs(height) / 2);
 	const points = [
-		{ x, y },
-		{ x: x + width, y },
-		{ x: x + width, y: y + height },
-		{ x, y: y + height },
+		{ x: x + inset, y: y + inset },
+		{ x: x + width - inset, y: y + inset },
+		{ x: x + width - inset, y: y + height - inset },
+		{ x: x + inset, y: y + height - inset },
 	];
 	const rotation = Number(token.document?.rotation ?? 0);
 	if (!rotation) return points;

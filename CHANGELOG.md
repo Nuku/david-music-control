@@ -5,6 +5,9 @@
 ### Added
 - **Vision**: Added an optional Enhanced Vision setting that calculates token vision from all four corners of each token footprint.
 
+### Fixed
+- **Vision**: Inset Enhanced Vision corner origins slightly so tokens touching walls cannot bypass wall collision from an origin exactly on the wall.
+
 ## [2.4.157] - 2026-08-05
 
 ### Fixed

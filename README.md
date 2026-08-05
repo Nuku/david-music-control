@@ -35,7 +35,7 @@ PF2 Director currently includes:
 
 ### Enhanced Vision
 
-When `Enhanced Vision` is enabled, tokens provide vision from all four corners of their footprint rather than only from the center. This can reveal more accurate sightlines around walls, at the cost of additional perception calculations.
+When `Enhanced Vision` is enabled, tokens provide vision from four slightly inset corner positions rather than only from the center. Each corner still obeys wall line-of-sight, allowing an unobstructed corner to see around a wall without allowing the token to see through a wall it is touching. This costs additional perception calculations.
 
 ## Music
 
