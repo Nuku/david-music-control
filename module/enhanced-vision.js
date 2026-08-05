@@ -5,6 +5,7 @@ import { MODULE_ID, getSetting } from './settings.js';
 // center-anchored source.
 const CORNER_SOURCE_COUNT = 3;
 const CORNER_INSET_PIXELS = 1;
+const WALL_CLEARANCE_PIXELS = 1;
 const CORNER_SOURCE_KEY = Symbol('pf2DirectorEnhancedVisionSources');
 
 function isEnabled() {
@@ -42,6 +43,40 @@ function getCornerPoints(token) {
 	});
 }
 
+function getTokenCenter(token) {
+	if (typeof token.getCenterPoint === 'function') return token.getCenterPoint();
+	return {
+		x: Number(token.document?.x ?? token.x ?? 0) + Number(token.w ?? 0) / 2,
+		y: Number(token.document?.y ?? token.y ?? 0) + Number(token.h ?? 0) / 2,
+	};
+}
+
+function getWallSafeCornerPoint(token, center, corner) {
+	const PointSourcePolygon = foundry.canvas.geometry?.PointSourcePolygon;
+	if (typeof PointSourcePolygon?.testCollision !== 'function') return corner;
+
+	const config = { mode: 'closest', type: 'sight' };
+	if (token.vision?.level) config.level = token.vision.level;
+	let collision;
+	try {
+		collision = PointSourcePolygon.testCollision(center, corner, config);
+	} catch (error) {
+		console.warn(`[${MODULE_ID}] Enhanced Vision could not test the center-to-corner ray`, error);
+		return corner;
+	}
+	if (!collision || !Number.isFinite(collision.x) || !Number.isFinite(collision.y)) return corner;
+
+	const dx = collision.x - center.x;
+	const dy = collision.y - center.y;
+	const distance = Math.hypot(dx, dy);
+	if (!distance) return center;
+	const safeDistance = Math.max(0, distance - WALL_CLEARANCE_PIXELS);
+	return {
+		x: center.x + (dx / distance) * safeDistance,
+		y: center.y + (dy / distance) * safeDistance,
+	};
+}
+
 function destroyCornerSources(token) {
 	for (const source of token[CORNER_SOURCE_KEY] ?? []) {
 		try {
@@ -61,7 +96,8 @@ function updateCornerSources(token) {
 	}
 
 	const data = foundry.utils.deepClone(vision.data ?? {});
-	const points = getCornerPoints(token);
+	const center = getTokenCenter(token);
+	const points = getCornerPoints(token).map((corner) => getWallSafeCornerPoint(token, center, corner));
 	vision.initialize({ ...data, x: points[0].x, y: points[0].y });
 	const sources = token[CORNER_SOURCE_KEY] ?? [];
 	for (let index = 0; index < CORNER_SOURCE_COUNT; index += 1) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.160] - 2026-08-05
+
+### Fixed
+- **Vision**: Enhanced Vision now traces each corner from the token center and places the viewpoint just before the closest wall, preventing wall bypasses while preserving around-corner sightlines.
+
 ## [2.4.158] - 2026-08-05
 
 ### Added
