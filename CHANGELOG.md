@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.158] - 2026-08-05
+
+### Added
+- **Vision**: Added an optional Enhanced Vision setting that calculates token vision from all four corners of each token footprint.
+
 ## [2.4.157] - 2026-08-05
 
 ### Fixed

@@ -117,6 +117,15 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enhancedVision: {
+		name: 'Enhanced Vision',
+		hint: 'Calculate each token\'s vision from all four corners of its footprint instead of only from its center. This increases perception work, especially with many tokens. Reload the scene after changing this setting if the current view does not update immediately.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+		onChange: () => canvas?.perception?.update?.({ initializeVision: true, refreshVision: true }),
+	},
 	enableCreatureAmbience: {
 		name: 'Enable Creature Ambience',
 		hint: 'Periodically plays PF2e Creature Sounds creature noises for players who have a path from the source creature to that player\'s nearest placed Observer-or-owner token, with closed doors and distance muffling the result.',
@@ -463,6 +472,11 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
 			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 			gmOnlyKeys: ['autoApplyDamage', 'autoRollToolbeltSaves'],
+		},
+		{
+			title: 'Vision',
+			description: 'Optional token vision enhancements.',
+			keys: ['enhancedVision'],
 		},
 		{
 			title: 'Villain Points',

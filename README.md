@@ -31,6 +31,11 @@ PF2 Director currently includes:
 - Dramatic health display overlays with optional damage and healing sounds
 - PF2e subsystem export and generation tools, including live creation support when `pf2e-subsystems` is installed
 - Integrated end credits with configurable music, background media, and GM start or stop controls
+- Optional Enhanced Vision, which calculates token vision from each of its four corners
+
+### Enhanced Vision
+
+When `Enhanced Vision` is enabled, tokens provide vision from all four corners of their footprint rather than only from the center. This can reveal more accurate sightlines around walls, at the cost of additional perception calculations.
 
 ## Music
 
