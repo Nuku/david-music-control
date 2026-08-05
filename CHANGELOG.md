@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.155] - 2026-08-05
+
+### Fixed
+- **PF2e tools**: Automatic damage waits for every PF2e Toolbelt target save to resolve before applying damage.
+
 ## [2.4.153] - 2026-08-04
 
 ### Fixed

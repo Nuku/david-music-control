@@ -720,6 +720,7 @@ async function shouldAutoApplyTargetSection(section, mode) {
 async function getAutoApplyDamageButtons(message, root, mode) {
 	const targetSections = await waitForTargetDamageApplications(root);
 	if (targetSections.length > 0) {
+		if (!(await waitForToolbeltTargetSaves(root))) return [];
 		const forceHalf = isForcedHalfDamageMessage(message);
 		const useOutcomeButtons = shouldUseOutcomeBasedAutoApply(root, targetSections);
 		const buttons = [];
@@ -794,6 +795,33 @@ function waitForTargetDamageApplications(root, timeoutMs = 500) {
 		}, timeoutMs);
 
 		observer.observe(root, { childList: true, subtree: true });
+	});
+}
+
+function getPendingToolbeltTargetSaves(root) {
+	return Array.from(root.querySelectorAll('.pf2e-toolbelt-target-damage .target-row'))
+		.filter((row) => row.querySelector('[data-action="roll-save"], .target-header .controls .unknown'));
+}
+
+function waitForToolbeltTargetSaves(root) {
+	return new Promise((resolve) => {
+		const observer = new MutationObserver(() => check());
+		const cleanup = () => {
+			observer.disconnect();
+		};
+		const check = () => {
+			if (getPendingToolbeltTargetSaves(root).length > 0) return;
+			cleanup();
+			resolve(true);
+		};
+
+		observer.observe(root, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['class', 'data-action'],
+		});
+		check();
 	});
 }
 
