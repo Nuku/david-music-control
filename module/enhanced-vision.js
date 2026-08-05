@@ -7,10 +7,20 @@ const CORNER_SOURCE_COUNT = 3;
 const CORNER_INSET_PIXELS = 1;
 const WALL_CLEARANCE_PIXELS = 1;
 const CORNER_SOURCE_KEY = Symbol('pf2DirectorEnhancedVisionSources');
+const DEBUG_DATA_KEY = Symbol('pf2DirectorEnhancedVisionDebugData');
+let debugOverlay;
 
 function isEnabled() {
 	try {
 		return Boolean(getSetting('enhancedVision'));
+	} catch (_error) {
+		return false;
+	}
+}
+
+function isDebugEnabled() {
+	try {
+		return Boolean(getSetting('enhancedVisionDebug'));
 	} catch (_error) {
 		return false;
 	}
@@ -53,7 +63,7 @@ function getTokenCenter(token) {
 
 function getWallSafeCornerPoint(token, center, corner) {
 	const PointSourcePolygon = foundry.canvas.geometry?.PointSourcePolygon;
-	if (typeof PointSourcePolygon?.testCollision !== 'function') return corner;
+	if (typeof PointSourcePolygon?.testCollision !== 'function') return { point: corner, collision: null };
 
 	const config = { mode: 'closest', type: 'sight' };
 	if (token.vision?.level) config.level = token.vision.level;
@@ -62,19 +72,78 @@ function getWallSafeCornerPoint(token, center, corner) {
 		collision = PointSourcePolygon.testCollision(center, corner, config);
 	} catch (error) {
 		console.warn(`[${MODULE_ID}] Enhanced Vision could not test the center-to-corner ray`, error);
-		return corner;
+		return { point: corner, collision: null };
 	}
-	if (!collision || !Number.isFinite(collision.x) || !Number.isFinite(collision.y)) return corner;
+	if (!collision || !Number.isFinite(collision.x) || !Number.isFinite(collision.y)) return { point: corner, collision: null };
 
 	const dx = collision.x - center.x;
 	const dy = collision.y - center.y;
 	const distance = Math.hypot(dx, dy);
-	if (!distance) return center;
+	if (!distance) return { point: center, collision };
 	const safeDistance = Math.max(0, distance - WALL_CLEARANCE_PIXELS);
 	return {
-		x: center.x + (dx / distance) * safeDistance,
-		y: center.y + (dy / distance) * safeDistance,
+		point: {
+			x: center.x + (dx / distance) * safeDistance,
+			y: center.y + (dy / distance) * safeDistance,
+		},
+		collision,
 	};
+}
+
+function clearDebugOverlay() {
+	debugOverlay?.destroy?.();
+	debugOverlay = null;
+}
+
+function getDebugOverlay() {
+	if (debugOverlay || !globalThis.PIXI?.Graphics) return debugOverlay;
+	const parent = canvas?.interface ?? canvas?.controls ?? canvas?.stage;
+	if (!parent) return null;
+	debugOverlay = new PIXI.Graphics();
+	debugOverlay.zIndex = 10000;
+	parent.addChild(debugOverlay);
+	return debugOverlay;
+}
+
+function drawDebugMarker(graphics, point, color, radius = 3) {
+	graphics.beginFill(color, 0.9).drawCircle(point.x, point.y, radius).endFill();
+}
+
+function drawDebugOverlay() {
+	clearDebugOverlay();
+	if (!isEnabled() || !isDebugEnabled()) return;
+	const graphics = getDebugOverlay();
+	if (!graphics) return;
+	for (const token of canvas?.tokens?.placeables ?? []) {
+		const debug = token[DEBUG_DATA_KEY];
+		if (!debug) continue;
+		drawDebugMarker(graphics, debug.center, 0xffffff, 4);
+		for (const entry of debug.corners) {
+			graphics.lineStyle(1, 0xffff00, 0.75).moveTo(debug.center.x, debug.center.y).lineTo(entry.corner.x, entry.corner.y);
+			drawDebugMarker(graphics, entry.corner, 0xffff00, 3);
+			if (entry.collision) {
+				graphics.lineStyle(2, 0xff3333, 0.9).moveTo(debug.center.x, debug.center.y).lineTo(entry.collision.x, entry.collision.y);
+				drawDebugMarker(graphics, entry.collision, 0xff3333, 3);
+			}
+			drawDebugMarker(graphics, entry.point, 0x33ff66, 3);
+		}
+	}
+}
+
+function logDebugData(token, center, corners) {
+	if (!isDebugEnabled()) return;
+	console.groupCollapsed(`[${MODULE_ID}] Enhanced Vision: ${token.name ?? token.id}`);
+	console.log('center', center);
+	console.table(corners.map((entry, index) => ({
+		corner: index + 1,
+		intendedX: entry.corner.x,
+		intendedY: entry.corner.y,
+		collisionX: entry.collision?.x ?? null,
+		collisionY: entry.collision?.y ?? null,
+		viewpointX: entry.point.x,
+		viewpointY: entry.point.y,
+	})));
+	console.groupEnd();
 }
 
 function destroyCornerSources(token) {
@@ -97,7 +166,14 @@ function updateCornerSources(token) {
 
 	const data = foundry.utils.deepClone(vision.data ?? {});
 	const center = getTokenCenter(token);
-	const points = getCornerPoints(token).map((corner) => getWallSafeCornerPoint(token, center, corner));
+	const corners = getCornerPoints(token).map((corner) => ({
+		corner,
+		...getWallSafeCornerPoint(token, center, corner),
+	}));
+	token[DEBUG_DATA_KEY] = { center, corners };
+	logDebugData(token, center, corners);
+	drawDebugOverlay();
+	const points = corners.map((entry) => entry.point);
 	vision.initialize({ ...data, x: points[0].x, y: points[0].y });
 	const sources = token[CORNER_SOURCE_KEY] ?? [];
 	for (let index = 0; index < CORNER_SOURCE_COUNT; index += 1) {
@@ -130,10 +206,12 @@ Hooks.once('init', () => {
 	TokenClass.prototype.initializeVisionSource = function enhancedVisionInitialize(options = {}) {
 		if (options.deleted) destroyCornerSources(this);
 		const result = originalInitializeVisionSource.call(this, options);
-		if (!options.deleted) updateCornerSources(this);
+	if (!options.deleted) updateCornerSources(this);
 		return result;
 	};
 });
+
+Hooks.on('canvasTearDown', clearDebugOverlay);
 
 Hooks.on('canvasReady', () => {
 	if (!isEnabled()) return;

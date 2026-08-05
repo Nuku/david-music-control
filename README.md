@@ -37,6 +37,8 @@ PF2 Director currently includes:
 
 When `Enhanced Vision` is enabled, tokens provide vision from four slightly inset corner positions rather than only from the center. Each corner still obeys wall line-of-sight, allowing an unobstructed corner to see around a wall without allowing the token to see through a wall it is touching. This costs additional perception calculations.
 
+For troubleshooting, `Enhanced Vision Debug` draws the center, intended corners, wall collision points, and final viewpoints, and logs their coordinates in the browser console.
+
 ## Music
 
 ### Combat Music

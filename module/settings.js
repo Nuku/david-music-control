@@ -126,6 +126,15 @@ const settings = {
 		default: false,
 		onChange: () => canvas?.perception?.update?.({ initializeVision: true, refreshVision: true }),
 	},
+	enhancedVisionDebug: {
+		name: 'Enhanced Vision Debug',
+		hint: 'Draw and log Enhanced Vision centers, corners, wall collisions, and final viewpoints for troubleshooting. Disable after testing.',
+		scope: 'client',
+		config: true,
+		type: Boolean,
+		default: false,
+		onChange: () => canvas?.perception?.update?.({ initializeVision: true, refreshVision: true }),
+	},
 	enableCreatureAmbience: {
 		name: 'Enable Creature Ambience',
 		hint: 'Periodically plays PF2e Creature Sounds creature noises for players who have a path from the source creature to that player\'s nearest placed Observer-or-owner token, with closed doors and distance muffling the result.',
@@ -476,7 +485,7 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'Vision',
 			description: 'Optional token vision enhancements.',
-			keys: ['enhancedVision'],
+			keys: ['enhancedVision', 'enhancedVisionDebug'],
 		},
 		{
 			title: 'Villain Points',

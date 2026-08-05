@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.161] - 2026-08-05
+
+### Added
+- **Vision**: Added an Enhanced Vision Debug setting that draws and logs center points, intended corners, wall collisions, and final viewpoints.
+
 ## [2.4.160] - 2026-08-05
 
 ### Fixed
