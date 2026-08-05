@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.157] - 2026-08-05
+
+### Fixed
+- **PF2e tools**: Automatic Toolbelt save rolling now supports action cards whose visible target rows lack stored target UUID data.
+
 ## [2.4.156] - 2026-08-05
 
 ### Added

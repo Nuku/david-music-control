@@ -883,6 +883,26 @@ function normalizeToolbeltTargetName(name) {
 	return String(name ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+function addToolbeltTargetInfo(targetInfoByName, info) {
+	if (!info) return;
+	const name = normalizeToolbeltTargetName(info.name);
+	if (!name) return;
+	const targets = targetInfoByName.get(name) ?? [];
+	targets.push(info);
+	targetInfoByName.set(name, targets);
+}
+
+function getVisibleToolbeltTargetInfo() {
+	return Array.from(canvas?.tokens?.placeables ?? [])
+		.map((token) => {
+			const actor = token.actor;
+			return {
+				name: token.name ?? actor?.name ?? '',
+				isNpc: !!actor && !actor.hasPlayerOwner,
+			};
+		});
+}
+
 async function maybeAutoRollToolbeltSaves(message, root) {
 	if (!isCurrentUserActiveGM()) return;
 	if (autoRolledToolbeltMessageIds.has(message.id)) return;
@@ -891,17 +911,15 @@ async function maybeAutoRollToolbeltSaves(message, root) {
 	if (mode === 'none') return;
 
 	const targetUuids = getToolbeltTargetUuids(message);
-	if (targetUuids.length === 0) return;
 	const rows = await waitForToolbeltTargetRows(root);
 	if (rows.length === 0) return;
 	const targetInfoByName = new Map();
 	if (mode === 'npc') {
 		for (const info of await Promise.all(targetUuids.map((uuid) => getToolbeltTargetInfo(uuid)))) {
-			if (!info) continue;
-			const name = normalizeToolbeltTargetName(info.name);
-			const targets = targetInfoByName.get(name) ?? [];
-			targets.push(info);
-			targetInfoByName.set(name, targets);
+			addToolbeltTargetInfo(targetInfoByName, info);
+		}
+		if (targetInfoByName.size === 0) {
+			for (const info of getVisibleToolbeltTargetInfo()) addToolbeltTargetInfo(targetInfoByName, info);
 		}
 	}
 
