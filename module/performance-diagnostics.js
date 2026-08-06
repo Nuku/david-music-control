@@ -122,7 +122,7 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	note.className = 'hint';
 	note.textContent = 'Long tasks cannot always be assigned to a specific module by the browser. Hook entries are clues, not proof; system, rendering, and hardware work may remain unattributed.';
 	content.append(note);
-	return content;
+	return content.outerHTML;
 }
 
 export async function runPerformanceDiagnostic() {
