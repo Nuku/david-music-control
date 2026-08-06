@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.166] - 2026-08-06
+
+### Added
+- **PF2e tools**: Added Pacifying property-rune automation with an attacker reaction prompt, the DC 20 Will save, and the Pacified effect's –2 penalty to attacks without the nonlethal trait.
+
 ## [2.4.163] - 2026-08-06
 
 ### Added

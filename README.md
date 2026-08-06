@@ -28,6 +28,7 @@ PF2 Director currently includes:
 - Victory music and Foundry V14 victory fireworks
 - PF2e party utilities such as Full Rest, Cult tracking, and clustered party token art
 - PF2e chat tools including roll retyping, villain-point rerolls, and explicit Half buttons for strikes, spells, impulses, and other cards that can roll damage
+- Automatic Pacifying property-rune handling: the attacker is prompted to spend the reaction; if accepted, damaged creatures attempt a DC 20 Will save and, on failure, receive a 1-minute Pacified effect with a –2 penalty to attacks lacking the nonlethal trait
 - Dramatic health display overlays with optional damage and healing sounds
 - PF2e subsystem export and generation tools, including live creation support when `pf2e-subsystems` is installed
 - Integrated end credits with configurable music, background media, and GM start or stop controls

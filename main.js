@@ -9,6 +9,7 @@ import './module/full-rest.js';
 import './module/at-will-recharge.js';
 import './module/chat-roll-type.js';
 import './module/taunt.js';
+import './module/pacifying.js';
 import './module/dice-pcg.js';
 import './module/villain-points.js';
 import './module/scene-music.js';
