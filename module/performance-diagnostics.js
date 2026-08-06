@@ -29,10 +29,14 @@ function startRollingSampler() {
 		try {
 			new PerformanceObserver((list) => {
 				for (const entry of list.getEntries()) {
+					const attribution = Array.isArray(entry.attribution)
+						? entry.attribution.map((item) => item.containerName || item.name).filter(Boolean)
+						: [];
 					pushLimited(longTasks, {
 						at: entry.startTime,
 						duration: entry.duration,
-						name: entry.name || 'main thread',
+						name: entry.name === 'self' || !entry.name ? 'Unattributed browser main-thread task' : entry.name,
+						attribution,
 					}, LONG_TASK_LIMIT);
 				}
 			}).observe({ type: 'longtask', buffered: true });
@@ -96,7 +100,10 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	title.textContent = `Captured ${DIAGNOSTIC_MS / 1000} seconds beginning at ${new Date(startedAt).toLocaleTimeString()}. Results are local to this browser. `;
 	content.append(title);
 	const sections = [
-		['Longest main-thread tasks', tasks.slice(0, 8).map((entry) => `${formatDuration(entry.duration)} — ${entry.name}`)],
+		['Longest main-thread tasks', tasks.slice(0, 8).map((entry) => {
+			const source = entry.attribution?.length ? ` (${entry.attribution.join(', ')})` : '';
+			return `${formatDuration(entry.duration)} — ${entry.name}${source}`;
+		})],
 		['Largest frame stalls', frames.slice(0, 8).map((entry) => formatDuration(entry.duration))],
 		['Slow Foundry hook callbacks', hooksByCost.map(([name, duration]) => `${formatDuration(duration)} total — ${name}`)],
 	];
