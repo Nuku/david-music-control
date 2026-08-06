@@ -11,7 +11,20 @@ function isActiveGM() {
 }
 
 function getDamageItem(message) {
-	return message?.item ?? message?.flags?.pf2e?.context?.item ?? message?.flags?.pf2e?.origin?.item ?? null;
+	return message?.item ?? message?.flags?.pf2e?.context?.item ?? message?.flags?.pf2e?.context?.self?.item ?? message?.flags?.pf2e?.origin?.item ?? null;
+}
+
+function getDamageItemUuids(message) {
+	const candidates = [
+		message?.item,
+		message?.flags?.pf2e?.context?.item,
+		message?.flags?.pf2e?.context?.self?.item,
+		message?.flags?.pf2e?.origin?.item,
+		message?.flags?.pf2e?.origin?.uuid,
+	];
+	return candidates
+		.map((candidate) => typeof candidate === 'string' ? candidate : candidate?.uuid)
+		.filter((uuid) => typeof uuid === 'string' && uuid.length > 0);
 }
 
 function hasPacifyingRune(item) {
@@ -25,10 +38,14 @@ function hasPacifyingRune(item) {
 	});
 }
 
-function isPacifyingDamage(message) {
+async function isPacifyingDamage(message) {
 	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
 	const item = getDamageItem(message);
 	if (hasPacifyingRune(item)) return true;
+	for (const uuid of getDamageItemUuids(message)) {
+		const resolved = await fromUuid(uuid).catch(() => null);
+		if (hasPacifyingRune(resolved)) return true;
+	}
 	const markup = `${message?.flavor ?? ''}\n${message?.content ?? ''}`;
 	return /(?:pacifying|pacified)/i.test(markup) && /weapon|strike/i.test(markup);
 }
@@ -198,22 +215,26 @@ game.socket.on(SOCKET_NAME, (data) => {
 });
 
 Hooks.on('renderChatMessage', (message, html) => {
-	if (!isActiveGM() || !isPacifyingDamage(message)) return;
+	if (!isActiveGM() || message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
 	const root = html instanceof HTMLElement ? html : html?.[0];
-	if (!root) return;
-	root.addEventListener('click', (event) => {
-		const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
-		if (!button) return;
-		const targets = getTargetActors(button);
-		const attacker = getAttackerActor(message);
-		window.setTimeout(() => {
-			void promptForReaction(attacker).then((useReaction) => {
-				if (!useReaction) return;
-				void announcePacifyingReaction(attacker);
-				for (const actor of targets) void pacifyTarget(actor, message);
-			});
-		}, 250);
-	}, { capture: true });
+	if (!root || root.dataset.pacifyingListener === 'true') return;
+	void isPacifyingDamage(message).then((isPacifying) => {
+		if (!isPacifying || !root.isConnected || root.dataset.pacifyingListener === 'true') return;
+		root.dataset.pacifyingListener = 'true';
+		root.addEventListener('click', (event) => {
+			const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
+			if (!button) return;
+			const targets = getTargetActors(button);
+			const attacker = getAttackerActor(message);
+			window.setTimeout(() => {
+				void promptForReaction(attacker).then((useReaction) => {
+					if (!useReaction) return;
+					void announcePacifyingReaction(attacker);
+					for (const actor of targets) void pacifyTarget(actor, message);
+				});
+			}, 250);
+		}, { capture: true });
+	});
 });
 
 export { createPacifiedEffectSource };
