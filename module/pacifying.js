@@ -88,7 +88,9 @@ async function confirmPacifyingReaction(actor) {
 	});
 }
 
-function getReactionUser(actor) {
+function getReactionUser(actor, message) {
+	const messageUser = game.users?.get(message?.user?.id ?? message?.user);
+	if (messageUser?.active) return messageUser;
 	const owners = Array.from(game.users ?? []).filter((user) => user.active && actor?.testUserPermission?.(user, 'OWNER'));
 	return owners.find((user) => !user.isGM) ?? owners[0] ?? game.users?.activeGM ?? game.user;
 }
@@ -97,8 +99,8 @@ function createPromptId() {
 	return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 }
 
-async function promptForReaction(actor) {
-	const user = getReactionUser(actor);
+async function promptForReaction(actor, message) {
+	const user = getReactionUser(actor, message);
 	if (!user || user.id === game.user?.id) return confirmPacifyingReaction(actor);
 
 	const requestId = createPromptId();
@@ -227,7 +229,7 @@ Hooks.on('renderChatMessage', (message, html) => {
 			const targets = getTargetActors(button);
 			const attacker = getAttackerActor(message);
 			window.setTimeout(() => {
-				void promptForReaction(attacker).then((useReaction) => {
+				void promptForReaction(attacker, message).then((useReaction) => {
 					if (!useReaction) return;
 					void announcePacifyingReaction(attacker);
 					for (const actor of targets) void pacifyTarget(actor, message);
