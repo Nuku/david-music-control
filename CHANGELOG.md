@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.163] - 2026-08-06
+
+### Added
+- **Diagnostics**: Added a settings button that captures recent and live frame stalls, long main-thread tasks, and slow Foundry hooks during a 10-second lag investigation.
+
 ## [2.4.161] - 2026-08-05
 
 ### Added

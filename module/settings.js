@@ -1,5 +1,6 @@
 export const MODULE_ID = 'pf2-david-music-control';
 import { exportMusicConfig, importMusicConfig } from './transfer.js';
+import { buildPerformanceDiagnosticsRow } from './performance-diagnostics.js';
 
 class VictoryFireworksImageConfig extends FormApplication {
 	static get defaultOptions() {
@@ -503,6 +504,12 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 			description: 'Credits music, background media, memoriam source, and live start or stop control.',
 			keys: ['endCreditsMusicConfig', 'endCreditsImageConfig', 'endCreditsMemoriamFolder', 'endCreditsToggle'],
 			gmOnly: true,
+		},
+		{
+			title: 'Diagnostics',
+			description: 'Investigate browser-side lag while it is happening.',
+			keys: [],
+			extraRow: buildPerformanceDiagnosticsRow(),
 		},
 	];
 
