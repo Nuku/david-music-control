@@ -258,7 +258,7 @@ function completePacifyingReaction(attacker, message, targets) {
 }
 
 Hooks.once('ready', () => {
-	document.addEventListener('click', (event) => {
+	const handleDamageButton = (event) => {
 		const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
 		if (!button || promptedMessages.has(button.closest?.('li.chat-message')?.dataset?.messageId)) return;
 		const card = button.closest?.('li.chat-message');
@@ -278,7 +278,9 @@ Hooks.once('ready', () => {
 				});
 			}, 250);
 		});
-	}, { capture: true });
+	};
+	document.addEventListener('pointerdown', handleDamageButton, { capture: true });
+	document.addEventListener('click', handleDamageButton, { capture: true });
 });
 
 export { createPacifiedEffectSource };
