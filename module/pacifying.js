@@ -4,6 +4,7 @@ const PACIFYING_SLUG = 'pacifying';
 const PACIFIED_SOURCE_ID = `Compendium.${MODULE_ID}.pacified`;
 const SOCKET_NAME = `module.${MODULE_ID}`;
 const processedTargets = new Set();
+const promptedMessages = new Set();
 const pendingReactionPrompts = new Map();
 
 function isActiveGM() {
@@ -250,26 +251,26 @@ function completePacifyingReaction(attacker, message, targets) {
 	});
 }
 
-Hooks.on('renderChatMessage', (message, html) => {
-	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
-	const root = html instanceof HTMLElement ? html : html?.[0];
-	if (!root || root.dataset.pacifyingListener === 'true') return;
-	void isPacifyingDamage(message).then((isPacifying) => {
-		if (!isPacifying || root.dataset.pacifyingListener === 'true') return;
-		root.dataset.pacifyingListener = 'true';
-		root.addEventListener('click', (event) => {
-			const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
-			if (!button) return;
-			const targets = getTargetActors(button);
-			const attacker = getAttackerActor(message);
+Hooks.once('ready', () => {
+	document.addEventListener('click', (event) => {
+		const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
+		if (!button || promptedMessages.has(button.closest?.('li.chat-message')?.dataset?.messageId)) return;
+		const messageId = button.closest?.('li.chat-message')?.dataset?.messageId;
+		const message = messageId ? game.messages?.get(messageId) : null;
+		if (!message || message.flags?.pf2e?.context?.type !== 'damage-roll') return;
+		promptedMessages.add(messageId);
+		const targets = getTargetActors(button);
+		const attacker = getAttackerActor(message);
+		void isPacifyingDamage(message).then((isPacifying) => {
+			if (!isPacifying) return;
 			window.setTimeout(() => {
-			void promptForReaction(attacker, message).then((useReaction) => {
-				if (!useReaction) return;
-				completePacifyingReaction(attacker, message, targets);
-			});
+				void promptForReaction(attacker, message).then((useReaction) => {
+					if (!useReaction) return;
+					completePacifyingReaction(attacker, message, targets);
+				});
 			}, 250);
-		}, { capture: true });
-	});
+		});
+	}, { capture: true });
 });
 
 export { createPacifiedEffectSource };
