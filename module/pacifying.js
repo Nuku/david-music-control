@@ -9,7 +9,7 @@ const pendingReactionPrompts = new Map();
 const PACIFYING_DEBUG = true;
 
 function debug(...args) {
-	if (PACIFYING_DEBUG) console.debug('[PF2 Director][Pacifying]', ...args);
+	if (PACIFYING_DEBUG) console.log('[PF2 Director][Pacifying]', ...args);
 }
 
 function isActiveGM() {
@@ -228,7 +228,7 @@ async function announcePacifyingReaction(actor) {
 	});
 }
 
-game.socket.on(SOCKET_NAME, (data) => {
+function handlePacifyingSocket(data) {
 	if (data?.type === 'pacifying-reaction-prompt' && data.userId === game.user?.id) {
 		const actor = getActorFromUuid(data.actorUuid);
 		if (!actor) return;
@@ -262,7 +262,7 @@ game.socket.on(SOCKET_NAME, (data) => {
 	window.clearTimeout(pending.timeout);
 	pendingReactionPrompts.delete(data.requestId);
 	pending.resolve(data.useReaction === true);
-});
+}
 
 function completePacifyingReaction(attacker, message, targets) {
 	debug('Reaction accepted; completing Pacifying', {
@@ -286,6 +286,7 @@ function completePacifyingReaction(attacker, message, targets) {
 
 Hooks.once('ready', () => {
 	debug('Registering document damage-button listeners', game.user?.name ?? game.user?.id);
+	game.socket?.on?.(SOCKET_NAME, handlePacifyingSocket);
 	const handleDamageButton = (event) => {
 		const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
 		if (!button || promptedMessages.has(button.closest?.('li.chat-message')?.dataset?.messageId)) return;
