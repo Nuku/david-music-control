@@ -144,10 +144,15 @@ async function promptForReaction(actor, message) {
 
 function getTargetActors(button) {
 	const actors = [];
-	const targetElement = button?.closest?.('[data-target-uuid], [data-token-uuid], [data-actor-uuid]');
+	const targetElement = button?.closest?.('[data-target-uuid], [data-token-uuid], [data-actor-uuid], [data-sceneid][data-tokenid], [data-actorid]');
 	const uuid = targetElement?.dataset?.targetUuid ?? targetElement?.dataset?.tokenUuid ?? targetElement?.dataset?.actorUuid;
 	const directActor = getActorFromUuid(uuid);
 	if (directActor) actors.push(directActor);
+	const scene = targetElement?.dataset?.sceneid ? game.scenes?.get(targetElement.dataset.sceneid) : null;
+	const tokenActor = scene?.tokens?.get?.(targetElement?.dataset?.tokenid)?.actor;
+	const actor = game.actors?.get(targetElement?.dataset?.actorid);
+	if (tokenActor?.isOfType?.('creature')) actors.push(tokenActor);
+	if (actor?.isOfType?.('creature')) actors.push(actor);
 
 	for (const target of game.user?.targets ?? []) {
 		const actor = target?.actor ?? target?.document?.actor;
