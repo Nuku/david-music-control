@@ -135,6 +135,12 @@ function getTargetActors(button) {
 	return Array.from(new Map(actors.map((actor) => [actor.uuid, actor])).values());
 }
 
+function isRenderedPacifyingDamage(button) {
+	const card = button?.closest?.('li.chat-message');
+	const markup = card?.innerHTML ?? '';
+	return /pacifying/i.test(markup) && /data-action=["']applyDamage|damage-roll|Damage Roll/i.test(markup);
+}
+
 function hasPacifiedEffect(actor) {
 	return actor.items?.some((item) => {
 		const sourceId = item.getFlag?.('core', 'sourceId') ?? item.flags?.core?.sourceId;
@@ -255,13 +261,15 @@ Hooks.once('ready', () => {
 	document.addEventListener('click', (event) => {
 		const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
 		if (!button || promptedMessages.has(button.closest?.('li.chat-message')?.dataset?.messageId)) return;
-		const messageId = button.closest?.('li.chat-message')?.dataset?.messageId;
+		const card = button.closest?.('li.chat-message');
+		const messageId = card?.dataset?.messageId;
 		const message = messageId ? game.messages?.get(messageId) : null;
-		if (!message || message.flags?.pf2e?.context?.type !== 'damage-roll') return;
+		if (!message || (message.flags?.pf2e?.context?.type !== 'damage-roll' && !isRenderedPacifyingDamage(button))) return;
 		promptedMessages.add(messageId);
 		const targets = getTargetActors(button);
 		const attacker = getAttackerActor(message);
 		void isPacifyingDamage(message).then((isPacifying) => {
+			isPacifying ||= isRenderedPacifyingDamage(button);
 			if (!isPacifying) return;
 			window.setTimeout(() => {
 				void promptForReaction(attacker, message).then((useReaction) => {
