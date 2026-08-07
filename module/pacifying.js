@@ -185,6 +185,13 @@ async function pacifyTarget(actor, message) {
 	await actor.createEmbeddedDocuments('Item', [createPacifiedEffectSource()]);
 }
 
+function getActorsFromUuids(uuids) {
+	return Array.from(new Map((uuids ?? [])
+		.map((uuid) => getActorFromUuid(uuid))
+		.filter((actor) => actor?.isOfType?.('creature'))
+		.map((actor) => [actor.uuid, actor])).values());
+}
+
 async function announcePacifyingReaction(actor) {
 	const speaker = actor ? ChatMessage.getSpeaker({ actor }) : undefined;
 	await ChatMessage.create({
@@ -208,6 +215,19 @@ game.socket.on(SOCKET_NAME, (data) => {
 		return;
 	}
 
+	if (data?.type === 'pacifying-apply-request' && isActiveGM()) {
+		const message = game.messages?.get(data.messageId);
+		const attacker = getActorFromUuid(data.attackerUuid) ?? getAttackerActor(message);
+		const targets = getActorsFromUuids(data.targetUuids);
+		if (!message || targets.length === 0) return;
+		void isPacifyingDamage(message).then((isPacifying) => {
+			if (!isPacifying) return;
+			void announcePacifyingReaction(attacker);
+			for (const actor of targets) void pacifyTarget(actor, message);
+		});
+		return;
+	}
+
 	if (data?.type !== 'pacifying-reaction-response' || !isActiveGM() || data.gmId !== game.user?.id) return;
 	const pending = pendingReactionPrompts.get(data.requestId);
 	if (!pending) return;
@@ -216,12 +236,26 @@ game.socket.on(SOCKET_NAME, (data) => {
 	pending.resolve(data.useReaction === true);
 });
 
+function completePacifyingReaction(attacker, message, targets) {
+	if (isActiveGM()) {
+		void announcePacifyingReaction(attacker);
+		for (const actor of targets) void pacifyTarget(actor, message);
+		return;
+	}
+	game.socket.emit(SOCKET_NAME, {
+		type: 'pacifying-apply-request',
+		messageId: message.id,
+		attackerUuid: attacker?.uuid,
+		targetUuids: targets.map((actor) => actor.uuid),
+	});
+}
+
 Hooks.on('renderChatMessage', (message, html) => {
-	if (!isActiveGM() || message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
 	const root = html instanceof HTMLElement ? html : html?.[0];
 	if (!root || root.dataset.pacifyingListener === 'true') return;
 	void isPacifyingDamage(message).then((isPacifying) => {
-		if (!isPacifying || !root.isConnected || root.dataset.pacifyingListener === 'true') return;
+		if (!isPacifying || root.dataset.pacifyingListener === 'true') return;
 		root.dataset.pacifyingListener = 'true';
 		root.addEventListener('click', (event) => {
 			const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
@@ -229,11 +263,10 @@ Hooks.on('renderChatMessage', (message, html) => {
 			const targets = getTargetActors(button);
 			const attacker = getAttackerActor(message);
 			window.setTimeout(() => {
-				void promptForReaction(attacker, message).then((useReaction) => {
-					if (!useReaction) return;
-					void announcePacifyingReaction(attacker);
-					for (const actor of targets) void pacifyTarget(actor, message);
-				});
+			void promptForReaction(attacker, message).then((useReaction) => {
+				if (!useReaction) return;
+				completePacifyingReaction(attacker, message, targets);
+			});
 			}, 250);
 		}, { capture: true });
 	});
