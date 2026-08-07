@@ -6,6 +6,11 @@ const SOCKET_NAME = `module.${MODULE_ID}`;
 const processedTargets = new Set();
 const promptedMessages = new Set();
 const pendingReactionPrompts = new Map();
+const PACIFYING_DEBUG = true;
+
+function debug(...args) {
+	if (PACIFYING_DEBUG) console.debug('[PF2 Director][Pacifying]', ...args);
+}
 
 function isActiveGM() {
 	return game.user?.isGM && game.users?.activeGM?.id === game.user.id;
@@ -40,15 +45,24 @@ function hasPacifyingRune(item) {
 }
 
 async function isPacifyingDamage(message) {
-	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
+	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') {
+		debug('Ignored message with non-damage context', message?.id, message?.flags?.pf2e?.context?.type);
+		return false;
+	}
 	const item = getDamageItem(message);
-	if (hasPacifyingRune(item)) return true;
+	if (hasPacifyingRune(item)) {
+		debug('Detected Pacifying from message item', message.id, item?.name ?? item?.uuid);
+		return true;
+	}
 	for (const uuid of getDamageItemUuids(message)) {
 		const resolved = await fromUuid(uuid).catch(() => null);
+		debug('Resolved damage item candidate', message.id, uuid, resolved?.name ?? null, hasPacifyingRune(resolved));
 		if (hasPacifyingRune(resolved)) return true;
 	}
 	const markup = `${message?.flavor ?? ''}\n${message?.content ?? ''}`;
-	return /(?:pacifying|pacified)/i.test(markup) && /weapon|strike/i.test(markup);
+	const detected = /(?:pacifying|pacified)/i.test(markup) && /weapon|strike/i.test(markup);
+	debug('Markup Pacifying detection', message.id, detected);
+	return detected;
 }
 
 function getActorFromUuid(uuid) {
@@ -102,6 +116,13 @@ function createPromptId() {
 
 async function promptForReaction(actor, message) {
 	const user = getReactionUser(actor, message);
+	debug('Routing reaction prompt', {
+		messageId: message?.id,
+		attacker: actor?.name ?? null,
+		messageUser: message?.user?.id ?? message?.user ?? null,
+		routedUser: user?.name ?? user?.id ?? null,
+		localUser: game.user?.name ?? game.user?.id,
+	});
 	if (!user || user.id === game.user?.id) return confirmPacifyingReaction(actor);
 
 	const requestId = createPromptId();
@@ -244,6 +265,12 @@ game.socket.on(SOCKET_NAME, (data) => {
 });
 
 function completePacifyingReaction(attacker, message, targets) {
+	debug('Reaction accepted; completing Pacifying', {
+		messageId: message?.id,
+		attacker: attacker?.name ?? null,
+		targets: targets.map((target) => target.name),
+		localIsGM: isActiveGM(),
+	});
 	if (isActiveGM()) {
 		void announcePacifyingReaction(attacker);
 		for (const actor of targets) void pacifyTarget(actor, message);
@@ -258,18 +285,22 @@ function completePacifyingReaction(attacker, message, targets) {
 }
 
 Hooks.once('ready', () => {
+	debug('Registering document damage-button listeners', game.user?.name ?? game.user?.id);
 	const handleDamageButton = (event) => {
 		const button = event.target?.closest?.('[data-action="applyDamage"], [data-action="apply-damage"], .damage-application button');
 		if (!button || promptedMessages.has(button.closest?.('li.chat-message')?.dataset?.messageId)) return;
 		const card = button.closest?.('li.chat-message');
 		const messageId = card?.dataset?.messageId;
 		const message = messageId ? game.messages?.get(messageId) : null;
+		debug('Captured damage button', event.type, { messageId, messageFound: !!message, contextType: message?.flags?.pf2e?.context?.type, renderedPacifying: isRenderedPacifyingDamage(button) });
 		if (!message || (message.flags?.pf2e?.context?.type !== 'damage-roll' && !isRenderedPacifyingDamage(button))) return;
 		promptedMessages.add(messageId);
 		const targets = getTargetActors(button);
 		const attacker = getAttackerActor(message);
+		debug('Accepted Pacifying candidate card', { messageId, attacker: attacker?.name ?? null, targets: targets.map((target) => target.name) });
 		void isPacifyingDamage(message).then((isPacifying) => {
 			isPacifying ||= isRenderedPacifyingDamage(button);
+			debug('Final Pacifying detection result', messageId, isPacifying);
 			if (!isPacifying) return;
 			window.setTimeout(() => {
 				void promptForReaction(attacker, message).then((useReaction) => {
