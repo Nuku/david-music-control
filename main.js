@@ -1,5 +1,5 @@
-import './module/settings.js';
 import './module/performance-diagnostics.js';
+import './module/settings.js';
 import './module/enhanced-vision.js';
 import './module/menu.js';
 import './module/token.js';

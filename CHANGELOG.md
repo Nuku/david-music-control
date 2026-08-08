@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.176] - 2026-08-08
+
+### Added
+- **Diagnostics**: Performance diagnostics now tracks the module or system that registered slow Foundry hook callbacks when browser attribution is unavailable.
+
 ## [2.4.166] - 2026-08-06
 
 ### Added

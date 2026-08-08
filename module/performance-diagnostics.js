@@ -6,6 +6,35 @@ const frameStalls = [];
 const longTasks = [];
 let lastFrame;
 let sampling = false;
+const callbackOwners = new WeakMap();
+
+function ownerFromStack(stack = '') {
+	const moduleMatch = stack.match(/(?:https?:\/\/[^/]+)?\/modules\/([^/\s?#]+)/i);
+	if (moduleMatch) return moduleMatch[1];
+	const systemMatch = stack.match(/(?:https?:\/\/[^/]+)?\/systems\/([^/\s?#]+)/i);
+	if (systemMatch) return `system:${systemMatch[1]}`;
+	return 'unattributed';
+}
+
+function captureRegistrationOwner() {
+	return ownerFromStack(new Error().stack);
+}
+
+function installHookRegistrationTracking() {
+	const hooks = globalThis.Hooks;
+	if (!hooks || hooks.__pf2DirectorTrackingInstalled) return;
+	hooks.__pf2DirectorTrackingInstalled = true;
+	for (const methodName of ['on', 'once']) {
+		if (typeof hooks[methodName] !== 'function') continue;
+		const original = hooks[methodName];
+		hooks[methodName] = function trackedHookRegistration(event, callback, ...args) {
+			if (typeof callback === 'function') callbackOwners.set(callback, captureRegistrationOwner());
+			return original.call(this, event, callback, ...args);
+		};
+	}
+}
+
+installHookRegistrationTracking();
 
 function pushLimited(list, value, limit) {
 	list.push(value);
@@ -67,7 +96,13 @@ function instrumentHooks(measurements) {
 				} finally {
 					const duration = performance.now() - started;
 					if (duration >= 2) {
-						measurements.push({ event, duration, callback: original.name || 'anonymous' });
+						measurements.push({
+							event,
+							duration,
+							at: performance.now(),
+							owner: callbackOwners.get(original) ?? 'unattributed',
+							callback: original.name || 'anonymous',
+						});
 					}
 				}
 			};
@@ -90,7 +125,7 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	const tasks = [...beforeTasks, ...afterTasks].sort((a, b) => b.duration - a.duration);
 	const hookTotals = new Map();
 	for (const entry of hooks) {
-		const key = `${entry.event} / ${entry.callback}`;
+		const key = `${entry.owner} / ${entry.event} / ${entry.callback}`;
 		hookTotals.set(key, (hookTotals.get(key) ?? 0) + entry.duration);
 	}
 	const hooksByCost = [...hookTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
