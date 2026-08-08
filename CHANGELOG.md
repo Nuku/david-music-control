@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.180] - 2026-08-08
+
+### Added
+- **Diagnostics**: Added scene complexity metrics, a recent hook-event timeline, and temporary probes for actor preparation, token refresh, and vision initialization.
+
 ## [2.4.179] - 2026-08-08
 
 ### Added

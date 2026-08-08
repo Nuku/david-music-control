@@ -9,6 +9,7 @@ let lastFrame;
 let sampling = false;
 const callbackOwners = new WeakMap();
 let activeCallbackCapture = null;
+let activeEventTimeline = null;
 
 function ownerFromStack(stack = '') {
 	const moduleMatches = [...stack.matchAll(/(?:https?:\/\/[^/]+)?\/modules\/([^/\s?#]+)/gi)];
@@ -47,6 +48,24 @@ function installHookRegistrationTracking() {
 }
 
 installHookRegistrationTracking();
+
+function installHookEventTracking() {
+	const hooks = globalThis.Hooks;
+	if (!hooks || hooks.__pf2DirectorEventTrackingInstalled) return;
+	hooks.__pf2DirectorEventTrackingInstalled = true;
+	for (const methodName of ['call', 'callAll', 'callAsync']) {
+		if (typeof hooks[methodName] !== 'function') continue;
+		const original = hooks[methodName];
+		hooks[methodName] = function trackedHookCall(event, ...args) {
+			if (activeEventTimeline && typeof event === 'string') {
+				pushLimited(activeEventTimeline, { at: performance.now(), event, method: methodName }, 120);
+			}
+			return original.call(this, event, ...args);
+		};
+	}
+}
+
+installHookEventTracking();
 
 function installAsyncCallbackTracking() {
 	const target = globalThis.window ?? globalThis;
@@ -171,16 +190,18 @@ function instrumentRuntimeMethods(measurements) {
 	const addCandidate = (target, label) => {
 		if (target && typeof target === 'object') candidates.push([target, label]);
 	};
-	const addMethods = (target, labels) => {
+	const addMethods = (target, labels, prefix) => {
 		if (!target) return;
-		for (const method of labels) addCandidate(target, method);
+		for (const method of labels) addCandidate(target, prefix ? `${prefix}.${method}` : method);
 	};
 
-	addMethods(globalThis.PIXI?.Ticker?.prototype, ['update', '_tick']);
+	addMethods(globalThis.PIXI?.Ticker?.prototype, ['update', '_tick'], 'PIXI.Ticker.prototype');
 	addCandidate(globalThis.canvas?.app, 'canvas.app.render');
 	addCandidate(globalThis.canvas?.renderer, 'canvas.renderer.render');
 	addCandidate(globalThis.canvas?.perception, 'canvas.perception.update');
-	addMethods(globalThis.foundry?.applications?.api?.ApplicationV2?.prototype, ['render', '_renderFrame']);
+	addMethods(globalThis.foundry?.applications?.api?.ApplicationV2?.prototype, ['render', '_renderFrame'], 'ApplicationV2.prototype');
+	addMethods(globalThis.CONFIG?.Actor?.documentClass?.prototype, ['prepareData', 'prepareDerivedData'], 'Actor.prototype');
+	addMethods(globalThis.CONFIG?.Token?.objectClass?.prototype, ['refresh', 'initializeVisionSource'], 'Token.prototype');
 
 	for (const [target, label] of candidates) {
 		const method = label.includes('.') ? label.split('.').pop() : label;
@@ -208,7 +229,24 @@ function formatDuration(value) {
 	return `${value.toFixed(1)} ms`;
 }
 
-function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, asyncCallbacks, runtimeCallbacks, startedAt) {
+function getSceneMetrics() {
+	const scene = globalThis.canvas?.scene;
+	const actorCounts = [...(globalThis.game?.actors?.contents ?? [])].reduce((total, actor) => total + (actor.items?.size ?? actor.items?.contents?.length ?? 0), 0);
+	const effectCounts = [...(globalThis.game?.actors?.contents ?? [])].reduce((total, actor) => total + (actor.effects?.size ?? actor.effects?.contents?.length ?? 0), 0);
+	return {
+		scene: scene?.name ?? 'No active scene',
+		tokens: canvas?.tokens?.placeables?.length ?? 0,
+		walls: scene?.walls?.size ?? scene?.walls?.contents?.length ?? 0,
+		lights: scene?.lights?.size ?? scene?.lights?.contents?.length ?? 0,
+		templates: scene?.templates?.size ?? scene?.templates?.contents?.length ?? 0,
+		actors: game?.actors?.size ?? game?.actors?.contents?.length ?? 0,
+		items: actorCounts,
+		effects: effectCounts,
+		chatMessages: game?.messages?.size ?? game?.messages?.contents?.length ?? 0,
+	};
+}
+
+function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, asyncCallbacks, runtimeCallbacks, eventTimeline, sceneMetrics, startedAt) {
 	const frames = [...beforeFrames, ...afterFrames].sort((a, b) => b.duration - a.duration);
 	const tasks = [...beforeTasks, ...afterTasks].sort((a, b) => b.duration - a.duration);
 	const hookTotals = new Map();
@@ -247,7 +285,16 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	}
 	const runtimeByCost = [...runtimeTotals.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8);
 	const describeCallback = ([name, data]) => `${formatDuration(data.total)} total; max ${formatDuration(data.max)}; ${data.count} call${data.count === 1 ? '' : 's'} — ${name} (${data.source})`;
+	const metricsText = Object.entries(sceneMetrics).map(([key, value]) => `${key}: ${value}`).join(' · ');
+	const nearbyEvents = frames.slice(0, 8).map((frame) => {
+		const events = eventTimeline
+			.filter((entry) => entry.at <= frame.at && frame.at - entry.at <= 1500)
+			.slice(-4)
+			.map((entry) => entry.event);
+		return `${formatDuration(frame.duration)} — ${events.length ? [...new Set(events)].join(', ') : 'No recent hook event recorded'}`;
+	});
 	const sections = [
+		['Scene snapshot', [metricsText]],
 		['Longest main-thread tasks', tasks.slice(0, 8).map((entry) => {
 			const source = entry.attribution?.length ? ` (${entry.attribution.join(', ')})` : '';
 			return `${formatDuration(entry.duration)} — ${entry.name}${source}`;
@@ -256,6 +303,7 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 		['Slow Foundry hook callbacks', hooksByCost.map(describeCallback)],
 		['Slow module timers and animation callbacks', asyncByCost.map(describeCallback)],
 		['Slow Foundry runtime methods', runtimeByCost.map(describeCallback)],
+		['Hook events near largest frame stalls', nearbyEvents],
 	];
 	for (const [heading, values] of sections) {
 		const h = document.createElement('h3');
@@ -290,16 +338,20 @@ export async function runPerformanceDiagnostic() {
 	const restoreHooks = instrumentHooks(hooks);
 	const asyncCallbacks = [];
 	const runtimeCallbacks = [];
+	const eventTimeline = [];
+	const sceneMetrics = getSceneMetrics();
 	const restoreRuntime = instrumentRuntimeMethods(runtimeCallbacks);
 	activeCallbackCapture = asyncCallbacks;
+	activeEventTimeline = eventTimeline;
 	const startedAt = Date.now();
 	ui.notifications.info('PF2 Director | Monitoring performance for 10 seconds. Reproduce the lag now.');
 	await new Promise((resolve) => window.setTimeout(resolve, DIAGNOSTIC_MS));
 	restoreHooks();
 	restoreRuntime();
 	activeCallbackCapture = null;
+	activeEventTimeline = null;
 	const cutoff = performance.now() - DIAGNOSTIC_MS - 100;
-	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, asyncCallbacks, runtimeCallbacks, startedAt);
+	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, asyncCallbacks, runtimeCallbacks, eventTimeline, sceneMetrics, startedAt);
 }
 
 export function buildPerformanceDiagnosticsRow() {
