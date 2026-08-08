@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.179] - 2026-08-08
+
+### Added
+- **Diagnostics**: Added temporary runtime probes for PIXI ticker, canvas rendering, perception updates, and Foundry application rendering.
+
 ## [2.4.178] - 2026-08-08
 
 ### Added

@@ -164,11 +164,51 @@ function instrumentHooks(measurements) {
 	});
 }
 
+function instrumentRuntimeMethods(measurements) {
+	const patches = [];
+	const seen = new Set();
+	const candidates = [];
+	const addCandidate = (target, label) => {
+		if (target && typeof target === 'object') candidates.push([target, label]);
+	};
+	const addMethods = (target, labels) => {
+		if (!target) return;
+		for (const method of labels) addCandidate(target, method);
+	};
+
+	addMethods(globalThis.PIXI?.Ticker?.prototype, ['update', '_tick']);
+	addCandidate(globalThis.canvas?.app, 'canvas.app.render');
+	addCandidate(globalThis.canvas?.renderer, 'canvas.renderer.render');
+	addCandidate(globalThis.canvas?.perception, 'canvas.perception.update');
+	addMethods(globalThis.foundry?.applications?.api?.ApplicationV2?.prototype, ['render', '_renderFrame']);
+
+	for (const [target, label] of candidates) {
+		const method = label.includes('.') ? label.split('.').pop() : label;
+		if (seen.has(`${label}:${method}`) || typeof target[method] !== 'function') continue;
+		seen.add(`${label}:${method}`);
+		const original = target[method];
+		const wrapped = function diagnosticRuntimeMethod(...args) {
+			const started = performance.now();
+			try {
+				return original.apply(this, args);
+			} finally {
+				const duration = performance.now() - started;
+				if (duration >= 2) measurements.push({ owner: 'Foundry runtime', source: label, type: 'runtime method', duration, callback: method });
+			}
+		};
+		target[method] = wrapped;
+		patches.push({ target, method, original, wrapped });
+	}
+	return () => patches.forEach(({ target, method, original, wrapped }) => {
+		if (target[method] === wrapped) target[method] = original;
+	});
+}
+
 function formatDuration(value) {
 	return `${value.toFixed(1)} ms`;
 }
 
-function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, asyncCallbacks, startedAt) {
+function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, asyncCallbacks, runtimeCallbacks, startedAt) {
 	const frames = [...beforeFrames, ...afterFrames].sort((a, b) => b.duration - a.duration);
 	const tasks = [...beforeTasks, ...afterTasks].sort((a, b) => b.duration - a.duration);
 	const hookTotals = new Map();
@@ -196,6 +236,16 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 		asyncTotals.set(key, current);
 	}
 	const asyncByCost = [...asyncTotals.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8);
+	const runtimeTotals = new Map();
+	for (const entry of runtimeCallbacks) {
+		const key = `${entry.source} / ${entry.callback}`;
+		const current = runtimeTotals.get(key) ?? { total: 0, max: 0, count: 0, source: entry.source };
+		current.total += entry.duration;
+		current.max = Math.max(current.max, entry.duration);
+		current.count += 1;
+		runtimeTotals.set(key, current);
+	}
+	const runtimeByCost = [...runtimeTotals.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8);
 	const describeCallback = ([name, data]) => `${formatDuration(data.total)} total; max ${formatDuration(data.max)}; ${data.count} call${data.count === 1 ? '' : 's'} — ${name} (${data.source})`;
 	const sections = [
 		['Longest main-thread tasks', tasks.slice(0, 8).map((entry) => {
@@ -205,6 +255,7 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 		['Largest frame stalls', frames.slice(0, 8).map((entry) => formatDuration(entry.duration))],
 		['Slow Foundry hook callbacks', hooksByCost.map(describeCallback)],
 		['Slow module timers and animation callbacks', asyncByCost.map(describeCallback)],
+		['Slow Foundry runtime methods', runtimeByCost.map(describeCallback)],
 	];
 	for (const [heading, values] of sections) {
 		const h = document.createElement('h3');
@@ -238,14 +289,17 @@ export async function runPerformanceDiagnostic() {
 	const hooks = [];
 	const restoreHooks = instrumentHooks(hooks);
 	const asyncCallbacks = [];
+	const runtimeCallbacks = [];
+	const restoreRuntime = instrumentRuntimeMethods(runtimeCallbacks);
 	activeCallbackCapture = asyncCallbacks;
 	const startedAt = Date.now();
 	ui.notifications.info('PF2 Director | Monitoring performance for 10 seconds. Reproduce the lag now.');
 	await new Promise((resolve) => window.setTimeout(resolve, DIAGNOSTIC_MS));
 	restoreHooks();
+	restoreRuntime();
 	activeCallbackCapture = null;
 	const cutoff = performance.now() - DIAGNOSTIC_MS - 100;
-	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, asyncCallbacks, startedAt);
+	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, asyncCallbacks, runtimeCallbacks, startedAt);
 }
 
 export function buildPerformanceDiagnosticsRow() {
