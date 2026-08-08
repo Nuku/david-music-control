@@ -59,7 +59,11 @@ function installHookEventTracking() {
 		const original = hooks[methodName];
 		hooks[methodName] = function trackedHookCall(event, ...args) {
 			if (activeEventTimeline && typeof event === 'string') {
-				pushLimited(activeEventTimeline, { at: performance.now(), event, method: methodName }, 120);
+				const callbacks = hooks.events instanceof Map ? hooks.events.get(event) : hooks.events?.[event];
+				const owners = Array.isArray(callbacks)
+					? [...new Set(callbacks.map((callback) => callbackOwners.get(callback)?.owner).filter(Boolean))]
+					: [];
+				pushLimited(activeEventTimeline, { at: performance.now(), event, method: methodName, owners }, 120);
 			}
 			return original.call(this, event, ...args);
 		};
@@ -148,7 +152,7 @@ function hookEntries() {
 	return Object.entries(events);
 }
 
-function instrumentHooks(measurements) {
+function instrumentHooks(measurements, invocations) {
 	const originals = [];
 	for (const [event, callbacks] of hookEntries()) {
 		if (!Array.isArray(callbacks)) continue;
@@ -164,6 +168,14 @@ function instrumentHooks(measurements) {
 					return original.apply(this, args);
 				} finally {
 					const duration = performance.now() - started;
+					pushLimited(invocations, {
+						at: performance.now(),
+						event,
+						duration,
+						owner: metadata.owner,
+						source: metadata.source,
+						callback: original.name || 'anonymous',
+					}, 300);
 					if (duration >= 2) {
 						measurements.push({
 							event,
@@ -178,6 +190,7 @@ function instrumentHooks(measurements) {
 				}
 			};
 			wrapped.__pf2DirectorDiagnostic = true;
+			callbackOwners.set(wrapped, callbackOwners.get(original) ?? { owner: 'unattributed', source: 'source unavailable' });
 			callbacks[index] = wrapped;
 			originals.push({ callbacks, index, original, wrapped });
 		}
@@ -185,6 +198,23 @@ function instrumentHooks(measurements) {
 	return () => originals.forEach(({ callbacks, index, original, wrapped }) => {
 		if (callbacks[index] === wrapped) callbacks[index] = original;
 	});
+}
+
+function instrumentUserInputs(measurements) {
+	let lastPointerMove = 0;
+	const handler = (event) => {
+		const now = performance.now();
+		if (event.type === 'pointermove' && now - lastPointerMove < 75) return;
+		if (event.type === 'pointermove') lastPointerMove = now;
+		const target = event.target;
+		const targetName = target instanceof Element
+			? `${target.tagName.toLowerCase()}${target.id ? `#${target.id}` : ''}${target.classList?.length ? `.${[...target.classList].slice(0, 3).join('.')}` : ''}`
+			: 'unknown target';
+		pushLimited(measurements, { at: now, type: event.type, target: targetName }, 120);
+	};
+	const eventTypes = ['pointermove', 'pointerdown', 'wheel', 'keydown'];
+	for (const eventType of eventTypes) document.addEventListener(eventType, handler, { capture: true, passive: true });
+	return () => eventTypes.forEach((eventType) => document.removeEventListener(eventType, handler, { capture: true }));
 }
 
 function instrumentRuntimeMethods(measurements) {
@@ -206,6 +236,7 @@ function instrumentRuntimeMethods(measurements) {
 	addMethods(globalThis.foundry?.applications?.api?.ApplicationV2?.prototype, ['render', '_renderFrame'], 'ApplicationV2.prototype');
 	addMethods(globalThis.CONFIG?.Actor?.documentClass?.prototype, ['prepareData', 'prepareDerivedData'], 'Actor.prototype');
 	addMethods(globalThis.CONFIG?.Token?.objectClass?.prototype, ['refresh', 'initializeVisionSource'], 'Token.prototype');
+	addMethods(globalThis.CONFIG?.Token?.objectClass?.prototype, ['_onHoverIn', '_onHoverOut', '_onClickLeft', '_onMouseOver'], 'Token.prototype');
 
 	for (const [target, label] of candidates) {
 		const method = label.includes('.') ? label.split('.').pop() : label;
@@ -261,7 +292,7 @@ function getSceneMetrics() {
 	};
 }
 
-function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, asyncCallbacks, runtimeCallbacks, eventTimeline, sceneMetrics, startedAt) {
+function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, hookInvocations, asyncCallbacks, runtimeCallbacks, eventTimeline, inputTimeline, sceneMetrics, startedAt) {
 	const frames = [...beforeFrames, ...afterFrames].sort((a, b) => b.duration - a.duration);
 	const tasks = [...beforeTasks, ...afterTasks].sort((a, b) => b.duration - a.duration);
 	const hookTotals = new Map();
@@ -312,8 +343,23 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 		const events = eventTimeline
 			.filter((entry) => entry.at <= frame.at && frame.at - entry.at <= 1500)
 			.slice(-4)
-			.map((entry) => entry.event);
+			.map((entry) => `${entry.event}${entry.owners?.length ? ` [${entry.owners.join(', ')}]` : ''}`);
 		return `${formatDuration(frame.duration)} — ${events.length ? [...new Set(events)].join(', ') : 'No recent hook event recorded'}`;
+	});
+	const nearbyCallbacks = frames.slice(0, 8).map((frame) => {
+		const callbacks = hookInvocations
+			.filter((entry) => entry.at <= frame.at && frame.at - entry.at <= 1500)
+			.sort((a, b) => b.duration - a.duration)
+			.slice(0, 4)
+			.map((entry) => `${entry.owner} / ${entry.event} / ${entry.callback} (${formatDuration(entry.duration)})`);
+		return `${formatDuration(frame.duration)} — ${callbacks.length ? callbacks.join(', ') : 'No recent hook callback recorded'}`;
+	});
+	const nearbyInputs = frames.slice(0, 8).map((frame) => {
+		const inputs = inputTimeline
+			.filter((entry) => entry.at <= frame.at && frame.at - entry.at <= 1500)
+			.slice(-4)
+			.map((entry) => `${entry.type} on ${entry.target}`);
+		return `${formatDuration(frame.duration)} — ${inputs.length ? [...new Set(inputs)].join(', ') : 'No recent user input recorded'}`;
 	});
 	const sections = [
 		['Scene snapshot', [metricsText]],
@@ -326,6 +372,8 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 		['Slow module timers and animation callbacks', asyncByCost.map(describeCallback)],
 		['Slow Foundry runtime methods', runtimeByCost.map(describeCallback)],
 		['Hook events near largest frame stalls', nearbyEvents],
+		['Hook callback owners near largest frame stalls', nearbyCallbacks],
+		['User input near largest frame stalls', nearbyInputs],
 	];
 	for (const [heading, values] of sections) {
 		const h = document.createElement('h3');
@@ -374,29 +422,33 @@ export async function runPerformanceDiagnostic() {
 	const beforeFrames = frameStalls.filter((entry) => entry.at >= performance.now() - 3000);
 	const beforeTasks = longTasks.filter((entry) => entry.at >= performance.now() - 3000);
 	const hooks = [];
-	const restoreHooks = instrumentHooks(hooks);
+	const hookInvocations = [];
+	const restoreHooks = instrumentHooks(hooks, hookInvocations);
 	const asyncCallbacks = [];
 	const runtimeCallbacks = [];
 	const eventTimeline = [];
+	const inputTimeline = [];
 	const sceneMetrics = getSceneMetrics();
 	const restoreRuntime = instrumentRuntimeMethods(runtimeCallbacks);
+	const restoreInputs = instrumentUserInputs(inputTimeline);
 	activeCallbackCapture = asyncCallbacks;
 	activeEventTimeline = eventTimeline;
 	const startedAt = Date.now();
-	ui.notifications.info('PF2 Director | Monitoring performance for 10 seconds. Reproduce the lag now.');
+	ui.notifications.info('PF2 Director | Monitoring performance for 10 seconds. Reproduce the lag, including the triggering mouse or token interaction.');
 	await new Promise((resolve) => window.setTimeout(resolve, DIAGNOSTIC_MS));
 	restoreHooks();
 	restoreRuntime();
+	restoreInputs();
 	activeCallbackCapture = null;
 	activeEventTimeline = null;
 	const cutoff = performance.now() - DIAGNOSTIC_MS - 100;
-	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, asyncCallbacks, runtimeCallbacks, eventTimeline, sceneMetrics, startedAt);
+	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, hookInvocations, asyncCallbacks, runtimeCallbacks, eventTimeline, inputTimeline, sceneMetrics, startedAt);
 }
 
 export function buildPerformanceDiagnosticsRow() {
 	const wrapper = document.createElement('div');
 	wrapper.className = 'form-group dmc-performance-diagnostics-row';
-	wrapper.innerHTML = '<label>Performance Diagnostic</label><div class="form-fields"><button type="button"><i class="fas fa-gauge-high"></i> Run 10-Second Diagnostic</button></div><p class="hint">Captures recent and live frame stalls, long tasks, and slow Foundry hooks. Reproduce the lag after clicking.</p>';
+	wrapper.innerHTML = '<label>Performance Diagnostic</label><div class="form-fields"><button type="button"><i class="fas fa-gauge-high"></i> Run 10-Second Diagnostic</button></div><p class="hint">Captures frame stalls, module callback owners, runtime methods, and nearby input. Reproduce the lag after clicking.</p>';
 	wrapper.querySelector('button').addEventListener('click', async (event) => {
 		const button = event.currentTarget;
 		button.disabled = true;

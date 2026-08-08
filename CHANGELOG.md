@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.183] - 2026-08-08
+
+### Added
+- **Diagnostics**: Added interaction tracing, token-hover probes, and per-callback module ownership near frame stalls.
+
 ## [2.4.182] - 2026-08-08
 
 ### Added
