@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.182] - 2026-08-08
+
+### Added
+- **Diagnostics**: Performance reports now include a Copy Report button and selectable plain-text output.
+
 ## [2.4.181] - 2026-08-08
 
 ### Added

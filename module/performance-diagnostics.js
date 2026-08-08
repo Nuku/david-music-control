@@ -276,8 +276,10 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	const hooksByCost = [...hookTotals.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8);
 	const content = document.createElement('div');
 	content.className = 'pf2-director-performance-report';
+	content.style.userSelect = 'text';
 	const title = document.createElement('p');
-	title.textContent = `Captured ${DIAGNOSTIC_MS / 1000} seconds beginning at ${new Date(startedAt).toLocaleTimeString()}. Results are local to this browser. `;
+	const titleText = `Captured ${DIAGNOSTIC_MS / 1000} seconds beginning at ${new Date(startedAt).toLocaleTimeString()}. Results are local to this browser.`;
+	title.textContent = titleText;
 	content.append(title);
 	const asyncTotals = new Map();
 	for (const entry of asyncCallbacks) {
@@ -347,7 +349,24 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	note.className = 'hint';
 	note.textContent = 'Long tasks cannot always be assigned to a specific module by the browser. Hook entries are clues, not proof; system, rendering, and hardware work may remain unattributed.';
 	content.append(note);
-	return content.outerHTML;
+	const plainText = [titleText, ...sections.map(([heading, values]) => `${heading}\n${values.length ? values.map((value) => `- ${value}`).join('\n') : '- No significant activity measured.'}`), note.textContent].join('\n\n');
+	return { html: content.outerHTML, text: plainText };
+}
+
+async function copyReportText(reportText) {
+	try {
+		await navigator.clipboard.writeText(reportText);
+	} catch (_error) {
+		const textarea = document.createElement('textarea');
+		textarea.value = reportText;
+		textarea.style.position = 'fixed';
+		textarea.style.opacity = '0';
+		document.body.appendChild(textarea);
+		textarea.select();
+		document.execCommand('copy');
+		textarea.remove();
+	}
+	ui.notifications.info('PF2 Director | Diagnostic report copied to the clipboard.');
 }
 
 export async function runPerformanceDiagnostic() {
@@ -383,7 +402,15 @@ export function buildPerformanceDiagnosticsRow() {
 		button.disabled = true;
 		try {
 			const report = await runPerformanceDiagnostic();
-			new Dialog({ title: 'PF2 Director Performance Diagnostic', content: report, buttons: { close: { label: 'Close' } }, default: 'close' }).render(true);
+			new Dialog({
+				title: 'PF2 Director Performance Diagnostic',
+				content: report.html,
+				buttons: {
+					copy: { label: 'Copy Report', callback: () => copyReportText(report.text) },
+					close: { label: 'Close' },
+				},
+				default: 'close',
+			}).render(true);
 		} catch (error) {
 			console.error('PF2 Director | Performance diagnostic failed', error);
 			ui.notifications.error('PF2 Director | Performance diagnostic failed. See the browser console.');

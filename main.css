@@ -933,3 +933,6 @@
         width: 164px;
     }
 }
+.pf2-director-performance-report {
+	user-select: text;
+}
