@@ -1,15 +1,18 @@
 const SAMPLE_LIMIT = 120;
 const LONG_TASK_LIMIT = 100;
 const DIAGNOSTIC_MS = 10000;
+const DIAGNOSTIC_MODULE_ID = 'pf2-david-music-control';
 
 const frameStalls = [];
 const longTasks = [];
 let lastFrame;
 let sampling = false;
 const callbackOwners = new WeakMap();
+let activeCallbackCapture = null;
 
 function ownerFromStack(stack = '') {
-	const moduleMatch = stack.match(/(?:https?:\/\/[^/]+)?\/modules\/([^/\s?#]+)/i);
+	const moduleMatches = [...stack.matchAll(/(?:https?:\/\/[^/]+)?\/modules\/([^/\s?#]+)/gi)];
+	const moduleMatch = moduleMatches.find((match) => match[1] !== DIAGNOSTIC_MODULE_ID);
 	if (moduleMatch) return moduleMatch[1];
 	const systemMatch = stack.match(/(?:https?:\/\/[^/]+)?\/systems\/([^/\s?#]+)/i);
 	if (systemMatch) return `system:${systemMatch[1]}`;
@@ -35,6 +38,40 @@ function installHookRegistrationTracking() {
 }
 
 installHookRegistrationTracking();
+
+function installAsyncCallbackTracking() {
+	const target = globalThis.window ?? globalThis;
+	if (target.__pf2DirectorAsyncTrackingInstalled) return;
+	target.__pf2DirectorAsyncTrackingInstalled = true;
+	const registrations = [
+		['setTimeout', 'timer'],
+		['setInterval', 'interval'],
+		['requestAnimationFrame', 'animation frame'],
+	];
+	for (const [methodName, type] of registrations) {
+		const original = target[methodName];
+		if (typeof original !== 'function') continue;
+		target[methodName] = function trackedAsyncRegistration(callback, ...args) {
+			if (typeof callback !== 'function') return original.call(this, callback, ...args);
+			const owner = captureRegistrationOwner();
+			if (owner === DIAGNOSTIC_MODULE_ID) return original.call(this, callback, ...args);
+			const wrapped = function trackedAsyncCallback(...callbackArgs) {
+				const started = performance.now();
+				try {
+					return callback.apply(this, callbackArgs);
+				} finally {
+					const duration = performance.now() - started;
+					if (activeCallbackCapture && duration >= 2) {
+						activeCallbackCapture.push({ type, owner, duration, callback: callback.name || 'anonymous' });
+					}
+				}
+			};
+			return original.call(this, wrapped, ...args);
+		};
+	}
+}
+
+installAsyncCallbackTracking();
 
 function pushLimited(list, value, limit) {
 	list.push(value);
@@ -120,7 +157,7 @@ function formatDuration(value) {
 	return `${value.toFixed(1)} ms`;
 }
 
-function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, startedAt) {
+function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks, asyncCallbacks, startedAt) {
 	const frames = [...beforeFrames, ...afterFrames].sort((a, b) => b.duration - a.duration);
 	const tasks = [...beforeTasks, ...afterTasks].sort((a, b) => b.duration - a.duration);
 	const hookTotals = new Map();
@@ -134,6 +171,12 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	const title = document.createElement('p');
 	title.textContent = `Captured ${DIAGNOSTIC_MS / 1000} seconds beginning at ${new Date(startedAt).toLocaleTimeString()}. Results are local to this browser. `;
 	content.append(title);
+	const asyncTotals = new Map();
+	for (const entry of asyncCallbacks) {
+		const key = `${entry.owner} / ${entry.type} / ${entry.callback}`;
+		asyncTotals.set(key, (asyncTotals.get(key) ?? 0) + entry.duration);
+	}
+	const asyncByCost = [...asyncTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 	const sections = [
 		['Longest main-thread tasks', tasks.slice(0, 8).map((entry) => {
 			const source = entry.attribution?.length ? ` (${entry.attribution.join(', ')})` : '';
@@ -141,6 +184,7 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 		})],
 		['Largest frame stalls', frames.slice(0, 8).map((entry) => formatDuration(entry.duration))],
 		['Slow Foundry hook callbacks', hooksByCost.map(([name, duration]) => `${formatDuration(duration)} total — ${name}`)],
+		['Slow module timers and animation callbacks', asyncByCost.map(([name, duration]) => `${formatDuration(duration)} total — ${name}`)],
 	];
 	for (const [heading, values] of sections) {
 		const h = document.createElement('h3');
@@ -173,12 +217,15 @@ export async function runPerformanceDiagnostic() {
 	const beforeTasks = longTasks.filter((entry) => entry.at >= performance.now() - 3000);
 	const hooks = [];
 	const restoreHooks = instrumentHooks(hooks);
+	const asyncCallbacks = [];
+	activeCallbackCapture = asyncCallbacks;
 	const startedAt = Date.now();
 	ui.notifications.info('PF2 Director | Monitoring performance for 10 seconds. Reproduce the lag now.');
 	await new Promise((resolve) => window.setTimeout(resolve, DIAGNOSTIC_MS));
 	restoreHooks();
+	activeCallbackCapture = null;
 	const cutoff = performance.now() - DIAGNOSTIC_MS - 100;
-	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, startedAt);
+	return renderReport(beforeFrames, beforeTasks, frameStalls.filter((entry) => entry.at >= cutoff), longTasks.filter((entry) => entry.at >= cutoff), hooks, asyncCallbacks, startedAt);
 }
 
 export function buildPerformanceDiagnosticsRow() {

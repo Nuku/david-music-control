@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.177] - 2026-08-08
+
+### Added
+- **Diagnostics**: Performance diagnostics now tracks slow timers, intervals, and animation callbacks by their registering module when possible.
+
 ## [2.4.176] - 2026-08-08
 
 ### Added
