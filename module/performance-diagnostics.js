@@ -10,6 +10,7 @@ let sampling = false;
 const callbackOwners = new WeakMap();
 let activeCallbackCapture = null;
 let activeEventTimeline = null;
+let activeHookContext = null;
 
 function ownerFromStack(stack = '') {
 	const moduleMatches = [...stack.matchAll(/(?:https?:\/\/[^/]+)?\/modules\/([^/\s?#]+)/gi)];
@@ -156,12 +157,14 @@ function instrumentHooks(measurements) {
 			if (typeof original !== 'function' || original.__pf2DirectorDiagnostic) continue;
 			const wrapped = function diagnosticHookWrapper(...args) {
 				const started = performance.now();
+				const previousContext = activeHookContext;
+				const metadata = callbackOwners.get(original) ?? { owner: 'unattributed', source: 'source unavailable' };
+				activeHookContext = { event, owner: metadata.owner, source: metadata.source };
 				try {
 					return original.apply(this, args);
 				} finally {
 					const duration = performance.now() - started;
 					if (duration >= 2) {
-						const metadata = callbackOwners.get(original) ?? { owner: 'unattributed', source: 'source unavailable' };
 						measurements.push({
 							event,
 							duration,
@@ -171,6 +174,7 @@ function instrumentHooks(measurements) {
 							callback: original.name || 'anonymous',
 						});
 					}
+					activeHookContext = previousContext;
 				}
 			};
 			wrapped.__pf2DirectorDiagnostic = true;
@@ -214,7 +218,18 @@ function instrumentRuntimeMethods(measurements) {
 				return original.apply(this, args);
 			} finally {
 				const duration = performance.now() - started;
-				if (duration >= 2) measurements.push({ owner: 'Foundry runtime', source: label, type: 'runtime method', duration, callback: method });
+				if (duration >= 2) {
+					const callStack = new Error().stack ?? '';
+					measurements.push({
+						owner: 'Foundry runtime',
+						source: label,
+						callSource: sourceFromStack(callStack),
+						hookContext: activeHookContext ? `${activeHookContext.owner} / ${activeHookContext.event} (${activeHookContext.source})` : 'No active hook context',
+						type: 'runtime method',
+						duration,
+						callback: method,
+					});
+				}
 			}
 		};
 		target[method] = wrapped;
@@ -276,8 +291,13 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	const asyncByCost = [...asyncTotals.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8);
 	const runtimeTotals = new Map();
 	for (const entry of runtimeCallbacks) {
-		const key = `${entry.source} / ${entry.callback}`;
-		const current = runtimeTotals.get(key) ?? { total: 0, max: 0, count: 0, source: entry.source };
+		const key = `${entry.source} / ${entry.callback} / ${entry.callSource} / ${entry.hookContext}`;
+		const current = runtimeTotals.get(key) ?? {
+			total: 0,
+			max: 0,
+			count: 0,
+			source: `${entry.source} / ${entry.callback}; caller: ${entry.callSource}; context: ${entry.hookContext}`,
+		};
 		current.total += entry.duration;
 		current.max = Math.max(current.max, entry.duration);
 		current.count += 1;

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.181] - 2026-08-08
+
+### Added
+- **Diagnostics**: Slow runtime reports now include invocation caller sources and the active hook/module context.
+
 ## [2.4.180] - 2026-08-08
 
 ### Added
