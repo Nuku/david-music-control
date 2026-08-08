@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.178] - 2026-08-08
+
+### Added
+- **Diagnostics**: Timer and animation reports now include registration source locations, call counts, and worst single-callback duration.
+
 ## [2.4.177] - 2026-08-08
 
 ### Added

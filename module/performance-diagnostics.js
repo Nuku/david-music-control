@@ -19,8 +19,17 @@ function ownerFromStack(stack = '') {
 	return 'unattributed';
 }
 
-function captureRegistrationOwner() {
-	return ownerFromStack(new Error().stack);
+function sourceFromStack(stack = '') {
+	return stack
+		.split('\n')
+		.map((line) => line.trim())
+		.filter((line) => line && !line.includes('performance-diagnostics.js'))
+		.find((line) => /(?:\/modules\/|\/systems\/|foundry\.)/i.test(line)) ?? 'source unavailable';
+}
+
+function captureRegistrationMetadata() {
+	const stack = new Error().stack ?? '';
+	return { owner: ownerFromStack(stack), source: sourceFromStack(stack) };
 }
 
 function installHookRegistrationTracking() {
@@ -31,7 +40,7 @@ function installHookRegistrationTracking() {
 		if (typeof hooks[methodName] !== 'function') continue;
 		const original = hooks[methodName];
 		hooks[methodName] = function trackedHookRegistration(event, callback, ...args) {
-			if (typeof callback === 'function') callbackOwners.set(callback, captureRegistrationOwner());
+			if (typeof callback === 'function') callbackOwners.set(callback, captureRegistrationMetadata());
 			return original.call(this, event, callback, ...args);
 		};
 	}
@@ -53,8 +62,8 @@ function installAsyncCallbackTracking() {
 		if (typeof original !== 'function') continue;
 		target[methodName] = function trackedAsyncRegistration(callback, ...args) {
 			if (typeof callback !== 'function') return original.call(this, callback, ...args);
-			const owner = captureRegistrationOwner();
-			if (owner === DIAGNOSTIC_MODULE_ID) return original.call(this, callback, ...args);
+			const metadata = captureRegistrationMetadata();
+			if (metadata.owner === DIAGNOSTIC_MODULE_ID) return original.call(this, callback, ...args);
 			const wrapped = function trackedAsyncCallback(...callbackArgs) {
 				const started = performance.now();
 				try {
@@ -62,7 +71,7 @@ function installAsyncCallbackTracking() {
 				} finally {
 					const duration = performance.now() - started;
 					if (activeCallbackCapture && duration >= 2) {
-						activeCallbackCapture.push({ type, owner, duration, callback: callback.name || 'anonymous' });
+						activeCallbackCapture.push({ type, ...metadata, duration, callback: callback.name || 'anonymous' });
 					}
 				}
 			};
@@ -133,11 +142,13 @@ function instrumentHooks(measurements) {
 				} finally {
 					const duration = performance.now() - started;
 					if (duration >= 2) {
+						const metadata = callbackOwners.get(original) ?? { owner: 'unattributed', source: 'source unavailable' };
 						measurements.push({
 							event,
 							duration,
 							at: performance.now(),
-							owner: callbackOwners.get(original) ?? 'unattributed',
+							owner: metadata.owner,
+							source: metadata.source,
 							callback: original.name || 'anonymous',
 						});
 					}
@@ -163,9 +174,13 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	const hookTotals = new Map();
 	for (const entry of hooks) {
 		const key = `${entry.owner} / ${entry.event} / ${entry.callback}`;
-		hookTotals.set(key, (hookTotals.get(key) ?? 0) + entry.duration);
+		const current = hookTotals.get(key) ?? { total: 0, max: 0, count: 0, source: entry.source };
+		current.total += entry.duration;
+		current.max = Math.max(current.max, entry.duration);
+		current.count += 1;
+		hookTotals.set(key, current);
 	}
-	const hooksByCost = [...hookTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+	const hooksByCost = [...hookTotals.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8);
 	const content = document.createElement('div');
 	content.className = 'pf2-director-performance-report';
 	const title = document.createElement('p');
@@ -174,17 +189,22 @@ function renderReport(beforeFrames, beforeTasks, afterFrames, afterTasks, hooks,
 	const asyncTotals = new Map();
 	for (const entry of asyncCallbacks) {
 		const key = `${entry.owner} / ${entry.type} / ${entry.callback}`;
-		asyncTotals.set(key, (asyncTotals.get(key) ?? 0) + entry.duration);
+		const current = asyncTotals.get(key) ?? { total: 0, max: 0, count: 0, source: entry.source };
+		current.total += entry.duration;
+		current.max = Math.max(current.max, entry.duration);
+		current.count += 1;
+		asyncTotals.set(key, current);
 	}
-	const asyncByCost = [...asyncTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+	const asyncByCost = [...asyncTotals.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 8);
+	const describeCallback = ([name, data]) => `${formatDuration(data.total)} total; max ${formatDuration(data.max)}; ${data.count} call${data.count === 1 ? '' : 's'} — ${name} (${data.source})`;
 	const sections = [
 		['Longest main-thread tasks', tasks.slice(0, 8).map((entry) => {
 			const source = entry.attribution?.length ? ` (${entry.attribution.join(', ')})` : '';
 			return `${formatDuration(entry.duration)} — ${entry.name}${source}`;
 		})],
 		['Largest frame stalls', frames.slice(0, 8).map((entry) => formatDuration(entry.duration))],
-		['Slow Foundry hook callbacks', hooksByCost.map(([name, duration]) => `${formatDuration(duration)} total — ${name}`)],
-		['Slow module timers and animation callbacks', asyncByCost.map(([name, duration]) => `${formatDuration(duration)} total — ${name}`)],
+		['Slow Foundry hook callbacks', hooksByCost.map(describeCallback)],
+		['Slow module timers and animation callbacks', asyncByCost.map(describeCallback)],
 	];
 	for (const [heading, values] of sections) {
 		const h = document.createElement('h3');
