@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.187] - 2026-08-28
+
+### Fixed
+- **Item Piles party stash**: Added the PF2e actor-sheet header hook so the Party Stash button appears in the modern party sheet header.
+
 ## [2.4.186] - 2026-08-28
 
 ### Added

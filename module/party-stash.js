@@ -59,8 +59,8 @@ async function syncPartyStash() {
 }
 
 async function openPartyStash(event) {
-	event.preventDefault();
-	event.stopPropagation();
+	event?.preventDefault?.();
+	event?.stopPropagation?.();
 	const party = getParty();
 	const api = itemPilesApi();
 	if (!party || !api || !stashEnabled()) return;
@@ -70,6 +70,18 @@ async function openPartyStash(event) {
 		console.error(`${MODULE_ID} | Unable to open the party stash:`, error);
 		ui.notifications.error('Unable to open the party stash. Check the console for details.');
 	}
+}
+
+function addPartyStashHeaderButton(app, buttons) {
+	if (!stashEnabled() || !Array.isArray(buttons)) return;
+	const actor = app?.actor ?? app?.document;
+	if (actor?.type !== 'party' || buttons.some((button) => button.class === 'dmc-party-stash')) return;
+	buttons.unshift({
+		label: 'Party Stash',
+		class: 'dmc-party-stash',
+		icon: 'fas fa-coins',
+		onclick: () => openPartyStash(),
+	});
 }
 
 function injectPartyStashButton(_app, html) {
@@ -91,6 +103,7 @@ function injectPartyStashButton(_app, html) {
 
 globalThis.PF2DirectorPartyStash = { sync: syncPartyStash };
 Hooks.once('ready', syncPartyStash);
+Hooks.on('getActorSheetHeaderButtons', addPartyStashHeaderButton);
 Hooks.on('renderPartySheetPF2e', injectPartyStashButton);
 Hooks.on('renderApplication', (app, html) => {
 	if (app.constructor?.name?.toLowerCase().includes('party')) injectPartyStashButton(app, html);
