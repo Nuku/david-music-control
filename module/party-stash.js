@@ -53,22 +53,19 @@ function usePartyStash(app, event) {
 	app.recipient = party;
 }
 
-function addMerchantPartyStashButton(app, html) {
+function addMerchantPartyStashButton(app, buttons) {
 	if (!stashEnabled() || !app?.merchant || app.merchant.type === 'party') return;
-	const root = html instanceof HTMLElement ? html : html?.[0];
-	if (!root || root.querySelector('.dmc-party-stash-merchant-btn')) return;
+	if (buttons.some((button) => button.class === 'dmc-party-stash-merchant-btn')) return;
 
-	const button = document.createElement('a');
-	button.className = 'header-button control dmc-party-stash-merchant-btn';
-	button.dataset.tooltip = 'Use Party Stash';
-	button.setAttribute('role', 'button');
-	button.innerHTML = '<i class="fas fa-coins"></i>';
-	button.addEventListener('click', (event) => usePartyStash(app, event));
-
-	const header = root.querySelector('header.window-header');
-	const closeButton = header?.querySelector('.header-button.close');
-	if (closeButton) closeButton.before(button);
+	const partyStashButton = {
+		label: 'Use Party Stash',
+		class: 'dmc-party-stash-merchant-btn',
+		icon: 'fas fa-coins',
+		onclick: (event) => usePartyStash(app, event),
+	};
+	const closeIndex = buttons.findIndex((button) => button.class === 'close');
+	buttons.splice(closeIndex < 0 ? buttons.length : closeIndex, 0, partyStashButton);
 }
 
 Hooks.once('ready', restoreLegacyPartyMerchant);
-Hooks.on('renderApplication', addMerchantPartyStashButton);
+Hooks.on('getApplicationHeaderButtons', addMerchantPartyStashButton);
