@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.188] - 2026-08-28
+
+### Fixed
+- **Item Piles party stash**: Added modern and legacy Foundry header integration paths so the Party Stash control appears on PF2e party sheets.
+
 ## [2.4.187] - 2026-08-28
 
 ### Fixed

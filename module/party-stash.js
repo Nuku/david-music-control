@@ -4,7 +4,7 @@ const ITEM_PILES_ID = 'item-piles';
 const PILE_FLAGS_PATH = 'flags.item-piles.data';
 
 function itemPilesApi() {
-	return game.modules.get(ITEM_PILES_ID)?.active ? globalThis.game?.itempiles?.API : null;
+	return game.modules.get(ITEM_PILES_ID)?.active ? game.itempiles?.API : null;
 }
 
 function getParty() {
@@ -73,14 +73,26 @@ async function openPartyStash(event) {
 }
 
 function addPartyStashHeaderButton(app, buttons) {
-	if (!stashEnabled() || !Array.isArray(buttons)) return;
-	const actor = app?.actor ?? app?.document;
+	if (!stashEnabled() || !buttons?.unshift) return;
+	const actor = app?.actor ?? app?.object ?? app?.document;
 	if (actor?.type !== 'party' || buttons.some((button) => button.class === 'dmc-party-stash')) return;
 	buttons.unshift({
 		label: 'Party Stash',
 		class: 'dmc-party-stash',
 		icon: 'fas fa-coins',
 		onclick: () => openPartyStash(),
+	});
+}
+
+function addPartyStashModernHeaderControl(app, controls) {
+	if (!stashEnabled() || !controls?.unshift) return;
+	const actor = app?.actor ?? app?.object ?? app?.document;
+	if (actor?.type !== 'party' || controls.some((control) => control.action === 'dmc-party-stash')) return;
+	controls.unshift({
+		label: 'Party Stash',
+		action: 'dmc-party-stash',
+		icon: 'fas fa-coins',
+		onClick: () => openPartyStash(),
 	});
 }
 
@@ -104,6 +116,11 @@ function injectPartyStashButton(_app, html) {
 globalThis.PF2DirectorPartyStash = { sync: syncPartyStash };
 Hooks.once('ready', syncPartyStash);
 Hooks.on('getActorSheetHeaderButtons', addPartyStashHeaderButton);
+Hooks.on('getHeaderControlsActorSheetV2', addPartyStashModernHeaderControl);
+Hooks.on('getHeaderControlsApplicationV2', addPartyStashModernHeaderControl);
+Hooks.on('renderActorSheet', (app, html) => {
+	if (app?.actor?.type === 'party') injectPartyStashButton(app, html);
+});
 Hooks.on('renderPartySheetPF2e', injectPartyStashButton);
 Hooks.on('renderApplication', (app, html) => {
 	if (app.constructor?.name?.toLowerCase().includes('party')) injectPartyStashButton(app, html);
