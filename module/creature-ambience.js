@@ -800,10 +800,7 @@ Hooks.on('updateScene', (scene, changes) => {
 	if (Object.prototype.hasOwnProperty.call(changes?.flags?.[MODULE_ID] ?? {}, SCENE_FLAG)) restartCreatureAmbience();
 });
 
-Hooks.on('renderSceneConfig', (_app, html) => {
-	const root = html instanceof HTMLElement ? html : html?.[0];
-	if (!root || root.querySelector(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return;
-	const scene = _app?.object ?? _app?.document;
+function createSceneCreatureSoundsGroup(scene) {
 	const enabled = isSceneCreatureAmbienceEnabled(scene);
 	const row = document.createElement('div');
 	row.className = 'form-group';
@@ -814,8 +811,47 @@ Hooks.on('renderSceneConfig', (_app, html) => {
 		</div>
 		<p class="hint">Allow PF2 Director to play ambient creature sounds in this scene. Enabled by default.</p>
 	`;
+	return row;
+}
+
+function appendSceneCreatureSoundsSetting(rendered, scene) {
+	const root = rendered?.[game.system?.id] ?? rendered?.main ?? Object.values(rendered ?? {})[0];
+	if (!root || root.querySelector?.(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return rendered;
+	root.appendChild(createSceneCreatureSoundsGroup(scene));
+	return rendered;
+}
+
+function prepareSceneConfig() {
+	const target = "CONFIG.Scene.sheetClasses.base['pf2e.SceneConfigPF2e'].cls.prototype._renderHTML";
+	const sceneConfigClass = CONFIG.Scene?.sheetClasses?.base?.['pf2e.SceneConfigPF2e']?.cls;
+	if (!sceneConfigClass?.prototype?._renderHTML) {
+		console.warn('[PF2 Director] Could not find the PF2e Scene Configuration renderer.');
+		return;
+	}
+
+	if (globalThis.libWrapper?.register) {
+		globalThis.libWrapper.register(MODULE_ID, target, async function (wrapped, ...args) {
+			const rendered = await wrapped(...args);
+			return appendSceneCreatureSoundsSetting(rendered, this.document);
+		}, 'WRAPPER');
+		return;
+	}
+
+	const originalRenderHTML = sceneConfigClass.prototype._renderHTML;
+	sceneConfigClass.prototype._renderHTML = async function (...args) {
+		const rendered = await originalRenderHTML.apply(this, args);
+		return appendSceneCreatureSoundsSetting(rendered, this.document);
+	};
+}
+
+Hooks.once('ready', prepareSceneConfig);
+
+// Classic SceneConfig fallback for runtimes that still emit this hook.
+Hooks.on('renderSceneConfig', (_app, html) => {
+	const root = html instanceof HTMLElement ? html : html?.[0];
+	if (!root || root.querySelector(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return;
 	const basicTab = root.querySelector('.tab[data-tab="basic"]');
-	(basicTab ?? root.querySelector('form'))?.appendChild(row);
+	(basicTab ?? root.querySelector('form'))?.appendChild(createSceneCreatureSoundsGroup(_app?.object ?? _app?.document));
 });
 
 Hooks.on('updateSetting', (setting) => {

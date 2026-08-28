@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.185] - 2026-08-28
+
+### Fixed
+- **Creature ambience**: Fixed the per-scene passive creature sounds setting not appearing in modern PF2e Scene Configuration.
+
 ## [2.4.184] - 2026-08-28
 
 ### Added
