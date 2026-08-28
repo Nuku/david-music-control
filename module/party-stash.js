@@ -39,7 +39,7 @@ function getMerchantStore(app) {
 	return app?.svelte?.applicationShell?.store ?? null;
 }
 
-function usePartyStash(app, event) {
+async function usePartyStash(app, event) {
 	event?.preventDefault?.();
 	event?.stopPropagation?.();
 	const party = getParty();
@@ -49,6 +49,10 @@ function usePartyStash(app, event) {
 		return;
 	}
 	if (store.recipient?.id === party.id) return;
+	if (!store.recipient) {
+		await app.close();
+		return game.itempiles.API.renderItemPileInterface(app.merchant, { inspectingTarget: party });
+	}
 	store.updateRecipient(party);
 	app.recipient = party;
 }
@@ -61,7 +65,7 @@ function addMerchantPartyStashButton(app, buttons) {
 		label: 'Use Party Stash',
 		class: 'dmc-party-stash-merchant-btn',
 		icon: 'fas fa-coins',
-		onclick: (event) => usePartyStash(app, event),
+		onclick: ({ event }) => usePartyStash(app, event),
 	};
 	const closeIndex = buttons.findIndex((button) => button.class === 'close');
 	buttons.splice(closeIndex < 0 ? buttons.length : closeIndex, 0, partyStashButton);
