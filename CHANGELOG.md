@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.184] - 2026-08-28
+
+### Added
+- **Creature ambience**: Added a per-scene setting to disable passive creature sounds, enabled by default.
+
 ## [2.4.183] - 2026-08-08
 
 ### Added

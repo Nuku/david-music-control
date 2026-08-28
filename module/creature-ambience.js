@@ -2,6 +2,7 @@ import { MODULE_ID } from './settings.js';
 
 const SOCKET_EVENT = `module.${MODULE_ID}`;
 const SOCKET_TYPE = 'creatureAmbiencePlay';
+const SCENE_FLAG = 'enablePassiveCreatureSounds';
 const CREATURE_SOUNDS_MODULE_ID = 'pf2e-creature-sounds';
 const WAYFINDER_MODULE_ID = 'wayfinder';
 const CREATURE_SOUNDS_SETTINGS = {
@@ -38,6 +39,10 @@ function logDebug(...args) {
 
 function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableCreatureAmbience');
+}
+
+function isSceneCreatureAmbienceEnabled(scene = canvas?.scene) {
+	return scene?.getFlag?.(MODULE_ID, SCENE_FLAG) !== false;
 }
 
 function isForceLocalDebugEnabled() {
@@ -78,7 +83,7 @@ function clearAmbienceTimer() {
 
 function scheduleNextCycle(kind = 'normal') {
 	clearAmbienceTimer();
-	if (!game.user.isGM || !isFeatureEnabled()) return;
+	if (!game.user.isGM || !isFeatureEnabled() || !isSceneCreatureAmbienceEnabled()) return;
 	if (isEndCreditsActive()) {
 		logDebug('Creature ambience is quiet while end credits are active.');
 		return;
@@ -554,6 +559,10 @@ function triggerLocalSoundPlayback({ src, volume }) {
 			logDebug(`Ignoring creature ambience playback for ${src} because end credits are active.`);
 			return;
 		}
+		if (!isSceneCreatureAmbienceEnabled()) {
+			logDebug(`Ignoring creature ambience playback for ${src} because passive creature sounds are disabled for this scene.`);
+			return;
+		}
 		const playbackVolume = computePlaybackVolume(volume);
 		logDebug(
 			`Local playback requested for ${src} at computed volume ${Math.max(0, Math.min(1, volume)).toFixed(4)} and playback volume ${playbackVolume.toFixed(4)}.`
@@ -625,7 +634,7 @@ function findBestListenerResultAcrossTokens(sourceToken, listeners) {
 
 async function runCreatureAmbienceCycle() {
 	clearAmbienceTimer();
-	if (!game.user.isGM || !isFeatureEnabled()) return;
+	if (!game.user.isGM || !isFeatureEnabled() || !isSceneCreatureAmbienceEnabled()) return;
 	if (isEndCreditsActive()) {
 		logDebug('Skipping creature ambience because end credits are active.');
 		return;
@@ -784,6 +793,29 @@ Hooks.on('deleteCombat', () => {
 
 Hooks.on('updateCombat', () => {
 	restartCreatureAmbience();
+});
+
+Hooks.on('updateScene', (scene, changes) => {
+	if (scene?.id !== canvas?.scene?.id) return;
+	if (Object.prototype.hasOwnProperty.call(changes?.flags?.[MODULE_ID] ?? {}, SCENE_FLAG)) restartCreatureAmbience();
+});
+
+Hooks.on('renderSceneConfig', (_app, html) => {
+	const root = html instanceof HTMLElement ? html : html?.[0];
+	if (!root || root.querySelector(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return;
+	const scene = _app?.object ?? _app?.document;
+	const enabled = isSceneCreatureAmbienceEnabled(scene);
+	const row = document.createElement('div');
+	row.className = 'form-group';
+	row.innerHTML = `
+		<label>Passive Creature Sounds</label>
+		<div class="form-fields">
+			<input type="checkbox" name="flags.${MODULE_ID}.${SCENE_FLAG}" ${enabled ? 'checked' : ''} />
+		</div>
+		<p class="hint">Allow PF2 Director to play ambient creature sounds in this scene. Enabled by default.</p>
+	`;
+	const basicTab = root.querySelector('.tab[data-tab="basic"]');
+	(basicTab ?? root.querySelector('form'))?.appendChild(row);
 });
 
 Hooks.on('updateSetting', (setting) => {
