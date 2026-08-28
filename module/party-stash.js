@@ -12,7 +12,10 @@ function getParty() {
 }
 
 function stashEnabled() {
-	return !!getSetting('enablePartyStashMerchant') && !!itemPilesApi();
+	const settingKey = `${MODULE_ID}.enablePartyStashMerchant`;
+	const hasStoredSetting = game.settings.storage?.get('world')?.has(settingKey);
+	const enabled = hasStoredSetting ? getSetting('enablePartyStashMerchant') : game.modules.get(ITEM_PILES_ID)?.active;
+	return !!enabled && !!itemPilesApi();
 }
 
 async function syncPartyStash() {
@@ -21,7 +24,7 @@ async function syncPartyStash() {
 	const api = itemPilesApi();
 	if (!party || !api) return;
 
-	const enabled = !!getSetting('enablePartyStashMerchant');
+	const enabled = stashEnabled();
 	const currentFlags = foundry.utils.deepClone(foundry.utils.getProperty(party, PILE_FLAGS_PATH) ?? null);
 	const managed = !!getSetting('partyStashItemPilesManaged');
 
@@ -101,16 +104,17 @@ function injectPartyStashButton(_app, html) {
 	const root = html instanceof HTMLElement ? html : html?.[0];
 	if (!root || root.querySelector('.dmc-party-stash-btn')) return;
 
-	const button = document.createElement('button');
-	button.type = 'button';
-	button.className = 'dmc-party-stash-btn';
-	button.title = 'Open the party stash merchant';
-	button.innerHTML = '<i class="fas fa-coins"></i> Party Stash';
+	const button = document.createElement('a');
+	button.className = 'header-button control dmc-party-stash-btn';
+	button.dataset.tooltip = 'Party Stash';
+	button.setAttribute('role', 'button');
+	button.innerHTML = '<i class="fas fa-coins"></i>';
 	button.addEventListener('click', openPartyStash);
 
-	const headerButtons = root.querySelector('.window-header .header-buttons, .sheet-navigation, .party-header-actions');
-	if (headerButtons) headerButtons.prepend(button);
-	else root.querySelector('.window-header')?.append(button);
+	const header = root.querySelector('header.window-header');
+	const closeButton = header?.querySelector('.header-button.close');
+	if (closeButton) closeButton.before(button);
+	else header?.append(button);
 }
 
 globalThis.PF2DirectorPartyStash = { sync: syncPartyStash };
@@ -119,9 +123,11 @@ Hooks.on('getActorSheetHeaderButtons', addPartyStashHeaderButton);
 Hooks.on('getHeaderControlsActorSheetV2', addPartyStashModernHeaderControl);
 Hooks.on('getHeaderControlsApplicationV2', addPartyStashModernHeaderControl);
 Hooks.on('renderActorSheet', (app, html) => {
-	if (app?.actor?.type === 'party') injectPartyStashButton(app, html);
+	const actor = app?.actor ?? app?.object ?? app?.document;
+	if (actor?.type === 'party') injectPartyStashButton(app, html);
 });
 Hooks.on('renderPartySheetPF2e', injectPartyStashButton);
 Hooks.on('renderApplication', (app, html) => {
-	if (app.constructor?.name?.toLowerCase().includes('party')) injectPartyStashButton(app, html);
+	const actor = app?.actor ?? app?.object ?? app?.document;
+	if (actor?.type === 'party' || app.constructor?.name?.toLowerCase().includes('party')) injectPartyStashButton(app, html);
 });

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.189] - 2026-08-28
+
+### Fixed
+- **Item Piles party stash**: Fixed Party Stash button insertion for the legacy PF2e party-sheet header markup and unstored default settings.
+
 ## [2.4.188] - 2026-08-28
 
 ### Fixed
