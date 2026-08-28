@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.191] - 2026-08-28
+
+### Fixed
+- **Settings registration**: Fixed PF2 Director failing to load its settings when Item Piles was not initialized yet.
+
 ## [2.4.190] - 2026-08-28
 
 ### Changed

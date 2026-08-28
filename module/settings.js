@@ -166,7 +166,9 @@ const settings = {
 		scope: 'world',
 		config: true,
 		type: Boolean,
-		default: !!game.modules.get('item-piles')?.active,
+		// Item Piles is not available yet when this settings object is imported.
+		// The setup hook supplies the runtime-dependent default below.
+		default: false,
 		onChange: () => globalThis.PF2DirectorPartyStash?.sync?.(),
 	},
 	enableAtWillRecharge: {
@@ -390,7 +392,10 @@ export function setSetting(name, value) {
 Hooks.once('setup', () => {
 	for (const [key, setting] of Object.entries(settings)) {
 		try {
-			game.settings.register(MODULE_ID, key, setting);
+			const settingData = key === 'enablePartyStashMerchant'
+				? { ...setting, default: !!game.modules.get('item-piles')?.active }
+				: setting;
+			game.settings.register(MODULE_ID, key, settingData);
 		} catch (error) {
 			console.error(`PF2 Director | Failed to register setting ${key}`, error);
 		}
