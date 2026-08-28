@@ -27,6 +27,8 @@ PF2 Director currently includes:
 - Creature ambience using `pf2e-creature-sounds`, including audibility checks, distance and door muffling, and player-aware playback
 - Victory music and Foundry V14 victory fireworks
 - PF2e party utilities such as Full Rest, Cult tracking, and clustered party token art
+
+When Item Piles is enabled, `Enable Item Piles Party Stash Merchant` is on by default. This adds a Party Stash button to the PF2e party sheet; Item Piles handles buying from the party actor's inventory and selling into it, with currency paid from or returned to the party stash. Install and activate `Item Piles: PF2e` alongside Item Piles for PF2e item pricing and currency support. The GM can disable this in PF2 Director settings.
 - PF2e chat tools including roll retyping, villain-point rerolls, and explicit Half buttons for strikes, spells, impulses, and other cards that can roll damage
 - Automatic Pacifying property-rune handling: the attacker is prompted to spend the reaction; if accepted, damaged creatures attempt a DC 20 Will save and, on failure, receive a 1-minute Pacified effect with a –2 penalty to attacks lacking the nonlethal trait
 - Dramatic health display overlays with optional damage and healing sounds

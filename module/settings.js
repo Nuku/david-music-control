@@ -160,6 +160,15 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	enablePartyStashMerchant: {
+		name: 'Enable Item Piles Party Stash Merchant',
+		hint: 'Adds a Party Stash button to the PF2e party sheet. Item Piles uses the party actor as the merchant, so purchases draw from the stash and sales pay into it.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: !!game.modules.get('item-piles')?.active,
+		onChange: () => globalThis.PF2DirectorPartyStash?.sync?.(),
+	},
 	enableAtWillRecharge: {
 		name: 'Enable At-Will Recharge',
 		hint: 'Automatically restores uses for PF2e items named with "(at will)" immediately after they are used.',
@@ -315,6 +324,22 @@ const settings = {
 		config: false,
 		type: String,
 		default: '',
+	},
+	partyStashItemPilesBackup: {
+		name: 'Party Stash Item Piles Backup',
+		hint: 'Internal party stash integration state.',
+		scope: 'world',
+		config: false,
+		type: String,
+		default: '',
+	},
+	partyStashItemPilesManaged: {
+		name: 'Party Stash Item Piles Managed',
+		hint: 'Internal party stash integration state.',
+		scope: 'world',
+		config: false,
+		type: Boolean,
+		default: false,
 	},
 	victoryMusicGeneric: {
 		name: 'Victory Music (Generic)',
@@ -480,7 +505,7 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'PF2e Tools',
 			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
+			keys: ['enableCultSystem', 'enableFullRest', 'enablePartyStashMerchant', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 			gmOnlyKeys: ['autoApplyDamage', 'autoRollToolbeltSaves'],
 		},
 		{

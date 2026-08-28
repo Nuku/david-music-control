@@ -6,6 +6,7 @@ import './module/token.js';
 import './module/party-cluster.js';
 import './module/cult.js';
 import './module/full-rest.js';
+import './module/party-stash.js';
 import './module/at-will-recharge.js';
 import './module/chat-roll-type.js';
 import './module/taunt.js';

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.186] - 2026-08-28
+
+### Added
+- **Item Piles party stash**: Added a GM-controlled Party Stash merchant button to PF2e party sheets. When enabled, purchases use the party stash's inventory and currency, while sales return items and funds to the stash; it defaults on when Item Piles is active.
+
 ## [2.4.185] - 2026-08-28
 
 ### Fixed

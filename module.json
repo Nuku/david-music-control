@@ -2,7 +2,7 @@
     "id": "pf2-david-music-control",
     "title": "PF2 Director",
     "description": "Direct combat music, scene presentation, PF2e party tools, and cinematic end credits.",
-    "version": "2.4.185",
+    "version": "2.4.186",
     "authors": [
         {
             "name": "Mad Wizard",
@@ -28,6 +28,16 @@
                 "id": "pf2e-subsystems",
                 "type": "module",
                 "reason": "Enables creation of live Influence and Research subsystem entries from the journal export tools."
+            },
+            {
+                "id": "item-piles",
+                "type": "module",
+                "reason": "Adds the optional Party Stash merchant interface when enabled in PF2 Director settings."
+            },
+            {
+                "id": "itempiles-pf2e",
+                "type": "module",
+                "reason": "Provides PF2e item pricing, quantities, filters, and currency definitions for Item Piles transactions."
             }
         ]
     },
@@ -39,5 +49,5 @@
     },
     "url": "https://github.com/Nuku/david-music-control/",
     "manifest": "https://raw.githubusercontent.com/Nuku/david-music-control/main/module.json",
-    "download": "https://github.com/Nuku/david-music-control/releases/download/v2.4.185/pf2-david-music-control.zip"
+    "download": "https://github.com/Nuku/david-music-control/releases/download/v2.4.186/pf2-david-music-control.zip"
 }
