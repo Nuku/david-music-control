@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.190] - 2026-08-28
+
+### Changed
+- **Item Piles party stash**: Moved the stash control into Item Piles merchant windows, where it switches the active `Shopping as` actor to the PF2e party stash for buying and selling.
+
 ## [2.4.189] - 2026-08-28
 
 ### Fixed

@@ -162,7 +162,7 @@ const settings = {
 	},
 	enablePartyStashMerchant: {
 		name: 'Enable Item Piles Party Stash Merchant',
-		hint: 'Adds a Party Stash button to the PF2e party sheet. Item Piles uses the party actor as the merchant, so purchases draw from the stash and sales pay into it.',
+		hint: 'Adds a Use Party Stash button inside Item Piles merchant windows so purchases and sales use the PF2e party actor.',
 		scope: 'world',
 		config: true,
 		type: Boolean,

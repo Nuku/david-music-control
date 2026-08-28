@@ -18,116 +18,57 @@ function stashEnabled() {
 	return !!enabled && !!itemPilesApi();
 }
 
-async function syncPartyStash() {
-	if (!game.user.isGM) return;
+async function restoreLegacyPartyMerchant() {
+	if (!game.user.isGM || !itemPilesApi() || !getSetting('partyStashItemPilesManaged')) return;
 	const party = getParty();
-	const api = itemPilesApi();
-	if (!party || !api) return;
+	if (!party) return;
 
-	const enabled = stashEnabled();
-	const currentFlags = foundry.utils.deepClone(foundry.utils.getProperty(party, PILE_FLAGS_PATH) ?? null);
-	const managed = !!getSetting('partyStashItemPilesManaged');
-
-	if (enabled) {
-		if (api.isItemPileMerchant(party)) return;
-		if (!managed) {
-			await setSetting('partyStashItemPilesBackup', JSON.stringify(currentFlags));
-			await setSetting('partyStashItemPilesManaged', true);
-		}
-		await party.update({
-			[`${PILE_FLAGS_PATH}.enabled`]: true,
-			[`${PILE_FLAGS_PATH}.type`]: 'merchant',
-			[`${PILE_FLAGS_PATH}.infiniteQuantity`]: false,
-			[`${PILE_FLAGS_PATH}.infiniteCurrencies`]: false,
-			[`${PILE_FLAGS_PATH}.shareItemsEnabled`]: true,
-			[`${PILE_FLAGS_PATH}.shareCurrenciesEnabled`]: true,
-		});
-		return;
-	}
-
-	if (!managed) return;
 	let backup = null;
 	try {
 		backup = JSON.parse(getSetting('partyStashItemPilesBackup') || 'null');
 	} catch (_error) {
-		console.warn(`${MODULE_ID} | Party stash backup was invalid; removing the managed Item Piles flags.`);
+		console.warn(`${MODULE_ID} | Ignoring invalid legacy party stash backup.`);
 	}
 
-	const restore = backup
-		? { [PILE_FLAGS_PATH]: backup }
-		: { 'flags.item-piles.-=data': null };
-	await party.update(restore);
+	await party.update(backup ? { [PILE_FLAGS_PATH]: backup } : { 'flags.item-piles.-=data': null });
 	await setSetting('partyStashItemPilesBackup', '');
 	await setSetting('partyStashItemPilesManaged', false);
 }
 
-async function openPartyStash(event) {
+function getMerchantStore(app) {
+	return app?.svelte?.applicationShell?.store ?? null;
+}
+
+function usePartyStash(app, event) {
 	event?.preventDefault?.();
 	event?.stopPropagation?.();
 	const party = getParty();
-	const api = itemPilesApi();
-	if (!party || !api || !stashEnabled()) return;
-	try {
-		await api.renderItemPileInterface(party, { useDefaultCharacter: true });
-	} catch (error) {
-		console.error(`${MODULE_ID} | Unable to open the party stash:`, error);
-		ui.notifications.error('Unable to open the party stash. Check the console for details.');
+	const store = getMerchantStore(app);
+	if (!party || !store?.updateRecipient) {
+		ui.notifications.warn('The party stash is not available for this merchant.');
+		return;
 	}
+	if (store.recipient?.id === party.id) return;
+	store.updateRecipient(party);
+	app.recipient = party;
 }
 
-function addPartyStashHeaderButton(app, buttons) {
-	if (!stashEnabled() || !buttons?.unshift) return;
-	const actor = app?.actor ?? app?.object ?? app?.document;
-	if (actor?.type !== 'party' || buttons.some((button) => button.class === 'dmc-party-stash')) return;
-	buttons.unshift({
-		label: 'Party Stash',
-		class: 'dmc-party-stash',
-		icon: 'fas fa-coins',
-		onclick: () => openPartyStash(),
-	});
-}
-
-function addPartyStashModernHeaderControl(app, controls) {
-	if (!stashEnabled() || !controls?.unshift) return;
-	const actor = app?.actor ?? app?.object ?? app?.document;
-	if (actor?.type !== 'party' || controls.some((control) => control.action === 'dmc-party-stash')) return;
-	controls.unshift({
-		label: 'Party Stash',
-		action: 'dmc-party-stash',
-		icon: 'fas fa-coins',
-		onClick: () => openPartyStash(),
-	});
-}
-
-function injectPartyStashButton(_app, html) {
-	if (!stashEnabled()) return;
+function addMerchantPartyStashButton(app, html) {
+	if (!stashEnabled() || !app?.merchant || app.merchant.type === 'party') return;
 	const root = html instanceof HTMLElement ? html : html?.[0];
-	if (!root || root.querySelector('.dmc-party-stash-btn')) return;
+	if (!root || root.querySelector('.dmc-party-stash-merchant-btn')) return;
 
 	const button = document.createElement('a');
-	button.className = 'header-button control dmc-party-stash-btn';
-	button.dataset.tooltip = 'Party Stash';
+	button.className = 'header-button control dmc-party-stash-merchant-btn';
+	button.dataset.tooltip = 'Use Party Stash';
 	button.setAttribute('role', 'button');
 	button.innerHTML = '<i class="fas fa-coins"></i>';
-	button.addEventListener('click', openPartyStash);
+	button.addEventListener('click', (event) => usePartyStash(app, event));
 
 	const header = root.querySelector('header.window-header');
 	const closeButton = header?.querySelector('.header-button.close');
 	if (closeButton) closeButton.before(button);
-	else header?.append(button);
 }
 
-globalThis.PF2DirectorPartyStash = { sync: syncPartyStash };
-Hooks.once('ready', syncPartyStash);
-Hooks.on('getActorSheetHeaderButtons', addPartyStashHeaderButton);
-Hooks.on('getHeaderControlsActorSheetV2', addPartyStashModernHeaderControl);
-Hooks.on('getHeaderControlsApplicationV2', addPartyStashModernHeaderControl);
-Hooks.on('renderActorSheet', (app, html) => {
-	const actor = app?.actor ?? app?.object ?? app?.document;
-	if (actor?.type === 'party') injectPartyStashButton(app, html);
-});
-Hooks.on('renderPartySheetPF2e', injectPartyStashButton);
-Hooks.on('renderApplication', (app, html) => {
-	const actor = app?.actor ?? app?.object ?? app?.document;
-	if (actor?.type === 'party' || app.constructor?.name?.toLowerCase().includes('party')) injectPartyStashButton(app, html);
-});
+Hooks.once('ready', restoreLegacyPartyMerchant);
+Hooks.on('renderApplication', addMerchantPartyStashButton);
