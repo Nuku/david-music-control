@@ -8,6 +8,14 @@ const promptedMessages = new Set();
 const pendingReactionPrompts = new Map();
 const PACIFYING_DEBUG = true;
 
+function getSystemId() {
+	return game.system?.id ?? 'pf2e';
+}
+
+function getSystemFlags(message) {
+	return message?.flags?.[getSystemId()] ?? null;
+}
+
 function debug(...args) {
 	if (PACIFYING_DEBUG) console.log('[PF2 Director][Pacifying]', ...args);
 }
@@ -17,16 +25,18 @@ function isActiveGM() {
 }
 
 function getDamageItem(message) {
-	return message?.item ?? message?.flags?.pf2e?.context?.item ?? message?.flags?.pf2e?.context?.self?.item ?? message?.flags?.pf2e?.origin?.item ?? null;
+	const systemFlags = getSystemFlags(message);
+	return message?.item ?? systemFlags?.context?.item ?? systemFlags?.context?.self?.item ?? systemFlags?.origin?.item ?? null;
 }
 
 function getDamageItemUuids(message) {
+	const systemFlags = getSystemFlags(message);
 	const candidates = [
 		message?.item,
-		message?.flags?.pf2e?.context?.item,
-		message?.flags?.pf2e?.context?.self?.item,
-		message?.flags?.pf2e?.origin?.item,
-		message?.flags?.pf2e?.origin?.uuid,
+		systemFlags?.context?.item,
+		systemFlags?.context?.self?.item,
+		systemFlags?.origin?.item,
+		systemFlags?.origin?.uuid,
 	];
 	return candidates
 		.map((candidate) => typeof candidate === 'string' ? candidate : candidate?.uuid)
@@ -45,8 +55,9 @@ function hasPacifyingRune(item) {
 }
 
 async function isPacifyingDamage(message) {
-	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') {
-		debug('Ignored message with non-damage context', message?.id, message?.flags?.pf2e?.context?.type);
+	const systemFlags = getSystemFlags(message);
+	if (systemFlags?.context?.type !== 'damage-roll') {
+		debug('Ignored message with non-damage context', message?.id, systemFlags?.context?.type);
 		return false;
 	}
 	const item = getDamageItem(message);
@@ -298,8 +309,9 @@ Hooks.once('ready', () => {
 		const card = button.closest?.('li.chat-message');
 		const messageId = card?.dataset?.messageId;
 		const message = messageId ? game.messages?.get(messageId) : null;
-		debug('Captured damage button', event.type, { messageId, messageFound: !!message, contextType: message?.flags?.pf2e?.context?.type, renderedPacifying: isRenderedPacifyingDamage(button) });
-		if (!message || (message.flags?.pf2e?.context?.type !== 'damage-roll' && !isRenderedPacifyingDamage(button))) return;
+		const contextType = getSystemFlags(message)?.context?.type;
+		debug('Captured damage button', event.type, { messageId, messageFound: !!message, contextType, renderedPacifying: isRenderedPacifyingDamage(button) });
+		if (!message || (contextType !== 'damage-roll' && !isRenderedPacifyingDamage(button))) return;
 		promptedMessages.add(messageId);
 		const targets = getTargetActors(button);
 		const attacker = getAttackerActor(message);

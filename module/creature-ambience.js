@@ -4,6 +4,10 @@ const SOCKET_EVENT = `module.${MODULE_ID}`;
 const SOCKET_TYPE = 'creatureAmbiencePlay';
 const SCENE_FLAG = 'enablePassiveCreatureSounds';
 const CREATURE_SOUNDS_MODULE_ID = 'pf2e-creature-sounds';
+
+function getSystemFlags(actor) {
+	return actor?.flags?.[game.system?.id ?? 'pf2e'] ?? {};
+}
 const WAYFINDER_MODULE_ID = 'wayfinder';
 const CREATURE_SOUNDS_SETTINGS = {
 	CREATURE_SOUNDS: 'creatureSounds_enable',
@@ -269,7 +273,7 @@ function getCustomSoundDatabase() {
 }
 
 function extractTraits(actor) {
-	const rollOptions = actor?.flags?.pf2e?.rollOptions?.all ?? {};
+	const rollOptions = getSystemFlags(actor).rollOptions?.all ?? {};
 	const traits = [];
 	for (const key of Object.keys(rollOptions)) {
 		if (!key.startsWith('self:trait:') && !key.startsWith('origin:trait:')) continue;
@@ -297,7 +301,7 @@ function getGenderFromBlurb(actor) {
 }
 
 function extractSize(actor) {
-	const rollOptions = actor?.flags?.pf2e?.rollOptions?.all ?? {};
+	const rollOptions = getSystemFlags(actor).rollOptions?.all ?? {};
 	for (const key of Object.keys(rollOptions)) {
 		const match = key.match(/^(self|origin):size:(\d+)$/);
 		if (!match) continue;

@@ -3,15 +3,24 @@ import { MODULE_ID } from './settings.js';
 const TAUNT_EFFECT_UUID = 'Compendium.pf2e.feat-effects.Item.FlyWq9znOHvpISNW';
 const TAUNT_TARGETS_FLAG = 'tauntTargets';
 
+function getSystemId() {
+	return game.system?.id ?? 'pf2e';
+}
+
+function getSystemFlags(message) {
+	return message?.flags?.[getSystemId()] ?? null;
+}
+
 function isCurrentUserActiveGM() {
 	return game.user?.isGM && game.users?.activeGM?.id === game.user.id;
 }
 
 function getItemSlug(message) {
+	const systemFlags = getSystemFlags(message);
 	return String(
 		message?.item?.slug
-		?? message?.flags?.pf2e?.context?.item?.slug
-		?? message?.flags?.pf2e?.origin?.slug
+		?? systemFlags?.context?.item?.slug
+		?? systemFlags?.origin?.slug
 		?? ''
 	)
 		.trim()
@@ -19,10 +28,11 @@ function getItemSlug(message) {
 }
 
 function getItemName(message) {
+	const systemFlags = getSystemFlags(message);
 	return String(
 		message?.item?.name
-		?? message?.flags?.pf2e?.context?.item?.name
-		?? message?.flags?.pf2e?.origin?.name
+		?? systemFlags?.context?.item?.name
+		?? systemFlags?.origin?.name
 		?? ''
 	)
 		.trim()

@@ -17,6 +17,14 @@ const REROLL_MATCH_WINDOW_MS = 5000;
 const VILLAIN_POINT_WIDGET_ID = 'dmc-villain-point-widget';
 const POINT_SPEND_BACKFILL_WINDOW_MS = 8000;
 
+function getSystemId() {
+	return game.system?.id ?? 'pf2e';
+}
+
+function getSystemFlags(message) {
+	return message?.flags?.[getSystemId()] ?? null;
+}
+
 const DOOM_MESSAGES = [
 	'The forces arrayed against you are taking notice of your resistance to fate.',
 	'Something old and patient smiles in the dark between your heartbeats.',
@@ -288,7 +296,7 @@ function isD20Roll(roll) {
 function canUseVillainReroll(message) {
 	if (!isFeatureEnabled() || !game.user.isGM) return false;
 	if (getState().villainPoints <= 0) return false;
-	if (message.flags?.pf2e?.context?.isReroll) return false;
+	if (getSystemFlags(message)?.context?.isReroll) return false;
 	const rolls = getMessageRolls(message);
 	if (rolls.length !== 1) return false;
 	const roll = rolls[0];
@@ -301,7 +309,7 @@ function isVillainRerollMessage(message) {
 }
 
 function findPendingVillainRerollIndex(message) {
-	if (!messageLooksLikeReroll(message) && !message?.flags?.pf2e?.context?.isReroll) return -1;
+	if (!messageLooksLikeReroll(message) && !getSystemFlags(message)?.context?.isReroll) return -1;
 
 	return pendingVillainRerolls.findIndex((entry) => {
 		if (entry?.resolved) return false;
@@ -363,7 +371,7 @@ function getPointRerollTypeFromMessage(message) {
 async function maybeBackfillPointUseFromReroll(message) {
 	if (!isFeatureEnabled() || !game.user.isGM) return;
 	if (!message || isVillainRerollMessage(message)) return;
-	if (!messageLooksLikeReroll(message) && !message.flags?.pf2e?.context?.isReroll) return;
+	if (!messageLooksLikeReroll(message) && !getSystemFlags(message)?.context?.isReroll) return;
 	if (processedPointRerollMessages.has(message.id)) return;
 
 	const rerollType = getPointRerollTypeFromMessage(message);
@@ -657,7 +665,7 @@ async function performPf2eVillainReroll(message) {
 }
 
 async function decorateVillainRerollMessage(message) {
-	if (!messageLooksLikeReroll(message) && !message.flags?.pf2e?.context?.isReroll) return;
+	if (!messageLooksLikeReroll(message) && !getSystemFlags(message)?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = findPendingVillainRerollIndex(message);
 	if (pendingIndex === -1) return;
@@ -667,7 +675,7 @@ async function decorateVillainRerollMessage(message) {
 }
 
 async function handleUpdatedVillainRerollMessage(message, changes) {
-	if (!messageLooksLikeReroll(message) && !message?.flags?.pf2e?.context?.isReroll) return;
+	if (!messageLooksLikeReroll(message) && !getSystemFlags(message)?.context?.isReroll) return;
 	if (isVillainRerollMessage(message)) return;
 	const pendingIndex = findPendingVillainRerollIndex(message);
 	if (pendingIndex === -1) return;

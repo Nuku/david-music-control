@@ -40,6 +40,14 @@ const DAMAGE_TYPES = [
 const HEALING_TYPES = ['healing', 'vitality', 'void'];
 const suppressedAutoApplyActors = new Map();
 
+function getSystemId() {
+	return game.system?.id ?? 'pf2e';
+}
+
+function getSystemFlags(document) {
+	return document?.flags?.[getSystemId()] ?? null;
+}
+
 function isFeatureEnabled() {
 	return game.settings.get(MODULE_ID, 'enableUntypedRollRetyping');
 }
@@ -67,7 +75,7 @@ function getPrimaryRoll(message) {
 }
 
 function isPf2eDamageSourceMessage(message) {
-	return message?.flags?.pf2e?.context?.type !== 'damage-roll';
+	return getSystemFlags(message)?.context?.type !== 'damage-roll';
 }
 
 function getRollFormula(roll) {
@@ -109,9 +117,10 @@ function getSpeakerActorId(message) {
 }
 
 function getMessageItemIdentifier(message) {
-	const itemUuid = message?.item?.uuid ?? message?.flags?.pf2e?.origin?.uuid ?? message?.flags?.pf2e?.context?.item?.uuid ?? null;
+	const systemFlags = getSystemFlags(message);
+	const itemUuid = message?.item?.uuid ?? systemFlags?.origin?.uuid ?? systemFlags?.context?.item?.uuid ?? null;
 	if (itemUuid) return itemUuid;
-	return message?.item?.id ?? message?.flags?.pf2e?.origin?.id ?? message?.flags?.pf2e?.context?.item?.id ?? null;
+	return message?.item?.id ?? systemFlags?.origin?.id ?? systemFlags?.context?.item?.id ?? null;
 }
 
 function suppressNextAutoApplyForSpeaker(message) {
@@ -147,7 +156,7 @@ function prunePendingAutoApplyMessages() {
 
 function markMessagePendingAutoApply(message) {
 	if (!message?.id) return;
-	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	if (getSystemFlags(message)?.context?.type !== 'damage-roll') return;
 	prunePendingAutoApplyMessages();
 	pendingAutoApplyMessageIds.set(message.id, Date.now() + AUTO_APPLY_CANDIDATE_MS);
 }
@@ -222,7 +231,7 @@ function extractRollContext(message) {
 		rollJson: typeof roll.toJSON === 'function' ? roll.toJSON() : null,
 		source: getSourceData(message),
 		targets: getStoredTargets(message).length > 0 ? getStoredTargets(message) : getSelectedTargets(),
-		pf2eContext: foundry.utils.deepClone(message.flags?.pf2e ?? {}),
+		pf2eContext: foundry.utils.deepClone(getSystemFlags(message) ?? {}),
 		flavor: message.flavor ?? null,
 	};
 }
@@ -374,7 +383,8 @@ function getHalfDamageTarget(message) {
 async function getDamageTargetActor(message) {
 	if (message?.target?.actor) return message.target.actor;
 
-	const target = message?.flags?.pf2e?.target ?? message?.flags?.pf2e?.context?.target ?? null;
+	const systemFlags = getSystemFlags(message);
+	const target = systemFlags?.target ?? systemFlags?.context?.target ?? null;
 	if (!target) return null;
 
 	const actorCandidates = [target.actor].filter(Boolean);
@@ -405,8 +415,9 @@ async function getDamageTargetActor(message) {
 
 function cloneDamageFlagsAsHalfDamage(message, sourceMessage) {
 	const original = foundry.utils.deepClone(message.flags ?? {});
-	const pf2e = foundry.utils.deepClone(original.pf2e ?? {});
-	const context = foundry.utils.deepClone(pf2e.context ?? {});
+	const systemId = getSystemId();
+	const systemFlags = foundry.utils.deepClone(original[systemId] ?? {});
+	const context = foundry.utils.deepClone(systemFlags.context ?? {});
 	const target = getHalfDamageTarget(sourceMessage);
 
 	context.type = 'damage-roll';
@@ -414,11 +425,11 @@ function cloneDamageFlagsAsHalfDamage(message, sourceMessage) {
 	if (context.unadjustedOutcome === 'criticalSuccess') context.unadjustedOutcome = 'success';
 	if (target) {
 		context.target = target;
-		pf2e.target = target;
+		systemFlags.target = target;
 	}
 
-	pf2e.context = context;
-	original.pf2e = pf2e;
+	systemFlags.context = context;
+	original[systemId] = systemFlags;
 	original[FLAG_SCOPE] = {
 		...(original[FLAG_SCOPE] ?? {}),
 		[HALF_DAMAGE_FLAG]: {
@@ -520,14 +531,15 @@ function forceTargetHelperHalfDamage(flags) {
 
 function forceHalfDamageContextOnSource(source) {
 	const originalFlags = foundry.utils.deepClone(source.flags ?? {});
-	const pf2e = normalizeHalfDamageOutcomes(foundry.utils.deepClone(originalFlags.pf2e ?? {}));
-	const context = foundry.utils.deepClone(pf2e.context ?? {});
+	const systemId = getSystemId();
+	const systemFlags = normalizeHalfDamageOutcomes(foundry.utils.deepClone(originalFlags[systemId] ?? {}));
+	const context = foundry.utils.deepClone(systemFlags.context ?? {});
 
 	context.outcome = 'success';
 	context.unadjustedOutcome = 'success';
 	context.type ??= 'damage-roll';
-	pf2e.context = context;
-	originalFlags.pf2e = pf2e;
+	systemFlags.context = context;
+	originalFlags[systemId] = systemFlags;
 	if (originalFlags['pf2e-target-helper']) {
 		originalFlags['pf2e-target-helper'] = forceTargetHelperHalfDamage(originalFlags);
 	}
@@ -557,7 +569,7 @@ function waitForNextDamageMessage(sourceMessage, timeoutMs = 2000, onMatch = nul
 		};
 
 		const onCreateChatMessage = (createdMessage) => {
-			const contextType = createdMessage?.flags?.pf2e?.context?.type;
+			const contextType = getSystemFlags(createdMessage)?.context?.type;
 			const sameActor = createdMessage?.speaker?.actor && sourceMessage?.speaker?.actor
 				? createdMessage.speaker.actor === sourceMessage.speaker.actor
 				: true;
@@ -944,7 +956,7 @@ async function maybeAutoRollToolbeltSaves(message, root) {
 
 async function shouldAutoApplyDamage(message) {
 	if (!isCurrentUserActiveGM()) return false;
-	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return false;
+	if (getSystemFlags(message)?.context?.type !== 'damage-roll') return false;
 	if (autoAppliedMessageIds.has(message.id)) return false;
 	if (consumeAutoApplyMessageSuppression(message)) return false;
 	if (consumeAutoApplySuppression(message)) return false;
@@ -960,7 +972,7 @@ async function shouldAutoApplyDamage(message) {
 
 async function maybeAutoApplyDamage(message, root) {
 	if (!isCurrentUserActiveGM()) return;
-	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	if (getSystemFlags(message)?.context?.type !== 'damage-roll') return;
 	if (autoAppliedMessageIds.has(message.id)) return;
 	if (!isMessagePendingAutoApply(message)) return;
 	if (consumeAutoApplyMessageSuppression(message)) return;
@@ -1095,7 +1107,7 @@ Hooks.on('createChatMessage', (message) => {
 });
 
 Hooks.on('preCreateChatMessage', (message) => {
-	if (message?.flags?.pf2e?.context?.type !== 'damage-roll') return;
+	if (getSystemFlags(message)?.context?.type !== 'damage-roll') return;
 	const request = findPendingHalfDamageRequest(message);
 	if (!request) return;
 

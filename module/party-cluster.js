@@ -94,7 +94,7 @@ async function getPartyMembers(party) {
 	const memberRefs = [
 		party.system?.details?.members,
 		party.system?.members,
-		party.flags?.pf2e?.members,
+		party.flags?.[game.system?.id ?? 'pf2e']?.members,
 	].flatMap((refs) => (Array.isArray(refs) ? refs : []));
 	const resolved = [];
 

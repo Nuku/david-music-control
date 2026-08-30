@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.094] - 2026-08-29
+
+### Fixed
+- **SF2e compatibility**: Made chat damage, Pacifying, villain-point rerolls, creature ambience trait extraction, and party-member flag handling use the active system's flags.
+
 ## [2.4.191] - 2026-08-28
 
 ### Fixed
