@@ -510,6 +510,186 @@ const OPENING_TAGLINES = [
   "A Campaign of Bold Choices,\nMost of Them Made Under Time Pressure",
 ];
 
+const SF2E_CREDITS = {
+  openingTaglines: [
+    "A Mission in Several Phases,\nMost of Which Were Not in the Flight Plan",
+    "An Expedition Beyond the Known Map,\nWith Unscheduled Repairs Along the Way",
+    "A Story of Courage, Chaos,\nand Questionable Life-Support Decisions",
+    "A Tactical Operation in Uneven Orbits,\nHeld Together by Duct Tape and Initiative",
+    "A Voyage of Discovery,\nAccidental Trespassing, and Administrative Oversight",
+    "A Campaign of Bold Maneuvers,\nMost of Them Made Under Fire",
+  ],
+  sillyRoles: [
+    "Chief Dice Fumbler",
+    "Senior Starship Systems Blamer",
+    "Director of Suspicious Dice Rolling",
+    "Head of Unnecessary Rules Research",
+    "Executive Airlock Procedure Forgetter",
+    "Natural 1 Enthusiast",
+    "Chief Tactical Scanner Misreader",
+    "Director of Standing in the Explosions",
+    "Lead Unauthorized Boarding Specialist",
+    "Senior 'I Have a Plan' Officer (Plan Pending)",
+    "Chief Cover Allocation Mismanager",
+    "Head of Asking the Alien the Wrong Question",
+    "Executive Producer of Needless System Checks",
+    "Director of Dramatic Helmet Removal",
+    "Chief 'Can I Hack That?' Inquirer",
+    "Senior Emergency Rerouting Coordinator",
+    "Lead Suspicious Cargo Appraiser",
+    "Director of Befriending the Hostile Lifeform",
+    "Head of Forgetting Which Planet We Are On",
+    "Chief Character Backstory Transmission Officer",
+    "Senior 'What Does the Scanner Say?' Asker",
+    "Director of Ignoring the Obvious Escape Pod",
+    "Executive 'This Is Probably Safe' Analyst",
+    "Head of Misplacing the Mission Brief",
+    "Lead Cooldown of Tablewide Side-Eyes",
+  ],
+  executiveProducers: [
+    "Whoever Brought Snacks Into the Cockpit",
+    "The Player Who Read the Equipment Rules",
+    "An Optimistic Mission Commander",
+    "Three Separate Arguments About Cover",
+    "One (1) Successful Diplomacy Check",
+    "The Person Who Remembered to Track Ammunition",
+    "Several Whispered Conversations the GM Definitely Heard",
+    "A Shared Delusion That This Would Be a Routine Mission",
+    "The Power of Friendship (and Emergency Thrusters)",
+    "Whoever Agreed to Track Initiative",
+    "Unearned Confidence and Favourable Dice",
+    "A GM Who Loves You All and Is Very Tired",
+  ],
+  epitaphs: [
+    "Gone, but not forgotten",
+    "Technically still on the crew manifest",
+    "Lost as they lived — at an inopportune moment",
+    "Their dice have been placed in quarantine",
+    "Beloved by all, warned by none",
+    "Their rescue beacon is still transmitting",
+    "Fell so that others could make the same mistake",
+    "Last seen making a very confident decision",
+    "They asked if it was hostile. It was.",
+    "Taken before their time, but not before initiative",
+    "They died doing what they loved: overcommitting",
+    "The void was not prepared for this amount of backstory",
+    "Their legend survives in increasingly inaccurate mission reports",
+    "They left us as they found us: under severe pressure",
+  ],
+  crewPool: [
+    ["Flight Planning", "Revised After Launch"],
+    ["Head of Xenobiology", "Do Not Pet the Specimen"],
+    ["Director of Shipboard Ambiance", "One Flickering Console"],
+    ["Chief Archive Officer", "Search Results Inconclusive"],
+    ["Sound Design", "The Collective Alarm Response"],
+    ["Catering", "Nutrient Paste, Somehow Spicy"],
+    ["Legal Counsel", "Arguing With the Mission Parameters"],
+    ["Insurance", "Void Where Prohibited"],
+    ["Atmospheric Effects", "The Ventilation Is Singing"],
+    ["Animal Containment", "The Familiar Is Not on the Manifest"],
+    ["Continuity", "Nobody Logged the Jump"],
+    ["Stunt Coordination", "The Pilot, Unasked"],
+    ["Medical Advisor", "The Medkit, Eventually"],
+    ["Explosives Consultant", "The Engineer, Probably"],
+    ["Negotiation Coach", "Out of Communications Range"],
+    ["Exit Strategy", "Still Being Workshopped"],
+    ["Map Accuracy", "Not Guaranteed Beyond This Sector"],
+    ["Cargo Manifest", "Optimistically Incomplete"],
+    ["Security Audit", "Several Doors Were Unlocked"],
+    ["Dramatic Lighting", "A Single Emergency Strip"],
+    ["Mission Briefing Editor", "Trimmed for Oxygen"],
+    ["Villain Motivation Consultant", "Working on It"],
+    ["Dramatic Music", "The GM's Spotify, Eventually"],
+    ["Hull Integrity", "Not Independently Verified"],
+    ["Robot Etiquette", "A Learning Experience"],
+    ["Navigation", "Somewhere in This Galaxy"],
+    ["Stasis Pod Inspector", "Please Do Not Open"],
+    ["Final Encounter Hype Coordinator", "Building to Something"],
+    ["Cliffhanger Management", "Transmission Interrupted"],
+    ["Quantum Prop Continuity", "Observed Differently by Everyone"],
+  ],
+  filmedOnLocation: [
+    "The Command Deck",
+    "A Remote Outpost With Suspiciously Few Exits",
+    "Three Sticky Notes and a Holographic Display",
+    "A Map That Was Definitely to Scale",
+    "Somewhere Dark and Slightly Airless",
+    "A Sector That Looked Safer in the Briefing",
+    "A Cargo Bay Full of Crates Nobody Scanned",
+    "The Exact Center of the Asteroid Belt",
+    "One Reused Spaceport With Four Different Names",
+    "An Uncharted Moon and Its Extremely Charted Problems",
+    "The Part of the Ship Behind the GM Screen",
+    "A Derelict Station Nobody Expected to Explore",
+    "The Stretch of Vacuum Where Bad Decisions Flourish",
+  ],
+  specialThanks: [
+    "The dice (for occasionally cooperating)",
+    "Natural 1s — for keeping the mission interesting",
+    "Natural 20s — for arriving at the least convenient moments",
+    "The rules — for being occasionally remembered",
+    "Snacks — for surviving the watch rotation",
+    "Everyone who said 'I have a plan' and did not have a plan",
+    "That one alien everyone got oddly attached to",
+    "Whoever kept forgetting their character sheet",
+    "The station administrator who waited patiently while we argued about docking",
+    "Every hazard that was spotted on the second character's turn",
+    "The medic, for healing people slightly too late",
+    "The operative, for using their best trick in the first encounter",
+    "Whoever drew the map — it was very evocative",
+    "The crew member whose designation the GM had to quietly look up every session",
+    "The decision to split the party, which worked out fine, technically",
+    "Everyone who remembered to use their reaction",
+    "The improvised solution nobody expected to work",
+    "The enemy that rolled minimum damage every single time",
+    "All the mission threads that will definitely come up later",
+    "The backup character waiting patiently in the cryopod",
+    "Every villain voice that drifted into pirate unexpectedly",
+  ],
+  disclaimers: [
+    "No explorers were permanently harmed in the making of this campaign.\n(Several were inconvenienced. Many rolled poorly.)",
+    "All alien lifeforms appearing in this campaign are fictional.\nAny resemblance to actual alien life is purely coincidental.",
+    "The events depicted are entirely fictional and occurred entirely within the imagination.\nThe dice results, however, were very real and very devastating.",
+    "This campaign was recorded on location in a sector that doesn't exist.\nAll decisions made by the crew were their own.",
+    "The mission commander reserves the right to have definitely planned all of that.\nAny evidence to the contrary is circumstantial.",
+    "No service robots were harmed during this production.\nSeveral were ignored. That is a different matter.",
+    "All airlocks were tested by professionals.\nThe professionals were not consulted about the results.",
+    "No navigation data was wasted in the making of this campaign.\nIt was, however, frequently ignored.",
+    "All strategic plans were performed by trained spacers.\nPlease do not attempt them without supervision.",
+    "No admirals, androids, or station owners endorsed the actions depicted herein.\nTheir legal positions remain ongoing.",
+  ],
+  stingers: [
+    "The escape pod is still out there. Waiting.",
+    "No one ever did go back for the cargo in bay 7.",
+    "The station quartermaster remembers who overturned the cart.",
+    "That customs officer is still thinking about it.",
+    "The hostile AI's apprentice took very detailed notes.",
+    "The outpost had a five-star rating before the party arrived.",
+    "The tether was not, in fact, long enough.",
+    "The alien you ignored was the ambassador.",
+    "Someone, somewhere, is still holding the pressure door open.",
+    "The mission report has been reclassified. Again.",
+    "The familiar found its way back to the ship eventually.",
+    "The derelict station is still transmitting. Nobody checked why.",
+    "The supply cache was behind the first panel the whole time.",
+    "The quartermaster filed a formal complaint.",
+    "The mysterious traveler at the spaceport was exactly who you thought.",
+    "The dice remember. The dice always remember.",
+    "That random colonist wrote a memoir. It sold well.",
+    "The unidentified device was never officially identified.",
+    "The exit was to the left. It was always to the left.",
+    "The merchant is still waiting for payment.",
+    "The engineer wrote a 14-page rebuttal to the ruling and lost it.",
+    "The creature you spared now runs a thriving roadside refueling station.",
+    "Someone eventually opened the crate marked 'Do Not Open Yet.'",
+    "The backup plan became the main plan and then also failed.",
+    "One of those statues was absolutely watching you leave.",
+    "The station boss updated their security procedures.",
+    "The crew's song about this was legally actionable.",
+    "Somewhere, an unopened escape pod is still being smug about it.",
+  ],
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function pick(arr) {
@@ -749,10 +929,24 @@ function buildCreditsHTML() {
   const gm        = game.users.find(u => u.isGM);
   const worldName = game.world.title || "This Campaign";
   const system    = game.system.title || "Unknown System";
+  const creditSet = game.system?.id === "sf2e"
+    ? SF2E_CREDITS
+    : {
+        openingTaglines: OPENING_TAGLINES,
+        sillyRoles: SILLY_ROLES,
+        executiveProducers: EXEC_PRODUCERS,
+        epitaphs: null,
+        crewPool: CREW_POOL,
+        filmedOnLocation: FILMED_ON_LOCATION,
+        specialThanks: SPECIAL_THANKS,
+        disclaimers: DISCLAIMERS,
+        stingers: STINGERS,
+      };
 
   // Build cast from party members; fall back to non-GM users if no party
   const partyActor   = game.actors.party ?? game.actors.find(a => a.type === "party");
-  const partyMembers = partyActor?.members ?? [];
+  const partyMembers = partyActor?.members?.contents ?? partyActor?.members
+    ?? game.actors.filter(a => a.type === "character" && a.hasPlayerOwner);
   const castEntries  = partyMembers.map(m => ({ character: m, player: getPlayerForActor(m) }));
   const fallbackPlayers = game.users.filter(u => !u.isGM && u.name);
 
@@ -764,7 +958,7 @@ function buildCreditsHTML() {
   html += sp(1.5);
   html += `<div class="ec-world-title">${worldName}</div>`;
   html += sp(0.5);
-  html += `<div class="ec-tagline">${pick(OPENING_TAGLINES)}</div>`;
+  html += `<div class="ec-tagline">${pick(creditSet.openingTaglines)}</div>`;
   html += sp(2);
 
   if (gm) {
@@ -781,7 +975,7 @@ function buildCreditsHTML() {
   html += divider();
   html += sectionHeader("Executive Producers");
   html += sp(0.5);
-  for (const ep of shuffle(EXEC_PRODUCERS).slice(0, 2)) {
+  for (const ep of shuffle(creditSet.executiveProducers).slice(0, 2)) {
     html += `<div class="ec-role">${ep}</div>`;
     html += sp(0.3);
   }
@@ -790,7 +984,7 @@ function buildCreditsHTML() {
   html += divider();
   html += sectionHeader("Cast of Adventurers");
 
-  const rolePool = shuffle(SILLY_ROLES);
+  const rolePool = shuffle(creditSet.sillyRoles);
   let roleIndex  = 0;
 
   if (castEntries.length > 0) {
@@ -827,7 +1021,7 @@ function buildCreditsHTML() {
   }
 
   // ── In Memoriam ───────────────────────────────────────────────────────────
-  const EPITAPHS = [
+  const epitaphs = creditSet.epitaphs ?? [
     "Gone, but not forgotten",
     "Technically still on the character sheet",
     "Died as they lived — at an inopportune moment",
@@ -873,7 +1067,7 @@ function buildCreditsHTML() {
       if (player) {
         html += `<div class="ec-role-connector" style="font-size:0.8em;">played by ${player.name}</div>`;
       }
-      html += `<div class="ec-role-connector" style="font-size:0.8em;margin-top:0.1em;">${pick(EPITAPHS)}</div>`;
+      html += `<div class="ec-role-connector" style="font-size:0.8em;margin-top:0.1em;">${pick(epitaphs)}</div>`;
     }
   }
 
@@ -883,7 +1077,7 @@ function buildCreditsHTML() {
   html += sp(0.5);
   // Pick a random 14–18 entries from the full crew pool each time
   const crewCount = 6 + Math.floor(Math.random() * 3);
-  for (const [role, name] of shuffle(CREW_POOL).slice(0, crewCount)) {
+  for (const [role, name] of shuffle(creditSet.crewPool).slice(0, crewCount)) {
     html += creditRow(role, name);
     html += sp(0.15);
   }
@@ -892,7 +1086,7 @@ function buildCreditsHTML() {
   html += divider();
   html += sectionHeader("Filmed on Location");
   html += sp(0.4);
-  html += `<div class="ec-role">${pick(FILMED_ON_LOCATION)}</div>`;
+  html += `<div class="ec-role">${pick(creditSet.filmedOnLocation)}</div>`;
   html += sp(0.3);
   html += `<div class="ec-fine-print">No locations were harmed in the making of this production.\nSeveral were looted.</div>`;
 
@@ -902,7 +1096,7 @@ function buildCreditsHTML() {
   html += sp(0.5);
   // Pick 10–14 at random so it's different each time
   const thanksCount = 4 + Math.floor(Math.random() * 2);
-  for (const line of shuffle(SPECIAL_THANKS).slice(0, thanksCount)) {
+  for (const line of shuffle(creditSet.specialThanks).slice(0, thanksCount)) {
     html += `<div class="ec-fine-print">${line}</div>`;
     html += sp(0.4);
   }
@@ -911,7 +1105,7 @@ function buildCreditsHTML() {
   html += divider();
   // Pick 2–3 disclaimers
   const disclaimerCount = 1 + Math.floor(Math.random() * 2);
-  for (const d of shuffle(DISCLAIMERS).slice(0, disclaimerCount)) {
+  for (const d of shuffle(creditSet.disclaimers).slice(0, disclaimerCount)) {
     html += `<div class="ec-fine-print">${d}</div>`;
     html += sp(1);
   }
@@ -929,7 +1123,7 @@ function buildCreditsHTML() {
   html += sp(6);
   html += divider();
   html += sp(1);
-  html += `<div class="ec-fine-print" style="font-style:italic;color:rgba(200,185,140,0.7);">${pick(STINGERS)}</div>`;
+  html += `<div class="ec-fine-print" style="font-style:italic;color:rgba(200,185,140,0.7);">${pick(creditSet.stingers)}</div>`;
   html += sp(10);
 
   return html;

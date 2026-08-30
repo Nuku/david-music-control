@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.5.095] - 2026-08-29
+
+### Added
+- **End Credits**: Added a dedicated sci-fi credit set for SF2e campaigns, including sci-fi roles, locations, disclaimers, and stingers.
+
+### Fixed
+- **End Credits**: SF2e campaigns without a party actor now credit owned character actors correctly.
+
 ## [2.5.094] - 2026-08-29
 
 ### Fixed
