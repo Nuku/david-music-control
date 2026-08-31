@@ -49,12 +49,8 @@ async function usePartyStash(app, event) {
 		return;
 	}
 	if (store.recipient?.id === party.id) return;
-	if (!store.recipient) {
-		await app.close();
-		return game.itempiles.API.renderItemPileInterface(app.merchant, { inspectingTarget: party });
-	}
-	store.updateRecipient(party);
-	app.recipient = party;
+	await app.close();
+	return game.itempiles.API.renderItemPileInterface(app.merchant, { inspectingTarget: party });
 }
 
 function addMerchantPartyStashButton(app, buttons) {
