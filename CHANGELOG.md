@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.097] - 2026-09-06
+
+### Fixed
+- **Creature ambience**: Updated the optional PF2e Creature Sounds integration for its v2 database layout, including case-insensitive matching and grouped trait matching.
+
 ## [2.5.095] - 2026-08-29
 
 ### Added

@@ -230,10 +230,23 @@ function getHashCode(str) {
 async function loadBuiltinCreatureSoundDatabase() {
 	if (builtinSoundDatabasePromise) return builtinSoundDatabasePromise;
 	builtinSoundDatabasePromise = (async () => {
-		const response = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/dist/pf2e-creature-sounds.js`);
-		if (!response.ok) throw new Error(`Unable to load ${CREATURE_SOUNDS_MODULE_ID} bundle.`);
-		const source = await response.text();
-		const parsed = Function(`"use strict"; ${extractCreatureSoundDatabaseProgram(source)}; return creature_sounds_db;`)();
+		let parsed = null;
+		// v2 of PF2e Creature Sounds moved the database to a source JSON file and
+		// bundles it into the module. Prefer the JSON path so this integration does
+		// not depend on the upstream bundle's variable names or function order.
+		const databaseResponse = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/databases/creature_sounds_db.json`);
+		if (databaseResponse.ok) parsed = await databaseResponse.json();
+
+		if (!parsed) {
+			const response = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/dist/pf2e-creature-sounds.js`);
+			if (!response.ok) throw new Error(`Unable to load ${CREATURE_SOUNDS_MODULE_ID} database or bundle.`);
+			const source = await response.text();
+			parsed = extractCreatureSoundDatabase(source);
+		}
+
+		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+			throw new Error(`Unable to parse ${CREATURE_SOUNDS_MODULE_ID} database.`);
+		}
 		return Object.fromEntries(
 			Object.entries(parsed).map(([key, value]) => [
 				key,
@@ -247,6 +260,56 @@ async function loadBuiltinCreatureSoundDatabase() {
 	return builtinSoundDatabasePromise;
 }
 
+function extractCreatureSoundDatabase(source) {
+	// Compatibility with pre-v2 bundles.
+	const legacyProgram = extractCreatureSoundDatabaseProgram(source);
+	if (legacyProgram) {
+		return Function(`"use strict"; ${legacyProgram}; return creature_sounds_db;`)();
+	}
+
+	// Vite's current JSON bundling emits the database as a JSON-compatible object
+	// assigned to a generated const. Find that object without relying on its name.
+	const assignment = /const\s+[A-Za-z_$][\w$]*\s*=\s*(\{)/g;
+	let match;
+	while ((match = assignment.exec(source))) {
+		const objectStart = match.index + match[0].lastIndexOf('{');
+		const objectText = extractBalancedObject(source, objectStart);
+		if (!objectText) continue;
+		try {
+			const candidate = JSON.parse(objectText);
+			const values = Object.values(candidate);
+			if (values.some((value) => value?.attack_sounds && value?.hurt_sounds && value?.display_name)) {
+				return candidate;
+			}
+		} catch (_error) {
+			// This const was not the bundled JSON object.
+		}
+	}
+	return null;
+}
+
+function extractBalancedObject(source, start) {
+	let depth = 0;
+	let quote = null;
+	let escaped = false;
+	for (let index = start; index < source.length; index += 1) {
+		const character = source[index];
+		if (quote) {
+			if (escaped) escaped = false;
+			else if (character === '\\') escaped = true;
+			else if (character === quote) quote = null;
+			continue;
+		}
+		if (character === '"' || character === "'") {
+			quote = character;
+			continue;
+		}
+		if (character === '{') depth += 1;
+		else if (character === '}' && --depth === 0) return source.slice(start, index + 1);
+	}
+	return null;
+}
+
 function extractCreatureSoundDatabaseProgram(source) {
 	const functionMarker = 'function getActorName';
 	const dbMarker = 'const creature_sounds_db =';
@@ -255,14 +318,14 @@ function extractCreatureSoundDatabaseProgram(source) {
 	const dbIndex = source.indexOf(dbMarker);
 	const endIndex = source.indexOf(endMarker, dbIndex);
 	if (functionIndex === -1 || dbIndex === -1 || endIndex === -1) {
-		throw new Error('Unable to locate PF2e Creature Sounds database.');
+		return null;
 	}
 	const startIndex = source.indexOf('const ', functionIndex);
 	if (startIndex === -1 || startIndex > dbIndex) {
-		throw new Error('Unable to locate PF2e Creature Sounds data definitions.');
+		return null;
 	}
 	const program = source.slice(startIndex, endIndex).trim();
-	if (!program) throw new Error('Unable to parse PF2e Creature Sounds database.');
+	if (!program) return null;
 	return program;
 }
 
@@ -313,7 +376,7 @@ function extractSize(actor) {
 
 function getMatchingSoundSetByName(soundDatabase, creatureName) {
 	for (const soundSet of Object.values(soundDatabase)) {
-		if (soundSet?.creatures?.includes?.(creatureName)) return soundSet;
+		if (soundSet?.creatures?.some?.((name) => String(name).toLowerCase() === String(creatureName).toLowerCase())) return soundSet;
 	}
 	return null;
 }
@@ -330,7 +393,13 @@ function scoreSoundSets(soundDatabase, actor) {
 			if (regex.test(getActorName(actor))) score += KEYWORD_NAME_SCORE;
 			if (blurb && regex.test(blurb)) score += KEYWORD_BLURB_SCORE;
 		}
-		score += (soundSet.traits ?? []).filter((trait) => traits.includes(trait)).length * TRAIT_SCORE;
+		for (const trait of soundSet.traits ?? []) {
+			if (Array.isArray(trait)) {
+				if (trait.every((requiredTrait) => traits.includes(requiredTrait))) score += TRAIT_SCORE + (trait.length - 1) * 0.1;
+			} else if (traits.includes(trait)) {
+				score += trait === 'male' || trait === 'female' ? 0.5 : TRAIT_SCORE;
+			}
+		}
 		if (score > 0 && soundSet.size !== -1 && creatureSize !== -1) {
 			score += (2 - Math.abs(creatureSize - soundSet.size)) / 10;
 		}
