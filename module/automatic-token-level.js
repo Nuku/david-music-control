@@ -8,6 +8,17 @@ function getLevelForElevation(scene, elevation) {
 	});
 }
 
+function snapElevationToNearbyBoundary(level, elevation) {
+	const bottom = Number(level.elevation?.bottom);
+	const top = Number(level.elevation?.top);
+	const bottomDistance = Math.abs(elevation - bottom);
+	const topDistance = Math.abs(top - elevation);
+
+	if (bottomDistance < topDistance && bottomDistance < 5) return bottom;
+	if (topDistance < bottomDistance && topDistance < 5) return top;
+	return elevation;
+}
+
 async function synchronizeTokenLevel(token, elevation = token?.elevation) {
 	if (!token || !game.user?.isGM || !game.settings.get(MODULE_ID, 'autoTokenLevel')) return;
 
@@ -17,9 +28,10 @@ async function synchronizeTokenLevel(token, elevation = token?.elevation) {
 	const targetLevel = getLevelForElevation(token.parent, elevation);
 	const targetLevelId = targetLevel?.id ?? targetLevel?._id;
 	if (!targetLevelId || token.level === targetLevelId) return;
+	const snappedElevation = snapElevationToNearbyBoundary(targetLevel, elevation);
 
 	try {
-		await token.update({ level: targetLevelId });
+		await token.update({ level: targetLevelId, elevation: snappedElevation });
 	} catch (error) {
 		console.error(`${MODULE_ID} | Could not update token level for ${token.name}`, error);
 	}

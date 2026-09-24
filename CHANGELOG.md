@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.101] - 2026-09-23
+
+### Changed
+- **Token levels**: Snap elevation to the nearer level boundary when it is less than 5 feet away during a level change.
+
 ## [2.5.100] - 2026-09-23
 
 ### Fixed
