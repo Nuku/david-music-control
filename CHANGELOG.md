@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.100] - 2026-09-23
+
+### Fixed
+- **Token levels**: Released the elevation threshold correction and scene-load reconciliation.
+
 ## [2.5.099] - 2026-09-23
 
 ### Fixed
