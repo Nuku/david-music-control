@@ -3,6 +3,7 @@ import './module/settings.js';
 import './module/enhanced-vision.js';
 import './module/menu.js';
 import './module/token.js';
+import './module/automatic-token-level.js';
 import './module/party-cluster.js';
 import './module/cult.js';
 import './module/full-rest.js';

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.098] - 2026-09-23
+
+### Added
+- **Token levels**: Added a GM setting to automatically assign tokens to the scene level matching their elevation.
+
 ## [2.5.097] - 2026-09-06
 
 ### Fixed

@@ -118,6 +118,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	autoTokenLevel: {
+		name: 'Automatically Update Token Level from Elevation',
+		hint: 'When a token elevation changes, assign it to the scene level whose elevation range contains it. The GM applies this update.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	enhancedVision: {
 		name: 'Enhanced Vision',
 		hint: 'Calculate each token\'s vision from all four corners of its footprint instead of only from its center. This increases perception work, especially with many tokens. Reload the scene after changing this setting if the current view does not update immediately.',
