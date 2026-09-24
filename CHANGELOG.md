@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.099] - 2026-09-23
+
+### Fixed
+- **Token levels**: Reconcile existing token levels when a scene loads or the setting is enabled, and use the submitted elevation value when reacting to token updates.
+
 ## [2.5.098] - 2026-09-23
 
 ### Added
