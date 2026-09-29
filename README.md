@@ -35,12 +35,15 @@ When Item Piles is enabled, `Enable Item Piles Party Stash Merchant` is on by de
 - PF2e subsystem export and generation tools, including live creation support when `pf2e-subsystems` is installed
 - Integrated end credits with configurable music, background media, and GM start or stop controls
 - Optional Enhanced Vision, which calculates token vision from each of its four corners
+- Optional custom art beneath PF2e's detected-token tint, fade, and concentric rings
 
 ### Enhanced Vision
 
 When `Enhanced Vision` is enabled, tokens provide vision from four slightly inset corner positions rather than only from the center. Each corner still obeys wall line-of-sight, allowing an unobstructed corner to see around a wall without allowing the token to see through a wall it is touching. This costs additional perception calculations.
 
 For troubleshooting, `Enhanced Vision Debug` draws the center, intended corners, wall collision points, and final viewpoints, and logs their coordinates in the browser console.
+
+In the `Vision` settings, enable `Use Custom Image for Detected Tokens` and choose an image. PF2e's normal detection appearance remains in place; the selected image replaces the token art only while a detection filter is active.
 
 ## Music
 
@@ -151,6 +154,7 @@ The settings UI is grouped into sections for:
 - PF2e Tools
 - Villain Points
 - Dramatic Health Display
+- Vision
 - End Credits
 
 Additional settings menus include:
@@ -158,6 +162,7 @@ Additional settings menus include:
 - trait music rule configuration
 - victory music configuration
 - victory fireworks image configuration
+- detected token image configuration
 - villain point dread sound configuration
 - dramatic health sound configuration
 - end credits music configuration

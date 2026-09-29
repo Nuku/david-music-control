@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.102] - 2026-09-29
+
+### Added
+- **Vision**: Added an optional custom image beneath PF2e's detected-token tint, fade, and concentric rings.
+
 ## [2.5.101] - 2026-09-23
 
 ### Changed

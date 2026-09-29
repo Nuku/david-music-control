@@ -33,6 +33,33 @@ class VictoryFireworksImageConfig extends FormApplication {
 	}
 }
 
+class DetectedTokenImageConfig extends FormApplication {
+	static get defaultOptions() {
+		return foundry.utils.mergeObject(super.defaultOptions, {
+			id: 'dmc-detected-token-image-config',
+			title: 'Detected Token Image',
+			template: 'modules/pf2-david-music-control/templates/detected-token-image-config.hbs',
+			width: 520,
+			height: 'auto',
+			closeOnSubmit: true,
+		});
+	}
+
+	getData() {
+		return { detectedTokenImage: game.settings.get(MODULE_ID, 'detectedTokenImage') ?? '' };
+	}
+
+	activateListeners(html) {
+		super.activateListeners(html);
+		html.find('[data-action="clear-image"]').on('click', () => html.find('[name="detectedTokenImage"]').val(''));
+	}
+
+	async _updateObject(_event, formData) {
+		await game.settings.set(MODULE_ID, 'detectedTokenImage', formData.detectedTokenImage ?? '');
+		ui.notifications.info('Detected token image saved.');
+	}
+}
+
 class VillainPointDreadSoundConfig extends FormApplication {
 	static get defaultOptions() {
 		return foundry.utils.mergeObject(super.defaultOptions, {
@@ -134,6 +161,24 @@ const settings = {
 		type: Boolean,
 		default: false,
 		onChange: () => canvas?.perception?.update?.({ initializeVision: true, refreshVision: true }),
+	},
+	useDetectedTokenImage: {
+		name: 'Use Custom Image for Detected Tokens',
+		hint: 'When PF2e obscures a token with a detection effect, show the selected image beneath the normal tint, fade, and rings.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+		onChange: refreshDetectedTokenImages,
+	},
+	detectedTokenImage: {
+		name: 'Detected Token Image',
+		hint: 'Image shown beneath PF2e detection effects when the custom image option is enabled.',
+		scope: 'world',
+		config: false,
+		type: String,
+		default: '',
+		onChange: refreshDetectedTokenImages,
 	},
 	enhancedVisionDebug: {
 		name: 'Enhanced Vision Debug',
@@ -423,6 +468,19 @@ Hooks.once('setup', () => {
 	}
 
 	try {
+		game.settings.registerMenu(MODULE_ID, 'detectedTokenImageMenu', {
+			name: 'Detected Token Image',
+			label: 'Choose Image',
+			hint: 'Choose the image displayed under PF2e detection effects when enabled.',
+			icon: 'fas fa-eye',
+			type: DetectedTokenImageConfig,
+			restricted: true,
+		});
+	} catch (error) {
+		console.error('PF2 Director | Failed to register menu detectedTokenImageMenu', error);
+	}
+
+	try {
 		game.settings.registerMenu(MODULE_ID, 'villainPointDreadSoundMenu', {
 			name: 'Villain Point Dread Sound',
 			label: 'Configure Sound',
@@ -441,6 +499,10 @@ function findSettingsRow(root, key) {
 	if (field) return field.closest('.form-group') ?? field.closest('div');
 	const button = root.querySelector(`button[data-key="${MODULE_ID}.${key}"]`);
 	return button?.closest('.form-group') ?? button?.closest('div') ?? null;
+}
+
+function refreshDetectedTokenImages() {
+	for (const token of canvas?.tokens?.placeables ?? []) token.render?.(canvas.app?.renderer ?? canvas.renderer);
 }
 
 function createSection(title, description = '') {
@@ -524,7 +586,8 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		{
 			title: 'Vision',
 			description: 'Optional token vision enhancements.',
-			keys: ['enhancedVision', 'enhancedVisionDebug'],
+			keys: ['enhancedVision', 'enhancedVisionDebug', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
+			gmOnlyKeys: ['useDetectedTokenImage', 'detectedTokenImageMenu'],
 		},
 		{
 			title: 'Villain Points',
