@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.103] - 2026-10-01
+
+### Added
+- **Token levels**: Ask players to confirm when a token's elevation change would move it to another level.
+
 ## [2.5.102] - 2026-09-29
 
 ### Added

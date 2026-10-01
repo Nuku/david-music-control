@@ -147,7 +147,7 @@ const settings = {
 	},
 	autoTokenLevel: {
 		name: 'Automatically Update Token Level from Elevation',
-		hint: 'When a token elevation changes, assign it to the scene level whose elevation range contains it. The GM applies this update.',
+		hint: 'When a token elevation changes, assign it to the scene level whose elevation range contains it. Players must confirm level transitions; declining leaves the token in place.',
 		scope: 'world',
 		config: true,
 		type: Boolean,

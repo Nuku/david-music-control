@@ -36,6 +36,7 @@ When Item Piles is enabled, `Enable Item Piles Party Stash Merchant` is on by de
 - Integrated end credits with configurable music, background media, and GM start or stop controls
 - Optional Enhanced Vision, which calculates token vision from each of its four corners
 - Optional custom art beneath PF2e's detected-token tint, fade, and concentric rings
+- Automatic token level changes from elevation, with player confirmation when a move crosses levels
 
 ### Enhanced Vision
 
