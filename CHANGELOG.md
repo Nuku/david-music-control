@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.104] - 2026-10-02
+
+### Fixed
+- **Detected token image**: Load replacement art before applying it to the token mesh to prevent hover collision checks from rendering an unready texture.
+
 ## [2.5.103] - 2026-10-01
 
 ### Added

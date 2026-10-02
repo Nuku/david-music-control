@@ -1,20 +1,33 @@
 import { MODULE_ID } from './settings.js';
 
 const textureCache = new Map();
+const tokenTextureRequests = new WeakMap();
 
-function getTexture(src) {
-	if (!textureCache.has(src)) textureCache.set(src, PIXI.Texture.from(src));
+function loadTexture(src) {
+	if (!textureCache.has(src)) {
+		textureCache.set(src, globalThis.loadTexture(src).catch((error) => {
+			textureCache.delete(src);
+			console.warn(`PF2 Director | Could not load detected token image: ${src}`, error);
+			return null;
+		}));
+	}
 	return textureCache.get(src);
 }
 
 function refreshTokenTexture(token) {
-	const mesh = token.mesh;
-	if (!mesh) return;
-
 	const enabled = game.settings.get(MODULE_ID, 'useDetectedTokenImage');
 	const replacement = enabled && token.detectionFilter ? game.settings.get(MODULE_ID, 'detectedTokenImage')?.trim() : '';
-	const src = replacement || token.document.texture.src;
-	if (src && mesh.texture !== getTexture(src)) mesh.texture = getTexture(src);
+	if (!replacement || !token.mesh) return;
+
+	tokenTextureRequests.set(token, replacement);
+	loadTexture(replacement).then((texture) => {
+		if (!texture || tokenTextureRequests.get(token) !== replacement || !token.mesh) return;
+
+		const stillRequested = game.settings.get(MODULE_ID, 'useDetectedTokenImage')
+			&& token.detectionFilter
+			&& game.settings.get(MODULE_ID, 'detectedTokenImage')?.trim() === replacement;
+		if (stillRequested && token.mesh.texture !== texture) token.mesh.texture = texture;
+	});
 }
 
 Hooks.once('setup', () => {
