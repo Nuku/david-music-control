@@ -237,7 +237,12 @@ function extractRollContext(message) {
 }
 
 function buildDamageTypeOptions(selected = '') {
-	return DAMAGE_TYPES.map((type) => `<option value="${type}"${type === selected ? ' selected' : ''}>${type}</option>`).join('');
+	return getDamageTypes().map((type) => `<option value="${type}"${type === selected ? ' selected' : ''}>${type}</option>`).join('');
+}
+
+function getDamageTypes() {
+	const types = Object.keys(CONFIG?.SF2E?.damageTypes ?? CONFIG?.PF2E?.damageTypes ?? {});
+	return types.length ? types : DAMAGE_TYPES;
 }
 
 function buildOriginalStatus(message) {
@@ -280,7 +285,7 @@ function injectRetypingControls(message, root) {
 	const syncTypes = () => {
 		if (!typeSelect) return;
 		const mode = modeSelect?.value || 'damage';
-		const options = mode === 'healing' ? HEALING_TYPES : DAMAGE_TYPES;
+		const options = mode === 'healing' ? HEALING_TYPES : getDamageTypes();
 		const preferred = mode === 'healing' ? 'healing' : 'fire';
 		typeSelect.innerHTML = options
 			.map((type) => `<option value="${type}"${type === preferred ? ' selected' : ''}>${type}</option>`)
@@ -300,7 +305,9 @@ function injectRetypingControls(message, root) {
 }
 
 function getDamageRollClass() {
-	return game.pf2e?.DamageRoll
+	return game[getSystemId()]?.DamageRoll
+		?? game.pf2e?.DamageRoll
+		?? CONFIG?.SF2E?.DamageRoll
 		?? CONFIG?.PF2E?.DamageRoll
 		?? CONFIG?.Dice?.rolls?.find?.((rollClass) => rollClass?.name === 'DamageRoll')
 		?? Roll;

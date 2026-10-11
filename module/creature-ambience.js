@@ -895,10 +895,14 @@ function appendSceneCreatureSoundsSetting(rendered, scene) {
 }
 
 function prepareSceneConfig() {
-	const target = "CONFIG.Scene.sheetClasses.base['pf2e.SceneConfigPF2e'].cls.prototype._renderHTML";
-	const sceneConfigClass = CONFIG.Scene?.sheetClasses?.base?.['pf2e.SceneConfigPF2e']?.cls;
+	const sheets = CONFIG.Scene?.sheetClasses?.base ?? {};
+	const entry = Object.entries(sheets).find(([key, value]) => key.startsWith(`${game.system?.id}.`) && value.default)
+		?? Object.entries(sheets).find(([key]) => key === 'pf2e.SceneConfigPF2e');
+	const [key, registration] = entry ?? [];
+	const target = `CONFIG.Scene.sheetClasses.base['${key}'].cls.prototype._renderHTML`;
+	const sceneConfigClass = registration?.cls;
 	if (!sceneConfigClass?.prototype?._renderHTML) {
-		console.warn('[PF2 Director] Could not find the PF2e Scene Configuration renderer.');
+		console.warn('[PF2 Director] Could not find the system Scene Configuration renderer.');
 		return;
 	}
 

@@ -194,6 +194,8 @@ async function doFullRest() {
 
 function injectPartySheetButton(_app, html) {
 	if (!isEnabled()) return;
+	html = html instanceof HTMLElement ? $(html) : html;
+	if (!html?.find) return;
 	if (html.find('.pf2e-full-rest-btn').length) return;
 
 	const headerButtons = html.find('.window-header .header-buttons, .sheet-navigation, .party-header-actions');
@@ -228,6 +230,10 @@ function registerApi() {
 Hooks.once('ready', registerApi);
 Hooks.on('renderPartySheetPF2e', (_app, html) => {
 	injectPartySheetButton(_app, html);
+});
+Hooks.on('renderPartySheetSF2e', injectPartySheetButton);
+Hooks.on('renderActorSheet', (app, html) => {
+	if ((app.actor ?? app.document)?.type === 'party') injectPartySheetButton(app, html);
 });
 Hooks.on('renderApplication', (app, html) => {
 	if (!app.constructor?.name?.toLowerCase().includes('party')) return;

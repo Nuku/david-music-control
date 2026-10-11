@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.5.106] - 2026-10-11
+
+### Added
+- **Fire Glows**: Optional torch-animated light effect for PF2e and SF2e while an actor has persistent fire damage, with 15 feet bright light, 30 feet dim light, and a 360-degree angle.
+- **SF2e support**: Declare PF2e and SF2e as supported systems.
+
+### Fixed
+- **SF2e tools**: Apply multi-target Taunt without requiring a PF2e compendium, preserve the taunting creature as the effect origin, and use the active system's damage types for roll retyping. Support system-specific APIs and sheet registrations.
+
 ## [2.5.105] - 2026-10-11
 
 ### Fixed

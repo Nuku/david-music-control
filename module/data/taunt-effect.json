@@ -1,0 +1,193 @@
+{
+  "img": "icons/creatures/magical/construct-iron-stomping-yellow.webp",
+  "name": "Effect: Taunt",
+  "system": {
+    "description": {
+      "value": "<p>You take a –1 circumstance penalty to attack rolls and DCs that do not target the creature that taunted you. If you take a hostile action that does not target that creature, you also become off-guard until the start of your next turn.</p>"
+    },
+    "duration": {
+      "expiry": "turn-start",
+      "sustained": false,
+      "unit": "rounds",
+      "value": 1
+    },
+    "fromSpell": false,
+    "level": {
+      "value": 1
+    },
+    "publication": {
+      "license": "ORC",
+      "remaster": true,
+      "title": "Pathfinder Battlecry!"
+    },
+    "rules": [
+      {
+        "key": "RollOption",
+        "label": "Apply Taunt penalty to DCs",
+        "option": "taunt-dc-penalty",
+        "toggleable": true
+      },
+      {
+        "key": "FlatModifier",
+        "predicate": [
+          {
+            "not": "target:signature:{item|origin.signature}"
+          }
+        ],
+        "selector": "attack-roll",
+        "slug": "taunt-attack-roll",
+        "type": "circumstance",
+        "value": -1
+      },
+      {
+        "key": "Note",
+        "predicate": [
+          {
+            "not": "target:signature:{item|origin.signature}"
+          }
+        ],
+        "selector": "attack-roll",
+        "text": "If this hostile action does not target the creature that taunted you, you become off-guard until the start of your next turn.",
+        "title": "Taunt"
+      },
+      {
+        "key": "FlatModifier",
+        "predicate": [
+          "taunt-dc-penalty"
+        ],
+        "selector": [
+          "class",
+          "inline-dc",
+          "spell-dc"
+        ],
+        "slug": "taunt-dc",
+        "type": "circumstance",
+        "value": -1
+      },
+      {
+        "itemType": "spell",
+        "key": "ItemAlteration",
+        "label": "Taunt",
+        "mode": "add",
+        "predicate": [
+          "taunt-dc-penalty"
+        ],
+        "property": "description",
+        "value": [
+          {
+            "text": "If this hostile action does not target the creature that taunted you, you become off-guard until the start of your next turn."
+          }
+        ]
+      },
+      {
+        "itemType": "action",
+        "key": "ItemAlteration",
+        "label": "Taunt",
+        "mode": "add",
+        "predicate": [
+          "taunt-dc-penalty"
+        ],
+        "property": "description",
+        "value": [
+          {
+            "text": "If this hostile action does not target the creature that taunted you, you become off-guard until the start of your next turn."
+          }
+        ]
+      },
+      {
+        "itemType": "feat",
+        "key": "ItemAlteration",
+        "label": "Taunt",
+        "mode": "add",
+        "predicate": [
+          "taunt-dc-penalty"
+        ],
+        "property": "description",
+        "value": [
+          {
+            "text": "If this hostile action does not target the creature that taunted you, you become off-guard until the start of your next turn."
+          }
+        ]
+      },
+      {
+        "disabledIf": [
+          {
+            "not": "taunt-dc-penalty"
+          }
+        ],
+        "disabledValue": false,
+        "key": "RollOption",
+        "label": "Apply Bodyguard penalty to DCs",
+        "option": "bodyguard-taunt",
+        "predicate": [
+          "parent:origin:item:tag:bodyguard"
+        ],
+        "toggleable": true
+      },
+      {
+        "key": "AdjustModifier",
+        "mode": "downgrade",
+        "predicate": [
+          "bodyguard-taunt"
+        ],
+        "selectors": [
+          "class",
+          "inline-dc",
+          "spell-dc"
+        ],
+        "slug": "taunt-dc",
+        "value": -2
+      },
+      {
+        "itemType": "action",
+        "key": "ItemAlteration",
+        "mode": "add",
+        "predicate": [
+          "parent:origin:item:tag:bodyguard",
+          "bodyguard-taunt"
+        ],
+        "property": "other-tags",
+        "value": "bodyguard-taunt"
+      },
+      {
+        "itemType": "spell",
+        "key": "ItemAlteration",
+        "mode": "add",
+        "predicate": [
+          "parent:origin:item:tag:bodyguard",
+          "bodyguard-taunt"
+        ],
+        "property": "other-tags",
+        "value": "bodyguard-taunt"
+      },
+      {
+        "itemType": "feat",
+        "key": "ItemAlteration",
+        "mode": "add",
+        "predicate": [
+          "parent:origin:item:tag:bodyguard",
+          "bodyguard-taunt"
+        ],
+        "property": "other-tags",
+        "value": "bodyguard-taunt"
+      },
+      {
+        "key": "RollOption",
+        "option": "self:effect:taunt:{item|origin.signature}"
+      }
+    ],
+    "start": {
+      "initiative": null,
+      "value": 0
+    },
+    "tokenIcon": {
+      "show": true
+    },
+    "traits": {
+      "value": []
+    },
+    "slug": "effect-taunt"
+  },
+  "type": "effect",
+  "effects": []
+}

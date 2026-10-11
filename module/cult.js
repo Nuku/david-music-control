@@ -860,3 +860,4 @@ function formatActivityLine(line) {
 
 Hooks.on('renderActorSheet', renderCultSheet);
 Hooks.on('renderPartySheetPF2e', renderCultSheet);
+Hooks.on('renderPartySheetSF2e', renderCultSheet);

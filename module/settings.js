@@ -153,6 +153,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	fireGlows: {
+		name: 'Fire Glows',
+		hint: 'Actors with persistent fire damage gain a torch-animated light effect (15 feet bright, 30 feet dim, 360 degrees). The effect is removed when all persistent fire damage ends.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	enhancedVision: {
 		name: 'Enhanced Vision',
 		hint: 'Calculate each token\'s vision from all four corners of its footprint instead of only from its center. This increases perception work, especially with many tokens. Reload the scene after changing this setting if the current view does not update immediately.',
@@ -164,7 +172,7 @@ const settings = {
 	},
 	useDetectedTokenImage: {
 		name: 'Use Custom Image for Detected Tokens',
-		hint: 'When PF2e obscures a token with a detection effect, show the selected image beneath the normal tint, fade, and rings.',
+		hint: 'When PF2e or SF2e obscures a token with a detection effect, show the selected image beneath the normal tint, fade, and rings.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
@@ -173,7 +181,7 @@ const settings = {
 	},
 	detectedTokenImage: {
 		name: 'Detected Token Image',
-		hint: 'Image shown beneath PF2e detection effects when the custom image option is enabled.',
+		hint: 'Image shown beneath PF2e or SF2e detection effects when the custom image option is enabled.',
 		scope: 'world',
 		config: false,
 		type: String,
@@ -198,8 +206,8 @@ const settings = {
 		default: false,
 	},
 	enableCultSystem: {
-		name: 'Enable PF2e Cult System',
-		hint: 'Adds a Cult tab to PF2e party sheets for tracking cult statistics, phase notes, and level checks.',
+		name: 'Enable Cult System',
+		hint: 'Adds a Cult tab to PF2e and SF2e party sheets for tracking cult statistics, phase notes, and level checks.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
@@ -207,7 +215,7 @@ const settings = {
 	},
 	enableFullRest: {
 		name: 'Enable Full Rest',
-		hint: 'Adds a Recover button to PF2e party sheets that fully restores party members and removes Wounded.',
+		hint: 'Adds a Recover button to PF2e and SF2e party sheets that fully restores party members and removes Wounded.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
@@ -215,7 +223,7 @@ const settings = {
 	},
 	enablePartyStashMerchant: {
 		name: 'Enable Item Piles Party Stash Merchant',
-		hint: 'Adds a Use Party Stash button inside Item Piles merchant windows so purchases and sales use the PF2e party actor.',
+		hint: 'Adds a Use Party Stash button inside Item Piles merchant windows so purchases and sales use the party actor.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
@@ -226,7 +234,7 @@ const settings = {
 	},
 	enableAtWillRecharge: {
 		name: 'Enable At-Will Recharge',
-		hint: 'Automatically restores uses for PF2e items named with "(at will)" immediately after they are used.',
+		hint: 'Automatically restores uses for PF2e and SF2e items named with "(at will)" immediately after they are used.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
@@ -242,7 +250,7 @@ const settings = {
 	},
 	enableHalfDamageButton: {
 		name: 'Enable Half Damage Button',
-		hint: 'Adds a Half button to PF2e damage chat cards and creates a follow-up damage card that preserves the original context as closely as possible.',
+		hint: 'Adds a Half button to PF2e and SF2e damage chat cards and creates a follow-up damage card that preserves the original context as closely as possible.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
@@ -250,7 +258,7 @@ const settings = {
 	},
 	autoApplyDamage: {
 		name: 'Apply Damage Automatically',
-		hint: 'For PF2e damage cards, automatically click compatible target-aware damage-application buttons for only NPC targets or all targets.',
+		hint: 'For PF2e and SF2e damage cards, automatically click compatible target-aware damage-application buttons for only NPC targets or all targets.',
 		scope: 'world',
 		config: true,
 		type: String,
@@ -333,7 +341,7 @@ const settings = {
 	},
 	traitRules: {
 		name: 'Trait Music Rules',
-		hint: 'Stored PF2e trait-based music rules.',
+		hint: 'Stored trait-based music rules.',
 		scope: 'world',
 		config: false,
 		type: String,
@@ -471,7 +479,7 @@ Hooks.once('setup', () => {
 		game.settings.registerMenu(MODULE_ID, 'detectedTokenImageMenu', {
 			name: 'Detected Token Image',
 			label: 'Choose Image',
-			hint: 'Choose the image displayed under PF2e detection effects when enabled.',
+			hint: 'Choose the image displayed under PF2e or SF2e detection effects when enabled.',
 			icon: 'fas fa-eye',
 			type: DetectedTokenImageConfig,
 			restricted: true,
@@ -578,16 +586,16 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 			extraRow: game.user.isGM ? buildTransferRow() : null,
 		},
 		{
-			title: 'PF2e Tools',
-			description: 'Optional PF2e-specific utilities for party management and chat workflows.',
+			title: 'PF2e / SF2e Tools',
+			description: 'Optional PF2e and SF2e utilities for party management and chat workflows.',
 			keys: ['enableCultSystem', 'enableFullRest', 'enablePartyStashMerchant', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 			gmOnlyKeys: ['autoApplyDamage', 'autoRollToolbeltSaves'],
 		},
 		{
 			title: 'Vision',
 			description: 'Optional token vision enhancements.',
-			keys: ['enhancedVision', 'enhancedVisionDebug', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
-			gmOnlyKeys: ['useDetectedTokenImage', 'detectedTokenImageMenu'],
+			keys: ['enhancedVision', 'enhancedVisionDebug', 'fireGlows', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
+			gmOnlyKeys: ['fireGlows', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
 		},
 		{
 			title: 'Villain Points',

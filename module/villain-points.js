@@ -635,10 +635,11 @@ function getVillainRerollKeepMode(message) {
 }
 
 async function performPf2eVillainReroll(message) {
-	const rerollApi = game.pf2e?.Check?.rerollFromMessage;
+	const checkApi = game[getSystemId()]?.Check ?? game.pf2e?.Check;
+	const rerollApi = checkApi?.rerollFromMessage;
 	const actor = message.actor?.isOfType?.('familiar') ? message.actor.master : message.actor;
 	if (typeof rerollApi !== 'function' || !actor) {
-		throw new Error('PF2e reroll API is unavailable.');
+		throw new Error('The system reroll API is unavailable.');
 	}
 
 	const pendingVillainReroll = {
@@ -652,7 +653,7 @@ async function performPf2eVillainReroll(message) {
 
 	pendingVillainRerolls.push(pendingVillainReroll);
 	const rerollOptions = { keep: getVillainRerollKeepMode(message) };
-	const rerollResult = await rerollApi.call(game.pf2e.Check, message, rerollOptions);
+	const rerollResult = await rerollApi.call(checkApi, message, rerollOptions);
 	const returnedMessage = extractChatMessageFromRerollResult(rerollResult);
 	if (returnedMessage && !pendingVillainReroll.resolved) {
 		await applyVillainRerollDecoration(returnedMessage, pendingVillainReroll);

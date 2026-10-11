@@ -4,7 +4,7 @@
 ![GitHub Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/latest/pf2-david-music-control.zip)
 ![GitHub All Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/pf2-david-music-control.zip?label=downloads)
 
-PF2 Director is a Foundry VTT module for encounter music control, scene presentation, PF2e table utilities, dramatic overlays, subsystem export tools, and cinematic end credits.
+PF2 Director is a Foundry VTT module for PF2e and SF2e with encounter music control, scene presentation, party utilities, dramatic overlays, subsystem export tools, and cinematic end credits.
 
 ## Installation
 
@@ -16,6 +16,12 @@ Compatibility:
 
 - Minimum Foundry version: `13`
 - Verified Foundry version: `14`
+- Supported game systems: **Pathfinder Second Edition (`pf2e`)** and **Starfinder Second Edition (`sf2e`)**
+- Current release: **2.5.106**
+
+SF2e uses the shared PF2e rules API for chat, rerolls, and party tools. Multi-target Taunt uses the active system's effect when available and a bundled effect otherwise, retaining the taunting creature as its origin. Roll retyping uses the active system's configured damage types, including homebrew types.
+
+Optional integrations still require compatible versions of their dependencies. PF2e Subsystems declares support for both systems. The inspected PF2e Creature Sounds and Item Piles: PF2e releases declare only PF2e support; their ambience and merchant integrations are available only when those dependencies can be activated and used with your system.
 
 ## Feature Overview
 
@@ -36,6 +42,7 @@ When Item Piles is enabled, `Enable Item Piles Party Stash Merchant` is on by de
 - Integrated end credits with configurable music, background media, and GM start or stop controls
 - Optional Enhanced Vision, which calculates token vision from each of its four corners
 - Optional custom art beneath PF2e's detected-token tint, fade, and concentric rings
+- Optional Fire Glows: persistent fire damage adds a torch-animated light effect with 15 feet bright, 30 feet dim, and a 360-degree angle; losing all persistent fire damage removes it
 - Automatic token level changes when elevation changes, preserving the current level in overlapping elevation ranges and asking players to confirm transitions
 
 ### Enhanced Vision
@@ -45,6 +52,8 @@ When `Enhanced Vision` is enabled, tokens provide vision from four slightly inse
 For troubleshooting, `Enhanced Vision Debug` draws the center, intended corners, wall collision points, and final viewpoints, and logs their coordinates in the browser console.
 
 In the `Vision` settings, enable `Use Custom Image for Detected Tokens` and choose an image. PF2e's normal detection appearance remains in place; the selected image replaces the token art only while a detection filter is active.
+
+Enable `Fire Glows` in the `Vision` settings to automatically add the light effect to PF2e and SF2e actors with persistent fire damage. Other persistent damage types do not trigger it. An active GM manages the effects, including existing actors and unlinked scene tokens when the option is enabled. Disabling the option removes its effects. The effect uses the systems' TokenLight rule, so removing it restores the token's normal light configuration.
 
 ## Music
 
