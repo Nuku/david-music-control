@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.105] - 2026-10-11
+
+### Fixed
+- **Token levels**: Prevent drag-and-drop from changing levels or snapping elevation when elevation is unchanged, preserve the current level when elevation ranges overlap, and correctly complete confirmed player transitions.
+
 ## [2.5.104] - 2026-10-02
 
 ### Fixed

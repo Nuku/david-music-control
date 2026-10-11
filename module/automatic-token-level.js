@@ -12,12 +12,16 @@ function escapeHTML(value) {
 	}[character]));
 }
 
-function getLevelForElevation(scene, elevation) {
-	return (scene?.levels ?? []).find((level) => {
+function getLevelForElevation(scene, elevation, currentLevelId) {
+	const containsElevation = (level) => {
 		const bottom = Number(level.elevation?.bottom);
 		const top = Number(level.elevation?.top);
 		return Number.isFinite(bottom) && Number.isFinite(top) && elevation >= bottom && elevation <= top;
-	});
+	};
+	const levels = scene?.levels ?? [];
+	const currentLevel = levels.find((level) => (level.id ?? level._id) === currentLevelId);
+	if (currentLevel && containsElevation(currentLevel)) return currentLevel;
+	return levels.find(containsElevation);
 }
 
 function snapElevationToNearbyBoundary(level, elevation) {
@@ -32,7 +36,6 @@ function snapElevationToNearbyBoundary(level, elevation) {
 }
 
 async function confirmLevelTransition(token, targetLevel, changes) {
-	const targetLevelId = targetLevel?.id ?? targetLevel?._id;
 	const currentLevel = token.parent?.levels?.get?.(token.level);
 	const tokenName = escapeHTML(token.name);
 	const targetLevelName = escapeHTML(targetLevel.name);
@@ -77,7 +80,7 @@ async function synchronizeTokenLevel(token, elevation = token?.elevation) {
 	elevation = Number(elevation);
 	if (!Number.isFinite(elevation)) return;
 
-	const targetLevel = getLevelForElevation(token.parent, elevation);
+	const targetLevel = getLevelForElevation(token.parent, elevation, token.level);
 	const targetLevelId = targetLevel?.id ?? targetLevel?._id;
 	if (!targetLevelId || token.level === targetLevelId) return;
 	const snappedElevation = snapElevationToNearbyBoundary(targetLevel, elevation);
@@ -99,27 +102,30 @@ async function synchronizeSceneTokenLevels(scene = canvas?.scene) {
  * and their elevation ranges are core Foundry data; no level-management module
  * is required.
  */
-Hooks.on('updateToken', async (token, changes, options, userId) => {
-	if (options?.pf2DirectorLevelTransition || (userId && userId !== game.user?.id)) return;
-	if (!Object.hasOwn(changes ?? {}, 'elevation')) return;
-	await synchronizeTokenLevel(token, changes.elevation);
-});
-
 // Intercept player-requested transitions before Foundry commits the movement.
 // A decline therefore leaves both the token and the player's viewed level as-is.
-Hooks.on('preUpdateToken', (token, changes, _options, userId) => {
+Hooks.on('preUpdateToken', (token, changes, options, userId) => {
 	if (
+		options?.pf2DirectorLevelTransition ||
 		!game.settings.get(MODULE_ID, 'autoTokenLevel') ||
-		game.user?.isGM ||
 		(userId && userId !== game.user?.id) ||
 		!Object.hasOwn(changes ?? {}, 'elevation')
 	) return;
 
 	const elevation = Number(changes.elevation);
-	if (!Number.isFinite(elevation)) return;
-	const targetLevel = getLevelForElevation(token.parent, elevation);
+	// Drag updates can include the existing elevation. Only a real elevation
+	// change should trigger automatic reassignment or boundary snapping.
+	if (!Number.isFinite(elevation) || elevation === Number(token.elevation)) return;
+	const targetLevel = getLevelForElevation(token.parent, elevation, token.level);
 	const targetLevelId = targetLevel?.id ?? targetLevel?._id;
 	if (!targetLevelId || token.level === targetLevelId) return;
+	if (game.user?.isGM) {
+		// Commit position, elevation, and level together, without a second update
+		// that can race against later movement or elevation edits.
+		changes.level = targetLevelId;
+		changes.elevation = snapElevationToNearbyBoundary(targetLevel, elevation);
+		return;
+	}
 
 	const promptKey = token.uuid ?? token.id;
 	if (activeTransitionPrompts.has(promptKey)) return false;
