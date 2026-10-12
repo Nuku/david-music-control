@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.107] - 2026-10-11
+
+### Fixed
+- **Detected token image**: Restore each token's own art when its obscuring detection filter ends, and limit the replacement to PF2e's outline detection filter.
+
 ## [2.5.106] - 2026-10-11
 
 ### Added

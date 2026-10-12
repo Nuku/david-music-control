@@ -1,7 +1,7 @@
 import { MODULE_ID } from './settings.js';
 
 const textureCache = new Map();
-const tokenTextureRequests = new WeakMap();
+const tokenTextureStates = new WeakMap();
 
 function loadTexture(src) {
 	if (!textureCache.has(src)) {
@@ -15,18 +15,47 @@ function loadTexture(src) {
 }
 
 function refreshTokenTexture(token) {
-	const enabled = game.settings.get(MODULE_ID, 'useDetectedTokenImage');
-	const replacement = enabled && token.detectionFilter ? game.settings.get(MODULE_ID, 'detectedTokenImage')?.trim() : '';
-	if (!replacement || !token.mesh) return;
+	const mesh = token.mesh;
+	if (!mesh) return;
 
-	tokenTextureRequests.set(token, replacement);
+	let state = tokenTextureStates.get(token);
+	if (!state || state.mesh !== mesh) {
+		state = { mesh, originalTexture: mesh.texture, appliedTexture: null, requestedSrc: null };
+		tokenTextureStates.set(token, state);
+	} else if (state.appliedTexture && mesh.texture !== state.appliedTexture) {
+		// Foundry refreshed the token's own art while our replacement was active.
+		state.originalTexture = mesh.texture;
+		state.appliedTexture = null;
+		state.requestedSrc = null;
+	}
+
+	const hasObscuringDetection = token.detectionFilter?.constructor?.name === 'OutlineOverlayFilter';
+	const replacement = game.settings.get(MODULE_ID, 'useDetectedTokenImage') && hasObscuringDetection
+		? game.settings.get(MODULE_ID, 'detectedTokenImage')?.trim()
+		: '';
+
+	if (!replacement) {
+		// Invalidate any pending load and restore the per-token texture when this
+		// viewer can see the token normally again.
+		state.requestedSrc = null;
+		if (state.appliedTexture && mesh.texture === state.appliedTexture) mesh.texture = state.originalTexture;
+		state.appliedTexture = null;
+		return;
+	}
+
+	if (state.requestedSrc === replacement) return;
+	state.requestedSrc = replacement;
 	loadTexture(replacement).then((texture) => {
-		if (!texture || tokenTextureRequests.get(token) !== replacement || !token.mesh) return;
+		if (!texture || tokenTextureStates.get(token) !== state || state.mesh !== token.mesh || state.requestedSrc !== replacement) return;
 
 		const stillRequested = game.settings.get(MODULE_ID, 'useDetectedTokenImage')
-			&& token.detectionFilter
+			&& token.detectionFilter?.constructor?.name === 'OutlineOverlayFilter'
 			&& game.settings.get(MODULE_ID, 'detectedTokenImage')?.trim() === replacement;
-		if (stillRequested && token.mesh.texture !== texture) token.mesh.texture = texture;
+		if (!stillRequested) return;
+
+		if (mesh.texture !== state.appliedTexture) state.originalTexture = mesh.texture;
+		mesh.texture = texture;
+		state.appliedTexture = texture;
 	});
 }
 
