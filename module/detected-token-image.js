@@ -14,6 +14,20 @@ function loadTexture(src) {
 	return textureCache.get(src);
 }
 
+function refreshTokenScale(token, scaleX, scaleY) {
+	const texture = token.document.texture;
+	const originalScaleX = texture.scaleX;
+	const originalScaleY = texture.scaleY;
+	try {
+		texture.scaleX = scaleX;
+		texture.scaleY = scaleY;
+		token._refreshMeshSizeAndScale?.();
+	} finally {
+		texture.scaleX = originalScaleX;
+		texture.scaleY = originalScaleY;
+	}
+}
+
 function refreshTokenTexture(token) {
 	const mesh = token.mesh;
 	if (!mesh) return;
@@ -38,7 +52,10 @@ function refreshTokenTexture(token) {
 		// Invalidate any pending load and restore the per-token texture when this
 		// viewer can see the token normally again.
 		state.requestedSrc = null;
-		if (state.appliedTexture && mesh.texture === state.appliedTexture) mesh.texture = state.originalTexture;
+		if (state.appliedTexture && mesh.texture === state.appliedTexture) {
+			mesh.texture = state.originalTexture;
+			refreshTokenScale(token, token.document.texture.scaleX, token.document.texture.scaleY);
+		}
 		state.appliedTexture = null;
 		return;
 	}
@@ -56,6 +73,7 @@ function refreshTokenTexture(token) {
 		if (mesh.texture !== state.appliedTexture) state.originalTexture = mesh.texture;
 		mesh.texture = texture;
 		state.appliedTexture = texture;
+		refreshTokenScale(token, 1.0, 1.0);
 	});
 }
 

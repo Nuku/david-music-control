@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.108] - 2026-10-11
+
+### Fixed
+- **Detected token image**: Render the replacement image at scale 1.0 and restore the token's configured scale with its original image.
+
 ## [2.5.107] - 2026-10-11
 
 ### Fixed
