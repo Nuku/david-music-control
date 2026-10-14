@@ -27,7 +27,7 @@ function getPartyStandardDC() {
 	return 14 + Math.ceil(levels.reduce((sum, level) => sum + level, 0) / levels.length);
 }
 
-function addSceneSetting(rendered, scene) {
+export function appendRandomDoorLockSetting(rendered, scene) {
 	if (!game.settings.get(MODULE_ID, 'randomlyLockedDoors')) return rendered;
 	const root = rendered?.[game.system?.id] ?? rendered?.main ?? Object.values(rendered ?? {})[0];
 	if (!root || root.querySelector?.(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return rendered;
@@ -39,26 +39,6 @@ function addSceneSetting(rendered, scene) {
 		<p class="hint">Prevent automatic random locks in this scene.</p>`;
 	root.appendChild(row);
 	return rendered;
-}
-
-function installSceneConfigExtension() {
-	const sheets = CONFIG.Scene?.sheetClasses?.base ?? {};
-	const entry = Object.entries(sheets).find(([key, value]) => key.startsWith(`${game.system?.id}.`) && value.default)
-		?? Object.entries(sheets).find(([key]) => key === 'pf2e.SceneConfigPF2e');
-	const [key, registration] = entry ?? [];
-	const sheet = registration?.cls;
-	if (!key || !sheet?.prototype?._renderHTML) return;
-	const target = `CONFIG.Scene.sheetClasses.base['${key}'].cls.prototype._renderHTML`;
-	if (globalThis.libWrapper?.register) {
-		globalThis.libWrapper.register(MODULE_ID, target, async function (wrapped, ...args) {
-			return addSceneSetting(await wrapped(...args), this.document);
-		}, 'WRAPPER');
-		return;
-	}
-	const original = sheet.prototype._renderHTML;
-	sheet.prototype._renderHTML = async function (...args) {
-		return addSceneSetting(await original.apply(this, args), this.document);
-	};
 }
 
 Hooks.on('preUpdateWall', (wall, changes, options) => {
@@ -124,14 +104,12 @@ Hooks.on('renderChatMessage', (message, html) => {
 	});
 });
 
-Hooks.once('ready', installSceneConfigExtension);
 Hooks.on('renderSceneConfig', (app, html) => {
 	const root = html instanceof HTMLElement ? html : html?.[0];
 	if (!root || !game.settings.get(MODULE_ID, 'randomlyLockedDoors') || root.querySelector(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return;
-	(root.querySelector('.tab[data-tab="basic"]') ?? root.querySelector('form'))?.appendChild((() => {
-		const row = document.createElement('div');
-		row.className = 'form-group';
-		row.innerHTML = `<label>Disable Random Door Locks</label><div class="form-fields"><input type="checkbox" name="flags.${MODULE_ID}.${SCENE_FLAG}" ${app?.object?.getFlag?.(MODULE_ID, SCENE_FLAG) === true ? 'checked' : ''}></div><p class="hint">Prevent automatic random locks in this scene.</p>`;
-		return row;
-	})());
+	const scene = app?.object ?? app?.document;
+	const row = document.createElement('div');
+	row.className = 'form-group';
+	row.innerHTML = `<label>Disable Random Door Locks</label><div class="form-fields"><input type="checkbox" name="flags.${MODULE_ID}.${SCENE_FLAG}" ${scene?.getFlag?.(MODULE_ID, SCENE_FLAG) === true ? 'checked' : ''}></div><p class="hint">Prevent automatic random locks in this scene.</p>`;
+	(root.querySelector('.tab[data-tab="basic"]') ?? root.querySelector('form'))?.appendChild(row);
 });

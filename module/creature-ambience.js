@@ -1,4 +1,5 @@
 import { MODULE_ID } from './settings.js';
+import { appendRandomDoorLockSetting } from './randomly-locked-doors.js';
 
 const SOCKET_EVENT = `module.${MODULE_ID}`;
 const SOCKET_TYPE = 'creatureAmbiencePlay';
@@ -909,7 +910,7 @@ function prepareSceneConfig() {
 	if (globalThis.libWrapper?.register) {
 		globalThis.libWrapper.register(MODULE_ID, target, async function (wrapped, ...args) {
 			const rendered = await wrapped(...args);
-			return appendSceneCreatureSoundsSetting(rendered, this.document);
+			return appendSceneCreatureSoundsSetting(appendRandomDoorLockSetting(rendered, this.document), this.document);
 		}, 'WRAPPER');
 		return;
 	}

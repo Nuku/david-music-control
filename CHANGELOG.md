@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.110] - 2026-10-14
+
+### Fixed
+- **Scene configuration**: Combined the Creature Ambience and Randomly Locked Doors settings into one SceneConfig wrapper to prevent a duplicate registration error at startup.
+
 ## [2.5.109] - 2026-10-14
 
 ### Added
