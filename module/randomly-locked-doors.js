@@ -1,0 +1,137 @@
+import { MODULE_ID } from './settings.js';
+
+const SCENE_FLAG = 'disableRandomDoorLocks';
+const WALL_FLAG = 'randomDoorChecked';
+const LOCKED_DOOR_STATE = 2;
+const OPEN_DOOR_STATE = 1;
+
+function isEnabled(scene = canvas?.scene) {
+	return !!game.settings.get(MODULE_ID, 'randomlyLockedDoors') && scene?.getFlag?.(MODULE_ID, SCENE_FLAG) !== true;
+}
+
+function makeDoorLockMessage(wall) {
+	void ChatMessage.create({
+		speaker: ChatMessage.getSpeaker(),
+		content: `<p>You find a locked door (Standard DC ${getPartyStandardDC()}).</p>`,
+		flags: { [MODULE_ID]: { randomDoorLock: { sceneId: wall.parent.id, wallId: wall.id } } },
+	});
+}
+
+function getPartyStandardDC() {
+	const partyActors = game.actors?.party?.members?.contents ?? game.actors?.party?.members ?? [];
+	const characters = Array.from(partyActors).filter((actor) => actor?.type === 'character');
+	const levels = (characters.length ? characters : game.actors?.contents?.filter((actor) => actor.type === 'character' && actor.hasPlayerOwner) ?? [])
+		.map((actor) => Number(actor.level ?? actor.system?.details?.level?.value))
+		.filter(Number.isFinite);
+	if (!levels.length) return 14;
+	return 14 + Math.ceil(levels.reduce((sum, level) => sum + level, 0) / levels.length);
+}
+
+function addSceneSetting(rendered, scene) {
+	if (!game.settings.get(MODULE_ID, 'randomlyLockedDoors')) return rendered;
+	const root = rendered?.[game.system?.id] ?? rendered?.main ?? Object.values(rendered ?? {})[0];
+	if (!root || root.querySelector?.(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return rendered;
+	const row = document.createElement('div');
+	row.className = 'form-group';
+	row.innerHTML = `
+		<label>Disable Random Door Locks</label>
+		<div class="form-fields"><input type="checkbox" name="flags.${MODULE_ID}.${SCENE_FLAG}" ${scene?.getFlag?.(MODULE_ID, SCENE_FLAG) === true ? 'checked' : ''}></div>
+		<p class="hint">Prevent automatic random locks in this scene.</p>`;
+	root.appendChild(row);
+	return rendered;
+}
+
+function installSceneConfigExtension() {
+	const sheets = CONFIG.Scene?.sheetClasses?.base ?? {};
+	const entry = Object.entries(sheets).find(([key, value]) => key.startsWith(`${game.system?.id}.`) && value.default)
+		?? Object.entries(sheets).find(([key]) => key === 'pf2e.SceneConfigPF2e');
+	const [key, registration] = entry ?? [];
+	const sheet = registration?.cls;
+	if (!key || !sheet?.prototype?._renderHTML) return;
+	const target = `CONFIG.Scene.sheetClasses.base['${key}'].cls.prototype._renderHTML`;
+	if (globalThis.libWrapper?.register) {
+		globalThis.libWrapper.register(MODULE_ID, target, async function (wrapped, ...args) {
+			return addSceneSetting(await wrapped(...args), this.document);
+		}, 'WRAPPER');
+		return;
+	}
+	const original = sheet.prototype._renderHTML;
+	sheet.prototype._renderHTML = async function (...args) {
+		return addSceneSetting(await original.apply(this, args), this.document);
+	};
+}
+
+Hooks.on('preUpdateWall', (wall, changes, options) => {
+	if (!isEnabled(wall.parent) || game.user.isGM || Number(wall.door) < 1) return;
+	if (options?.dmcDoorCheckSuccess) return;
+	if (
+		wall.getFlag(MODULE_ID, WALL_FLAG) &&
+		Number(wall.ds) === LOCKED_DOOR_STATE &&
+		changes.ds !== undefined &&
+		Number(changes.ds) !== LOCKED_DOOR_STATE
+	) {
+		void makeDoorLockMessage(wall);
+		return false;
+	}
+	if (Number(changes.ds) !== OPEN_DOOR_STATE || Number(wall.ds) === OPEN_DOOR_STATE) return;
+	if (wall.getFlag(MODULE_ID, WALL_FLAG)) return;
+
+	const chance = Math.clamp(Number(game.settings.get(MODULE_ID, 'randomlyLockedDoorsChance')) || 0, 0, 100);
+	changes[`flags.${MODULE_ID}.${WALL_FLAG}`] = true;
+	if (Math.random() * 100 >= chance) return;
+
+	changes.ds = LOCKED_DOOR_STATE;
+	options.dmcRandomDoorLock = true;
+});
+
+Hooks.on('updateWall', (wall, changes, options) => {
+	if (options?.dmcRandomDoorLock && Number(changes.ds) === LOCKED_DOOR_STATE) makeDoorLockMessage(wall);
+});
+
+async function rollDoorCheck(message, skill) {
+	const actor = game.user.character ?? canvas.tokens.controlled.find((token) => token.actor?.isOwner)?.actor;
+	const statistic = actor?.skills?.[skill];
+	if (!statistic?.roll) {
+		ui.notifications.warn(`Select a character with a ${skill} skill to roll.`);
+		return;
+	}
+	const result = await statistic.roll({ dc: { value: getPartyStandardDC() } });
+	if (Number(result?.degreeOfSuccess ?? result?.options?.degreeOfSuccess) < 2) return;
+
+	const target = message.getFlag(MODULE_ID, 'randomDoorLock');
+	const scene = game.scenes.get(target?.sceneId);
+	const wall = scene?.walls.get(target?.wallId);
+	if (!wall || Number(wall.ds) !== LOCKED_DOOR_STATE) {
+		ui.notifications.info('That door is no longer locked.');
+		return;
+	}
+	await wall.update({ ds: OPEN_DOOR_STATE }, { dmcDoorCheckSuccess: true });
+}
+
+Hooks.on('renderChatMessage', (message, html) => {
+	if (!message.getFlag(MODULE_ID, 'randomDoorLock')) return;
+	const root = html instanceof HTMLElement ? html : html?.[0];
+	if (!root || root.querySelector('[data-action="dmc-door-check"]')) return;
+	const controls = document.createElement('div');
+	controls.className = 'dmc-door-check-buttons';
+	controls.innerHTML = '<button type="button" data-action="dmc-door-check" data-skill="thievery">Thievery</button><button type="button" data-action="dmc-door-check" data-skill="athletics">Athletics</button>';
+	(root.querySelector('.message-content') ?? root).appendChild(controls);
+	const buttons = controls.querySelectorAll('[data-action="dmc-door-check"]');
+	for (const button of buttons) button.addEventListener('click', async (event) => {
+		event.preventDefault();
+		const skill = event.currentTarget.dataset.skill;
+		await rollDoorCheck(message, skill);
+	});
+});
+
+Hooks.once('ready', installSceneConfigExtension);
+Hooks.on('renderSceneConfig', (app, html) => {
+	const root = html instanceof HTMLElement ? html : html?.[0];
+	if (!root || !game.settings.get(MODULE_ID, 'randomlyLockedDoors') || root.querySelector(`[name="flags.${MODULE_ID}.${SCENE_FLAG}"]`)) return;
+	(root.querySelector('.tab[data-tab="basic"]') ?? root.querySelector('form'))?.appendChild((() => {
+		const row = document.createElement('div');
+		row.className = 'form-group';
+		row.innerHTML = `<label>Disable Random Door Locks</label><div class="form-fields"><input type="checkbox" name="flags.${MODULE_ID}.${SCENE_FLAG}" ${app?.object?.getFlag?.(MODULE_ID, SCENE_FLAG) === true ? 'checked' : ''}></div><p class="hint">Prevent automatic random locks in this scene.</p>`;
+		return row;
+	})());
+});

@@ -17,7 +17,7 @@ Compatibility:
 - Minimum Foundry version: `13`
 - Verified Foundry version: `14`
 - Supported game systems: **Pathfinder Second Edition (`pf2e`)** and **Starfinder Second Edition (`sf2e`)**
-- Current release: **2.5.106**
+- Current release: **2.5.109**
 
 SF2e uses the shared PF2e rules API for chat, rerolls, and party tools. Multi-target Taunt uses the active system's effect when available and a bundled effect otherwise, retaining the taunting creature as its origin. Roll retyping uses the active system's configured damage types, including homebrew types.
 
@@ -44,6 +44,7 @@ When Item Piles is enabled, `Enable Item Piles Party Stash Merchant` is on by de
 - Optional custom art beneath PF2e's detected-token tint, fade, and concentric rings
 - Optional Fire Glows: persistent fire damage adds a torch-animated light effect with 15 feet bright, 30 feet dim, and a 360-degree angle; losing all persistent fire damage removes it
 - Automatic token level changes when elevation changes, preserving the current level in overlapping elevation ranges and asking players to confirm transitions
+- Optional Randomly Locked Doors, with a configurable lock chance, per-scene opt-out, and Thievery or Athletics chat checks that open the door on success
 
 ### Enhanced Vision
 
@@ -165,6 +166,7 @@ The settings UI is grouped into sections for:
 - Villain Points
 - Dramatic Health Display
 - Vision
+- Doors
 - End Credits
 
 Additional settings menus include:

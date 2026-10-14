@@ -145,6 +145,23 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	randomlyLockedDoors: {
+		name: 'Randomly Locked Doors',
+		hint: 'On a player’s first attempt to open each door in a scene, there is a chance it is found locked.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
+	randomlyLockedDoorsChance: {
+		name: 'Random Door Lock Chance (%)',
+		hint: 'Chance that a door is found locked the first time a player tries to open it.',
+		scope: 'world',
+		config: true,
+		type: Number,
+		range: { min: 0, max: 100, step: 1 },
+		default: 20,
+	},
 	autoTokenLevel: {
 		name: 'Automatically Update Token Level from Elevation',
 		hint: 'When a token elevation changes, assign it to the scene level whose elevation range contains it. Players must confirm level transitions; declining leaves the token in place.',
@@ -596,6 +613,12 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 			description: 'Optional token vision enhancements.',
 			keys: ['enhancedVision', 'enhancedVisionDebug', 'fireGlows', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
 			gmOnlyKeys: ['fireGlows', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
+		},
+		{
+			title: 'Doors',
+			description: 'Optional random locks for doors opened by players.',
+			keys: ['randomlyLockedDoors', 'randomlyLockedDoorsChance'],
+			gmOnly: true,
 		},
 		{
 			title: 'Villain Points',

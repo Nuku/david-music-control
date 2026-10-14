@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.109] - 2026-10-14
+
+### Added
+- **Randomly Locked Doors**: Optional first-attempt door locks with a configurable chance, per-scene opt-out, and Thievery or Athletics chat checks that open the door on success.
+
 ## [2.5.108] - 2026-10-11
 
 ### Fixed
