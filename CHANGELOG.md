@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.111] - 2026-10-14
+
+### Fixed
+- **Randomly Locked Doors**: Route player door updates through the active GM to avoid wall permission errors.
+
 ## [2.5.110] - 2026-10-14
 
 ### Fixed

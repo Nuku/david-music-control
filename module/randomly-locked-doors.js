@@ -4,6 +4,8 @@ const SCENE_FLAG = 'disableRandomDoorLocks';
 const WALL_FLAG = 'randomDoorChecked';
 const LOCKED_DOOR_STATE = 2;
 const OPEN_DOOR_STATE = 1;
+const SOCKET_EVENT = `module.${MODULE_ID}`;
+const SOCKET_TYPE = 'dmc-random-door-request';
 
 function isEnabled(scene = canvas?.scene) {
 	return !!game.settings.get(MODULE_ID, 'randomlyLockedDoors') && scene?.getFlag?.(MODULE_ID, SCENE_FLAG) !== true;
@@ -15,6 +17,40 @@ function makeDoorLockMessage(wall) {
 		content: `<p>You find a locked door (Standard DC ${getPartyStandardDC()}).</p>`,
 		flags: { [MODULE_ID]: { randomDoorLock: { sceneId: wall.parent.id, wallId: wall.id } } },
 	});
+}
+
+function sendDoorLockRequest(sceneId, wallId, action) {
+	game.socket?.emit?.(SOCKET_EVENT, { type: SOCKET_TYPE, sceneId, wallId, action, userId: game.user.id });
+}
+
+async function handleDoorLockRequest(data) {
+	if (!game.user.isGM || game.users.activeGM?.id !== game.user.id || data?.type !== SOCKET_TYPE) return;
+	const requester = game.users.get(data.userId);
+	const scene = game.scenes.get(data.sceneId);
+	const wall = scene?.walls.get(data.wallId);
+	if (!requester?.active || requester.isGM || !wall || Number(wall.door) < 1) return;
+
+	if (data.action === 'attempt-open') {
+		if (!isEnabled(scene)) return;
+		if (Number(wall.ds) === LOCKED_DOOR_STATE) {
+			if (wall.getFlag(MODULE_ID, WALL_FLAG)) makeDoorLockMessage(wall);
+			return;
+		}
+		if (Number(wall.ds) === OPEN_DOOR_STATE || wall.getFlag(MODULE_ID, WALL_FLAG)) {
+			if (Number(wall.ds) !== OPEN_DOOR_STATE) await wall.update({ ds: OPEN_DOOR_STATE });
+			return;
+		}
+
+		const chance = Math.clamp(Number(game.settings.get(MODULE_ID, 'randomlyLockedDoorsChance')) || 0, 0, 100);
+		const locked = Math.random() * 100 < chance;
+		await wall.update({ ds: locked ? LOCKED_DOOR_STATE : OPEN_DOOR_STATE, [`flags.${MODULE_ID}.${WALL_FLAG}`]: true });
+		if (locked) makeDoorLockMessage(wall);
+		return;
+	}
+
+	if (data.action === 'successful-check' && wall.getFlag(MODULE_ID, WALL_FLAG) && Number(wall.ds) === LOCKED_DOOR_STATE) {
+		await wall.update({ ds: OPEN_DOOR_STATE });
+	}
 }
 
 function getPartyStandardDC() {
@@ -41,31 +77,12 @@ export function appendRandomDoorLockSetting(rendered, scene) {
 	return rendered;
 }
 
-Hooks.on('preUpdateWall', (wall, changes, options) => {
-	if (!isEnabled(wall.parent) || game.user.isGM || Number(wall.door) < 1) return;
-	if (options?.dmcDoorCheckSuccess) return;
-	if (
-		wall.getFlag(MODULE_ID, WALL_FLAG) &&
-		Number(wall.ds) === LOCKED_DOOR_STATE &&
-		changes.ds !== undefined &&
-		Number(changes.ds) !== LOCKED_DOOR_STATE
-	) {
-		void makeDoorLockMessage(wall);
+Hooks.on('preUpdateWall', (wall, changes) => {
+	if (!isEnabled(wall.parent) || Number(wall.door) < 1) return;
+	if (!game.user.isGM && Number(changes.ds) === OPEN_DOOR_STATE && Number(wall.ds) !== OPEN_DOOR_STATE) {
+		sendDoorLockRequest(wall.parent.id, wall.id, 'attempt-open');
 		return false;
 	}
-	if (Number(changes.ds) !== OPEN_DOOR_STATE || Number(wall.ds) === OPEN_DOOR_STATE) return;
-	if (wall.getFlag(MODULE_ID, WALL_FLAG)) return;
-
-	const chance = Math.clamp(Number(game.settings.get(MODULE_ID, 'randomlyLockedDoorsChance')) || 0, 0, 100);
-	changes[`flags.${MODULE_ID}.${WALL_FLAG}`] = true;
-	if (Math.random() * 100 >= chance) return;
-
-	changes.ds = LOCKED_DOOR_STATE;
-	options.dmcRandomDoorLock = true;
-});
-
-Hooks.on('updateWall', (wall, changes, options) => {
-	if (options?.dmcRandomDoorLock && Number(changes.ds) === LOCKED_DOOR_STATE) makeDoorLockMessage(wall);
 });
 
 async function rollDoorCheck(message, skill) {
@@ -85,8 +102,10 @@ async function rollDoorCheck(message, skill) {
 		ui.notifications.info('That door is no longer locked.');
 		return;
 	}
-	await wall.update({ ds: OPEN_DOOR_STATE }, { dmcDoorCheckSuccess: true });
+	sendDoorLockRequest(scene.id, wall.id, 'successful-check');
 }
+
+Hooks.once('ready', () => game.socket?.on?.(SOCKET_EVENT, handleDoorLockRequest));
 
 Hooks.on('renderChatMessage', (message, html) => {
 	if (!message.getFlag(MODULE_ID, 'randomDoorLock')) return;
