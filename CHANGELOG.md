@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.112] - 2026-10-14
+
+### Changed
+- **Randomly Locked Doors**: Successful Thievery checks unlock the door while leaving it closed; successful Athletics checks unlock and open it.
+
 ## [2.5.111] - 2026-10-14
 
 ### Fixed

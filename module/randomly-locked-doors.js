@@ -3,6 +3,7 @@ import { MODULE_ID } from './settings.js';
 const SCENE_FLAG = 'disableRandomDoorLocks';
 const WALL_FLAG = 'randomDoorChecked';
 const LOCKED_DOOR_STATE = 2;
+const CLOSED_DOOR_STATE = 0;
 const OPEN_DOOR_STATE = 1;
 const SOCKET_EVENT = `module.${MODULE_ID}`;
 const SOCKET_TYPE = 'dmc-random-door-request';
@@ -48,8 +49,11 @@ async function handleDoorLockRequest(data) {
 		return;
 	}
 
-	if (data.action === 'successful-check' && wall.getFlag(MODULE_ID, WALL_FLAG) && Number(wall.ds) === LOCKED_DOOR_STATE) {
-		await wall.update({ ds: OPEN_DOOR_STATE });
+	if (
+		['successful-thievery', 'successful-athletics'].includes(data.action) &&
+		wall.getFlag(MODULE_ID, WALL_FLAG) && Number(wall.ds) === LOCKED_DOOR_STATE
+	) {
+		await wall.update({ ds: data.action === 'successful-athletics' ? OPEN_DOOR_STATE : CLOSED_DOOR_STATE });
 	}
 }
 
@@ -102,7 +106,7 @@ async function rollDoorCheck(message, skill) {
 		ui.notifications.info('That door is no longer locked.');
 		return;
 	}
-	sendDoorLockRequest(scene.id, wall.id, 'successful-check');
+	sendDoorLockRequest(scene.id, wall.id, skill === 'athletics' ? 'successful-athletics' : 'successful-thievery');
 }
 
 Hooks.once('ready', () => game.socket?.on?.(SOCKET_EVENT, handleDoorLockRequest));
