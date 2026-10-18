@@ -581,6 +581,7 @@ function appendRows(root, container, keys) {
 Hooks.on('renderSettingsConfig', (_app, html) => {
 	const root = html instanceof HTMLElement ? html : html[0];
 	if (!root) return;
+	const isPf2Family = ['pf2e', 'sf2e'].includes(game.system?.id);
 	const existingModuleContainer = root.querySelector('.dmc-settings-section .dmc-settings-section-body')?.closest('.dmc-settings-section')?.parentElement;
 
 	root.querySelectorAll('.dmc-settings-section').forEach((section) => {
@@ -593,39 +594,53 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		if (!header.closest('.dmc-settings-section')) header.remove();
 	});
 	root.querySelectorAll('.cmm-transfer-row').forEach((row) => row.remove());
+	if (!isPf2Family) {
+		for (const key of [
+			'traitMusicMenu', 'enableCreatureAmbience', 'enableCultSystem', 'enableFullRest',
+			'enablePartyStashMerchant', 'enableAtWillRecharge', 'enableUntypedRollRetyping',
+			'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves',
+			'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug', 'fireGlows',
+			'useDetectedTokenImage', 'detectedTokenImageMenu', 'randomlyLockedDoors',
+			'randomlyLockedDoorsChance', 'enableVillainPoints', 'villainPointHeroPointRate',
+			'villainPointDreadSoundMenu',
+		]) findSettingsRow(root, key)?.remove();
+	}
 
 	const sectionConfigs = [
 		{
 			title: 'Music',
 			description: 'Combat playlists, scene matching, and victory audio behavior.',
-			keys: ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'enableCreatureAmbience', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
+			keys: isPf2Family
+				? ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'enableCreatureAmbience', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu']
+				: ['combatMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
 			gmOnly: true,
 			extraRow: game.user.isGM ? buildTransferRow() : null,
 		},
-		{
+		...(isPf2Family ? [{
 			title: 'PF2e / SF2e Tools',
 			description: 'Optional PF2e and SF2e utilities for party management and chat workflows.',
 			keys: ['enableCultSystem', 'enableFullRest', 'enablePartyStashMerchant', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 			gmOnlyKeys: ['autoApplyDamage', 'autoRollToolbeltSaves'],
-		},
+		}] : []),
 		{
 			title: 'Vision',
 			description: 'Optional token vision enhancements.',
-			keys: ['enhancedVision', 'enhancedVisionDebug', 'fireGlows', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
+			keys: isPf2Family
+				? ['enhancedVision', 'enhancedVisionDebug', 'fireGlows', 'useDetectedTokenImage', 'detectedTokenImageMenu']
+				: ['enhancedVision', 'enhancedVisionDebug'],
 			gmOnlyKeys: ['fireGlows', 'useDetectedTokenImage', 'detectedTokenImageMenu'],
 		},
-		{
+		...(isPf2Family ? [{
 			title: 'Doors',
 			description: 'Optional random locks for doors opened by players.',
 			keys: ['randomlyLockedDoors', 'randomlyLockedDoorsChance'],
 			gmOnly: true,
-		},
-		{
+		}, {
 			title: 'Villain Points',
 			description: 'Hero-point conversion, rerolls, and synchronized dread cues for the table.',
 			keys: ['enableVillainPoints', 'villainPointHeroPointRate', 'villainPointDreadSoundMenu'],
 			gmOnly: true,
-		},
+		}] : []),
 		{
 			title: 'Dramatic Health Display',
 			description: 'Overlay position, visibility rules, and per-user sound feedback for HP changes.',

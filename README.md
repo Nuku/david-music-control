@@ -4,7 +4,7 @@
 ![GitHub Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/latest/pf2-david-music-control.zip)
 ![GitHub All Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/pf2-david-music-control.zip?label=downloads)
 
-PF2 Director is a Foundry VTT module for PF2e and SF2e with encounter music control, scene presentation, party utilities, dramatic overlays, subsystem export tools, and cinematic end credits.
+PF2 Director is a Foundry VTT module for PF2e, SF2e, and DnD5E with encounter music control, scene presentation, party utilities, dramatic overlays, subsystem export tools, and cinematic end credits.
 
 ## Installation
 
@@ -16,10 +16,12 @@ Compatibility:
 
 - Minimum Foundry version: `13`
 - Verified Foundry version: `14`
-- Supported game systems: **Pathfinder Second Edition (`pf2e`)** and **Starfinder Second Edition (`sf2e`)**
+- Supported game systems: **Pathfinder Second Edition (`pf2e`)**, **Starfinder Second Edition (`sf2e`)**, and **Dungeons & Dragons Fifth Edition (`dnd5e`)**
 - Current release: **2.5.112**
 
 SF2e uses the shared PF2e rules API for chat, rerolls, and party tools. Multi-target Taunt uses the active system's effect when available and a bundled effect otherwise, retaining the taunting creature as its origin. Roll retyping uses the active system's configured damage types, including homebrew types.
+
+DnD5E worlds can use combat and scene music, victory playback and fireworks, token vision enhancements, dramatic health displays, end credits, and performance diagnostics. PF2e/SF2e party, chat, subsystem, creature sound, fire-light, and skill-check tools are system-specific and are only shown in those systems.
 
 Optional integrations still require compatible versions of their dependencies. PF2e Subsystems declares support for both systems. The inspected PF2e Creature Sounds and Item Piles: PF2e releases declare only PF2e support; their ambience and merchant integrations are available only when those dependencies can be activated and used with your system.
 

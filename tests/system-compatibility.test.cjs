@@ -16,9 +16,9 @@ const bundled = JSON.parse(fs.readFileSync(path.join(root, 'module/data/taunt-ef
 const actor = { uuid: 'Actor.guardian' };
 const message = { actor, speaker: {}, item: { uuid: 'Actor.guardian.Item.taunt' }, flags: {} };
 
-test('manifest declares both systems', () => {
+test('manifest declares the supported systems', () => {
 	const manifest = JSON.parse(fs.readFileSync(path.join(root, 'module.json'), 'utf8'));
-	assert.deepEqual(manifest.relationships.systems.map((system) => system.id), ['pf2e', 'sf2e']);
+	assert.deepEqual(manifest.relationships.systems.map((system) => system.id), ['pf2e', 'sf2e', 'dnd5e']);
 });
 
 for (const systemId of ['pf2e', 'sf2e']) {

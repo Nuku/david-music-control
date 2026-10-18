@@ -1,8 +1,8 @@
 {
     "id": "pf2-david-music-control",
     "title": "PF2 Director",
-    "description": "Direct combat music, scene presentation, PF2e and SF2e party tools, persistent fire lighting, and cinematic end credits.",
-    "version": "2.5.112",
+    "description": "Direct combat music, scene presentation, system-specific party tools, persistent fire lighting, and cinematic end credits.",
+    "version": "2.5.113",
     "authors": [
         {
             "name": "Mad Wizard",
@@ -20,7 +20,8 @@
     "relationships": {
         "systems": [
             { "id": "pf2e", "type": "system" },
-            { "id": "sf2e", "type": "system" }
+            { "id": "sf2e", "type": "system" },
+            { "id": "dnd5e", "type": "system" }
         ],
         "recommends": [
             {
@@ -53,5 +54,5 @@
     },
     "url": "https://github.com/Nuku/david-music-control/",
     "manifest": "https://raw.githubusercontent.com/Nuku/david-music-control/main/module.json",
-    "download": "https://github.com/Nuku/david-music-control/releases/download/v2.5.112/pf2-david-music-control.zip"
+    "download": "https://github.com/Nuku/david-music-control/releases/download/v2.5.113/pf2-david-music-control.zip"
 }

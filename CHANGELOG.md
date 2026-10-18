@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.113] - 2026-10-17
+
+### Added
+- **System compatibility**: Added DnD5E support for system-agnostic music, vision, dramatic health display, end credits, and diagnostics features. System-specific settings are only shown for PF2e and SF2e.
+
 ## [2.5.112] - 2026-10-14
 
 ### Changed
