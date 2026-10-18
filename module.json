@@ -54,5 +54,5 @@
     },
     "url": "https://github.com/Nuku/david-music-control/",
     "manifest": "https://raw.githubusercontent.com/Nuku/david-music-control/main/module.json",
-    "download": "https://github.com/Nuku/david-music-control/releases/download/v2.5.113/pf2-david-music-control.zip"
+    "download": "https://raw.githubusercontent.com/Nuku/david-music-control/main/pf2-david-music-control.zip"
 }

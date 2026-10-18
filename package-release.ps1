@@ -4,7 +4,6 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $releaseRoot = $PSScriptRoot
 $manifest = Get-Content -LiteralPath (Join-Path $releaseRoot 'module.json') -Raw | ConvertFrom-Json
-$archivePath = Join-Path $releaseRoot "$($manifest.id)-v$($manifest.version).zip"
 $canonicalPath = Join-Path $releaseRoot "$($manifest.id).zip"
 $releaseFiles = @('module.json', 'main.js', 'main.css', 'README.md', 'CHANGELOG.md')
 foreach ($directory in @('module', 'styles', 'templates')) {
@@ -12,7 +11,7 @@ foreach ($directory in @('module', 'styles', 'templates')) {
         ForEach-Object { [IO.Path]::GetRelativePath($releaseRoot, $_.FullName) }
 }
 
-$stream = [IO.File]::Open($archivePath, [IO.FileMode]::Create)
+$stream = [IO.File]::Open($canonicalPath, [IO.FileMode]::Create)
 $archive = [IO.Compression.ZipArchive]::new($stream, [IO.Compression.ZipArchiveMode]::Create)
 try {
     foreach ($file in $releaseFiles) {
@@ -27,7 +26,7 @@ try {
     $stream.Dispose()
 }
 
-$archive = [IO.Compression.ZipFile]::OpenRead($archivePath)
+$archive = [IO.Compression.ZipFile]::OpenRead($canonicalPath)
 try {
     foreach ($file in $releaseFiles) {
         $entry = $archive.GetEntry($file.Replace('\', '/'))
@@ -49,5 +48,4 @@ try {
 } finally {
     $archive.Dispose()
 }
-Copy-Item -LiteralPath $archivePath -Destination $canonicalPath -Force
-Write-Output "Created $archivePath and replaced $canonicalPath."
+Write-Output "Created $canonicalPath."
