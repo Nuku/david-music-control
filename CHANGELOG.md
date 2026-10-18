@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.114] - 2026-10-18
+
+### Fixed
+- **Module downloads**: Use the stable canonical package URL so Foundry does not request a missing version-specific GitHub release asset.
+
 ## [2.5.113] - 2026-10-17
 
 ### Added
