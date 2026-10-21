@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.115] - 2026-10-21
+
+### Added
+- **Combat tracker**: Add a context menu action to jump to another combatant's turn in PF2e, SF2e, and DnD5E without advancing the round or changing initiative.
+
 ## [2.5.114] - 2026-10-18
 
 ### Fixed
