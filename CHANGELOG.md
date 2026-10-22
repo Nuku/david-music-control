@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.119] - 2026-10-22
+
+### Changed
+- **Random Door Traps**: Shocking runes can be disabled with Thievery, Arcana, or Nature and use the magical trait.
+
 ## [2.5.118] - 2026-10-22
 
 ### Changed

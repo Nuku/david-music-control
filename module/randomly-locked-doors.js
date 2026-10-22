@@ -24,7 +24,7 @@ const DOOR_TRAPS = [
 	{ name: 'Swinging Blade Trap', delivery: 'attack', damageType: 'slashing', attackName: 'Swinging Blade', trigger: 'A creature opens the door.', effect: 'A concealed blade swings at the creature that opened the door.' },
 	{ name: 'Flame Jet Trap', delivery: 'reflex', damageType: 'fire', trigger: 'A creature opens the door.', effect: 'A jet of flame erupts beside the door.' },
 	{ name: 'Acid Sprayer Trap', delivery: 'reflex', damageType: 'acid', trigger: 'A creature opens the door.', effect: 'A nozzle sprays burning acid at the creature that opened the door.' },
-	{ name: 'Shocking Rune Trap', delivery: 'reflex', damageType: 'electricity', trigger: 'A creature opens the door.', effect: 'A hidden rune discharges a crackling bolt of electricity.' },
+	{ name: 'Shocking Rune Trap', delivery: 'reflex', damageType: 'electricity', disableSkills: ['thievery', 'arcana', 'nature'], magical: true, trigger: 'A creature opens the door.', effect: 'A hidden rune discharges a crackling bolt of electricity.' },
 	{ name: 'Crushing Lintel Trap', delivery: 'reflex', damageType: 'bludgeoning', trigger: 'A creature opens the door.', effect: 'A weighted stone lintel drops onto the creature that opened the door.' },
 	{ name: 'Frost Vent Trap', delivery: 'reflex', damageType: 'cold', trigger: 'A creature opens the door.', effect: 'A freezing blast pours from a concealed vent.' },
 	{ name: 'Poison Needle Trap', delivery: 'attack', damageType: 'piercing', attackName: 'Poison Needle', trigger: 'A creature opens the door.', effect: 'A poisoned needle snaps out at the creature that opened the door.' },
@@ -151,6 +151,15 @@ function createDoorTrapAction(trap, level, damage, dc, attackBonus) {
 	};
 }
 
+function createDoorTrapDisableDescription(trap, dc) {
+	const skills = trap.disableSkills ?? ['thievery'];
+	const checks = skills.map((skill) =>
+		`@Check[${skill}|dc:${dc}|name:Disable Door Trap|traits:action:disable-a-device]`
+	);
+	const choices = checks.length > 1 ? checks.join(', ') : checks[0];
+	return `<p>${choices} to disable the mechanism.</p>`;
+}
+
 async function getRandomHazardBaseActor() {
 	let actor = game.actors.contents.find((candidate) => candidate.getFlag(MODULE_ID, RANDOM_HAZARD_FLAG));
 	if (actor) return actor;
@@ -216,7 +225,7 @@ async function createDoorTrap(scene, walls) {
 			},
 			details: {
 				description: `<p>A concealed ${trap.name.toLowerCase()} is rigged between these connected doors.</p>`,
-				disable: `<p>@Check[thievery|dc:${disableDC}|name:Disable Door Trap|traits:action:disable-a-device] to disable the mechanism.</p>`,
+				disable: createDoorTrapDisableDescription(trap, disableDC),
 				isComplex: false,
 				level: { value: level },
 				reset: '<p>The trap resets after it is manually rearmed.</p>',
@@ -227,7 +236,7 @@ async function createDoorTrap(scene, walls) {
 				reflex: { saveDetail: '', value: HAZARD_HIGH_SAVE[index] },
 				will: { saveDetail: '', value: HAZARD_HIGH_SAVE[index] },
 			},
-			traits: { rarity: 'common', size: { value: 'med' }, value: ['mechanical', 'trap'] },
+			traits: { rarity: 'common', size: { value: 'med' }, value: trap.magical ? ['magical', 'trap'] : ['mechanical', 'trap'] },
 		};
 
 	const gridSize = Number(scene.grid.size) || 100;

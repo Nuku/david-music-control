@@ -17,7 +17,7 @@ Compatibility:
 - Minimum Foundry version: `13`
 - Verified Foundry version: `14`
 - Supported game systems: **Pathfinder Second Edition (`pf2e`)**, **Starfinder Second Edition (`sf2e`)**, and **Dungeons & Dragons Fifth Edition (`dnd5e`)**
-- Current release: **2.5.118**
+- Current release: **2.5.119**
 
 SF2e uses the shared PF2e rules API for chat, rerolls, and party tools. Multi-target Taunt uses the active system's effect when available and a bundled effect otherwise, retaining the taunting creature as its origin. Roll retyping uses the active system's configured damage types, including homebrew types.
 
