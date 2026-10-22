@@ -103,7 +103,10 @@ async function handleDoorLockRequest(data) {
 			[`flags.${MODULE_ID}.${TRAP_TRIGGERED_FLAG}`]: false,
 		})));
 		if (locked) makeDoorLockMessage(wall);
-		else if (trapped && trap) await notifyDoorTrapTriggered(wall);
+		if (trapped && trap) {
+			await notifySearchingParty(scene, trap);
+			if (!locked) await notifyDoorTrapTriggered(wall);
+		}
 		return;
 	}
 
@@ -113,6 +116,46 @@ async function handleDoorLockRequest(data) {
 	) {
 		await wall.update({ ds: data.action === 'successful-athletics' ? OPEN_DOOR_STATE : CLOSED_DOOR_STATE });
 		if (data.action === 'successful-athletics') await notifyDoorTrapTriggered(wall);
+	}
+}
+
+async function notifySearchingParty(scene, trap) {
+	const partyActors = game.actors?.party?.members?.contents ?? game.actors?.party?.members ?? [];
+	const characters = Array.from(partyActors).filter((actor) => actor?.type === 'character');
+	const searchers = (characters.length ? characters : game.actors?.contents?.filter((actor) => actor.type === 'character' && actor.hasPlayerOwner) ?? [])
+		.filter((actor) => {
+			const activityId = actor.system?.exploration?.[0];
+			return activityId && actor.items.get(activityId)?.slug === 'search';
+		});
+	const stealthDC = trap.stealthDC;
+	if (!Number.isFinite(stealthDC)) return;
+
+	for (const actor of searchers) {
+		const result = await game.pf2e.Check.roll(
+			new game.pf2e.CheckModifier('Seek (Exploration Search)', actor.perception, []),
+			{
+				actor,
+				type: 'perception-check',
+				traits: ['secret', 'concentrate'],
+				rollMode: CONST.DICE_ROLL_MODES.PRIVATE,
+				skipDialog: true,
+				options: new Set([...actor.getRollOptions(), 'action:seek', 'concentrate', 'secret']),
+				domains: ['all', 'check', 'perception', 'perception-check', 'wis-based'],
+				dc: { value: stealthDC, slug: 'trap-stealth' },
+			},
+		);
+		const degree = Number(result?.degreeOfSuccess ?? result?.options?.degreeOfSuccess);
+		if (degree < 2) continue;
+
+		const recipients = game.users.contents
+			.filter((user) => !user.isGM && user.active && actor.testUserPermission(user, 'OWNER'))
+			.map((user) => user.id);
+		if (!recipients.length) continue;
+		await ChatMessage.create({
+			speaker: ChatMessage.getSpeaker({ actor }),
+			content: '<p>You spot a trap ahead.</p>',
+			whisper: recipients,
+		});
 	}
 }
 
@@ -216,7 +259,7 @@ async function createDoorTrap(scene, walls) {
 	const existingActorId = doors.map((door) => door.getFlag(MODULE_ID, TRAP_ACTOR_FLAG)).find((id) => id && game.actors.get(id));
 	if (existingActorId) {
 		const tokenId = doors.map((door) => door.getFlag(MODULE_ID, 'randomDoorTrapTokenId')).find(Boolean);
-		return { actorId: existingActorId, tokenId };
+		return { actorId: existingActorId, tokenId, stealthDC: Number(game.actors.get(existingActorId).system?.attributes?.stealth?.dc) };
 	}
 
 	const level = getDoorTrapLevel();
@@ -307,7 +350,7 @@ async function createDoorTrap(scene, walls) {
 		flags: { [MODULE_ID]: { randomDoorTrap: { sceneId: scene.id, wallIds: doors.map((door) => door.id) } } },
 	});
 	await placedToken.actor.createEmbeddedDocuments('Item', items);
-	return { actorId: actor.id, tokenId: placedToken?.id ?? null };
+	return { actorId: actor.id, tokenId: placedToken?.id ?? null, stealthDC };
 }
 
 async function notifyDoorTrapTriggered(wall) {
