@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.121] - 2026-10-22
+
+### Added
+- **Random Door Traps**: Added a poison gas trap that exposes all creatures in a 20-foot emanation to a level-appropriate inhaled poison without direct damage.
+
 ## [2.5.120] - 2026-10-22
 
 ### Changed

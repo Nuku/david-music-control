@@ -28,6 +28,7 @@ const DOOR_TRAPS = [
 	{ name: 'Crushing Lintel Trap', delivery: 'reflex', damageType: 'bludgeoning', trigger: 'A creature opens the door.', effect: 'A weighted stone lintel drops onto the creature that opened the door.' },
 	{ name: 'Frost Vent Trap', delivery: 'reflex', damageType: 'cold', trigger: 'A creature opens the door.', effect: 'A freezing blast pours from a concealed vent.' },
 	{ name: 'Poison Needle Trap', delivery: 'attack', damageType: 'piercing', attackName: 'Poison Needle', trigger: 'A creature opens the door.', effect: 'A poisoned needle snaps out at the creature that opened the door.' },
+	{ name: 'Poison Gas Trap', delivery: 'poison-cloud', poisonExposure: 'inhaled', trigger: 'A creature opens the door.', effect: 'The trap releases an inhaled poison cloud in a 20-foot emanation from the door.' },
 ];
 
 function isEnabled(scene = canvas?.scene) {
@@ -139,9 +140,12 @@ function createDoorTrapAction(trap, level, damage, dc, attackBonus, poison) {
 	const poisonEffect = poison
 		? ` If the Strike hits and deals piercing damage, the target is exposed to @UUID[${poison.uuid}]{${poison.name}} (level ${poison.system.level.value}); immediately administer that injury poison and resolve its save and stages from the embedded poison item.`
 		: '';
+	const poisonSaveDC = poison ? getPoisonSaveDC(poison, dc) : dc;
 	const effect = trap.delivery === 'attack'
 		? `The trap makes a ${trap.attackName} Strike (+${attackBonus}) against the triggering creature. On a hit, it deals @Damage[${damage}[${trap.damageType}]] damage.${poisonEffect}`
-		: `${trap.effect} The triggering creature attempts a @Check[reflex|dc:${dc}|basic] save, taking @Damage[${damage}[${trap.damageType}]] damage.`;
+		: trap.delivery === 'poison-cloud'
+			? `${trap.effect} Each creature in the area is exposed to @UUID[${poison?.uuid ?? ''}]{${poison?.name ?? 'the inhaled poison'}} (level ${poison?.system?.level?.value ?? level}) and attempts a @Check[fortitude|dc:${poisonSaveDC}]. Resolve the poison's stages from the embedded poison item. The cloud deals no direct damage.`
+			: `${trap.effect} The triggering creature attempts a @Check[reflex|dc:${dc}|basic] save, taking @Damage[${damage}[${trap.damageType}]] damage.`;
 	return {
 		name: trap.name,
 		type: 'action',
@@ -154,13 +158,19 @@ function createDoorTrapAction(trap, level, damage, dc, attackBonus, poison) {
 	};
 }
 
-async function findAtLevelInjuryPoison(level) {
+function getPoisonSaveDC(poison, fallback) {
+	const description = poison.system?.description?.value ?? '';
+	const match = description.match(/DC\s*(\d+)\s*Fortitude/i);
+	return match ? Number(match[1]) : fallback;
+}
+
+async function findAtLevelPoison(level, exposure) {
 	const pack = game.packs.get('pf2e.equipment-srd');
 	if (!pack) return null;
-	const index = await pack.getIndex({ fields: ['system.level.value', 'system.category.value', 'system.traits.value'] });
+	const index = await pack.getIndex({ fields: ['system.level.value', 'system.traits.value'] });
 	const poisons = index.contents.filter((entry) => {
 		const traits = entry.system?.traits?.value ?? [];
-		return entry.type === 'consumable' && (entry.system?.category?.value === 'poison' || traits.includes('injury'));
+		return entry.type === 'consumable' && traits.includes(exposure);
 	});
 	if (!poisons.length) return null;
 	const atOrBelow = poisons.filter((entry) => Number(entry.system?.level?.value) <= level);
@@ -218,7 +228,7 @@ async function createDoorTrap(scene, walls) {
 	const stealthDC = [18, 19, 20, 21, 23, 25, 26, 28, 30, 31, 33, 35, 36, 38, 40, 41, 43, 45, 46, 48, 50, 51, 53, 55, 56, 58][index];
 	const disableDC = [15, 16, 17, 18, 20, 22, 23, 25, 27, 28, 30, 32, 33, 35, 37, 38, 40, 42, 43, 45, 47, 48, 50, 52, 53, 55][index];
 	const name = `${trap.name} (Level ${level})`;
-	const poison = trap.name === 'Poison Needle Trap' ? await findAtLevelInjuryPoison(level) : null;
+	const poison = trap.poisonExposure ? await findAtLevelPoison(level, trap.poisonExposure) : null;
 	const items = [createDoorTrapAction(trap, level, damage, dc, attackBonus, poison)];
 	if (poison) {
 		const poisonSource = poison.toObject();
