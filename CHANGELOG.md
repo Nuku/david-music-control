@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.122] - 2026-10-22
+
+### Added
+- **Random Door Traps**: Searchers can silently spot newly determined traps; GMs can set a door's lock and trap state from the wall context menu or configuration, and optionally apply those states to touching doors.
+
 ## [2.5.121] - 2026-10-22
 
 ### Added
