@@ -64,7 +64,8 @@ async function handleDoorLockRequest(data) {
 	const requester = game.users.get(data.userId);
 	const scene = game.scenes.get(data.sceneId);
 	const wall = scene?.walls.get(data.wallId);
-	if (!requester?.active || requester.isGM || !wall || Number(wall.door) < 1) return;
+	if (!wall || Number(wall.door) < 1) return;
+	if (!requester?.active || requester.isGM) return;
 
 	if (data.action === 'attempt-open') {
 		if (!isEnabled(scene)) return;
@@ -118,6 +119,96 @@ async function handleDoorLockRequest(data) {
 		if (data.action === 'successful-athletics') await notifyDoorTrapTriggered(wall);
 	}
 }
+
+async function applyGMSetDoorState(scene, wall, data) {
+	const doors = data.includeConnected ? getDirectlyConnectedDoors(scene, wall) : [wall];
+	let trap = null;
+	if (data.trapState === 'trapped') {
+		try {
+			trap = await createDoorTrap(scene, doors);
+		} catch (error) {
+			console.error(`[${MODULE_ID}] Failed to create a door trap actor:`, error);
+			ui.notifications.error('Could not create the door trap. Door settings were not changed.');
+			return;
+		}
+		if (!trap) {
+			ui.notifications.error('Could not create the door trap. Door settings were not changed.');
+			return;
+		}
+	}
+
+	const tokenIdsToDelete = data.trapState === 'clear'
+		? [...new Set(doors.map((door) => door.getFlag(MODULE_ID, 'randomDoorTrapTokenId')).filter(Boolean))]
+		: [];
+	const lockState = data.lockState;
+	const updates = doors.map((door) => {
+		const update = { _id: door.id, [`flags.${MODULE_ID}.${WALL_FLAG}`]: true };
+		if (lockState === 'locked') update.ds = LOCKED_DOOR_STATE;
+		if (lockState === 'unlocked') update.ds = CLOSED_DOOR_STATE;
+		if (data.trapState === 'trapped') {
+			update[`flags.${MODULE_ID}.${TRAP_FLAG}`] = true;
+			update[`flags.${MODULE_ID}.${TRAP_ACTOR_FLAG}`] = trap.actorId;
+			update[`flags.${MODULE_ID}.randomDoorTrapTokenId`] = trap.tokenId;
+			update[`flags.${MODULE_ID}.${TRAP_TRIGGERED_FLAG}`] = false;
+		} else if (data.trapState === 'clear') {
+			update[`flags.${MODULE_ID}.${TRAP_FLAG}`] = false;
+			update[`flags.${MODULE_ID}.${TRAP_ACTOR_FLAG}`] = null;
+			update[`flags.${MODULE_ID}.randomDoorTrapTokenId`] = null;
+			update[`flags.${MODULE_ID}.${TRAP_TRIGGERED_FLAG}`] = false;
+		}
+		return update;
+	});
+	await scene.updateEmbeddedDocuments('Wall', updates);
+
+	if (tokenIdsToDelete.length) await scene.deleteEmbeddedDocuments('Token', tokenIdsToDelete);
+	if (lockState === 'locked') makeDoorLockMessage(wall);
+	ui.notifications.info('Door settings updated.');
+}
+
+function openDoorSettingsDialog(wall) {
+	if (!wall || Number(wall.door) < 1) return;
+	new Dialog({
+		title: `Set Door State: ${wall.document?.label ?? wall.document?.id ?? wall.id}`,
+		content: `<form>
+			<div class="form-group"><label>Lock</label><select name="lockState"><option value="unchanged">Leave unchanged</option><option value="locked">Locked</option><option value="unlocked">Unlocked</option></select></div>
+			<div class="form-group"><label>Trap</label><select name="trapState"><option value="unchanged">Leave unchanged</option><option value="trapped">Trapped (random hazard)</option><option value="clear">No trap</option></select></div>
+			<div class="form-group"><label>Apply to touching doors</label><input type="checkbox" name="includeConnected" checked></div>
+			<p class="hint">Touching doors will be marked as checked. Locked doors use the normal Thievery or Athletics prompt.</p>
+		</form>`,
+		buttons: {
+			apply: {
+				label: 'Apply',
+				callback: (html) => {
+					const form = html[0]?.querySelector('form');
+					if (!form) return;
+					const values = new FormData(form);
+					void applyGMSetDoorState(wall.document.parent, wall.document, {
+						lockState: values.get('lockState'),
+						trapState: values.get('trapState'),
+						includeConnected: form.elements.includeConnected.checked,
+					});
+				},
+			},
+			cancel: { label: 'Cancel' },
+		},
+	}).render(true);
+}
+
+Hooks.on('getWallPlaceableContextOptions', (_application, menuItems) => {
+	if (!game.user.isGM || !game.settings.get(MODULE_ID, 'randomlyLockedDoors')) return;
+	menuItems.push({
+		name: 'Set Door Lock / Trap…',
+		icon: '<i class="fas fa-lock"></i>',
+		condition: function (...args) {
+			const placeable = args.find((arg) => arg?.document?.parent?.walls) ?? this;
+			return Number(placeable?.document?.door) >= 1;
+		},
+		callback: function (...args) {
+			const placeable = args.find((arg) => arg?.document?.parent?.walls) ?? this;
+			openDoorSettingsDialog(placeable);
+		},
+	});
+});
 
 async function notifySearchingParty(scene, trap) {
 	const partyActors = game.actors?.party?.members?.contents ?? game.actors?.party?.members ?? [];
