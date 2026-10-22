@@ -166,9 +166,10 @@ async function applyGMSetDoorState(scene, wall, data) {
 }
 
 function openDoorSettingsDialog(wall) {
-	if (!wall || Number(wall.door) < 1) return;
+	const wallDocument = wall?.document ?? wall;
+	if (!wallDocument || Number(wallDocument.door) < 1) return;
 	new Dialog({
-		title: `Set Door State: ${wall.document?.label ?? wall.document?.id ?? wall.id}`,
+		title: `Set Door State: ${wallDocument.label ?? wallDocument.id}`,
 		content: `<form>
 			<div class="form-group"><label>Lock</label><select name="lockState"><option value="unchanged">Leave unchanged</option><option value="locked">Locked</option><option value="unlocked">Unlocked</option></select></div>
 			<div class="form-group"><label>Trap</label><select name="trapState"><option value="unchanged">Leave unchanged</option><option value="trapped">Trapped (random hazard)</option><option value="clear">No trap</option></select></div>
@@ -182,7 +183,7 @@ function openDoorSettingsDialog(wall) {
 					const form = html[0]?.querySelector('form');
 					if (!form) return;
 					const values = new FormData(form);
-					void applyGMSetDoorState(wall.document.parent, wall.document, {
+					void applyGMSetDoorState(wallDocument.parent, wallDocument, {
 						lockState: values.get('lockState'),
 						trapState: values.get('trapState'),
 						includeConnected: form.elements.includeConnected.checked,
@@ -208,6 +209,23 @@ Hooks.on('getWallPlaceableContextOptions', (_application, menuItems) => {
 			openDoorSettingsDialog(placeable);
 		},
 	});
+});
+
+Hooks.on('renderWallConfig', (app, html) => {
+	const root = html instanceof HTMLElement ? html : html?.[0];
+	const wall = app?.document ?? app?.object;
+	if (!root || !game.user.isGM || !game.settings.get(MODULE_ID, 'randomlyLockedDoors') || Number(wall?.door) < 1) return;
+	if (root.querySelector('[data-action="dmc-set-door-state"]')) return;
+	const button = document.createElement('button');
+	button.type = 'button';
+	button.dataset.action = 'dmc-set-door-state';
+	button.innerHTML = '<i class="fas fa-lock"></i> Set Door Lock / Trap…';
+	button.addEventListener('click', (event) => {
+		event.preventDefault();
+		openDoorSettingsDialog(wall);
+	});
+	const footer = root.querySelector('.form-footer');
+	if (footer) footer.before(button);
 });
 
 async function notifySearchingParty(scene, trap) {
