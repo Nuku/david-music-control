@@ -135,9 +135,12 @@ function getDoorTrapLevel() {
 	return Math.clamp(partyLevel + Math.floor(Math.random() * 3) - 1, -1, 24);
 }
 
-function createDoorTrapAction(trap, level, damage, dc, attackBonus) {
+function createDoorTrapAction(trap, level, damage, dc, attackBonus, poison) {
+	const poisonEffect = poison
+		? ` If the Strike hits and deals piercing damage, the target is exposed to @UUID[${poison.uuid}]{${poison.name}} (level ${poison.system.level.value}); immediately administer that injury poison and resolve its save and stages from the embedded poison item.`
+		: '';
 	const effect = trap.delivery === 'attack'
-		? `The trap makes a ${trap.attackName} Strike (+${attackBonus}) against the triggering creature. On a hit, it deals @Damage[${damage}[${trap.damageType}]] damage.`
+		? `The trap makes a ${trap.attackName} Strike (+${attackBonus}) against the triggering creature. On a hit, it deals @Damage[${damage}[${trap.damageType}]] damage.${poisonEffect}`
 		: `${trap.effect} The triggering creature attempts a @Check[reflex|dc:${dc}|basic] save, taking @Damage[${damage}[${trap.damageType}]] damage.`;
 	return {
 		name: trap.name,
@@ -149,6 +152,23 @@ function createDoorTrapAction(trap, level, damage, dc, attackBonus) {
 			rules: [], slug: null, traits: { rarity: 'common', value: [] },
 		},
 	};
+}
+
+async function findAtLevelInjuryPoison(level) {
+	const pack = game.packs.get('pf2e.equipment-srd');
+	if (!pack) return null;
+	const index = await pack.getIndex({ fields: ['system.level.value', 'system.category.value', 'system.traits.value'] });
+	const poisons = index.contents.filter((entry) => {
+		const traits = entry.system?.traits?.value ?? [];
+		return entry.type === 'consumable' && (entry.system?.category?.value === 'poison' || traits.includes('injury'));
+	});
+	if (!poisons.length) return null;
+	const atOrBelow = poisons.filter((entry) => Number(entry.system?.level?.value) <= level);
+	const candidates = atOrBelow.length
+		? atOrBelow.filter((entry) => Number(entry.system?.level?.value) === Math.max(...atOrBelow.map((item) => Number(item.system.level.value))))
+		: poisons.filter((entry) => Number(entry.system?.level?.value) === Math.min(...poisons.map((item) => Number(item.system.level.value))));
+	const selected = candidates[Math.floor(Math.random() * candidates.length)];
+	return selected ? pack.getDocument(selected._id) : null;
 }
 
 function createDoorTrapDisableDescription(trap, dc) {
@@ -192,13 +212,19 @@ async function createDoorTrap(scene, walls) {
 	const level = getDoorTrapLevel();
 	const index = level + 1;
 	const trap = DOOR_TRAPS[Math.floor(Math.random() * DOOR_TRAPS.length)];
-	const damage = HAZARD_DAMAGE[index];
+	const damage = trap.name === 'Poison Needle Trap' ? HAZARD_DAMAGE[Math.max(0, index - 2)] : HAZARD_DAMAGE[index];
 	const dc = HAZARD_EXTREME_DC[index];
 	const attackBonus = HAZARD_ATTACK_BONUS[index];
 	const stealthDC = [18, 19, 20, 21, 23, 25, 26, 28, 30, 31, 33, 35, 36, 38, 40, 41, 43, 45, 46, 48, 50, 51, 53, 55, 56, 58][index];
 	const disableDC = [15, 16, 17, 18, 20, 22, 23, 25, 27, 28, 30, 32, 33, 35, 37, 38, 40, 42, 43, 45, 47, 48, 50, 52, 53, 55][index];
 	const name = `${trap.name} (Level ${level})`;
-	const items = [createDoorTrapAction(trap, level, damage, dc, attackBonus)];
+	const poison = trap.name === 'Poison Needle Trap' ? await findAtLevelInjuryPoison(level) : null;
+	const items = [createDoorTrapAction(trap, level, damage, dc, attackBonus, poison)];
+	if (poison) {
+		const poisonSource = poison.toObject();
+		delete poisonSource._id;
+		items.push(poisonSource);
+	}
 	if (trap.delivery === 'attack') {
 		items.push({
 			name: trap.attackName,

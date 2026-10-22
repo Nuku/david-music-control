@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.120] - 2026-10-22
+
+### Changed
+- **Random Door Traps**: Poison needles keep their level-based attack bonus, deal piercing damage two hazard levels lower, and randomly use an at-level injury poison from the PF2e compendium.
+
 ## [2.5.119] - 2026-10-22
 
 ### Changed
