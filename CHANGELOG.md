@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.123] - 2026-10-22
+
+### Fixed
+- **Random Door Traps**: Make manual trap placement robust to Foundry dialog render formats and recreate a trap token when its stored token reference is stale.
+
 ## [2.5.122] - 2026-10-22
 
 ### Added

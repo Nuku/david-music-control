@@ -180,13 +180,19 @@ function openDoorSettingsDialog(wall) {
 			apply: {
 				label: 'Apply',
 				callback: (html) => {
-					const form = html[0]?.querySelector('form');
-					if (!form) return;
+					const form = html instanceof HTMLElement ? html.querySelector('form') : html?.[0]?.querySelector('form');
+					if (!form) {
+						ui.notifications.error('Could not read the door settings. Please reopen the dialog and try again.');
+						return;
+					}
 					const values = new FormData(form);
 					void applyGMSetDoorState(wallDocument.parent, wallDocument, {
 						lockState: values.get('lockState'),
 						trapState: values.get('trapState'),
 						includeConnected: form.elements.includeConnected.checked,
+					}).catch((error) => {
+						console.error(`[${MODULE_ID}] Failed to apply GM door settings:`, error);
+						ui.notifications.error('Could not apply the door settings. See the console for details.');
 					});
 				},
 			},
@@ -366,9 +372,10 @@ async function getRandomHazardBaseActor() {
 async function createDoorTrap(scene, walls) {
 	const doors = Array.isArray(walls) ? walls : [walls];
 	const existingActorId = doors.map((door) => door.getFlag(MODULE_ID, TRAP_ACTOR_FLAG)).find((id) => id && game.actors.get(id));
-	if (existingActorId) {
-		const tokenId = doors.map((door) => door.getFlag(MODULE_ID, 'randomDoorTrapTokenId')).find(Boolean);
-		return { actorId: existingActorId, tokenId, stealthDC: Number(game.actors.get(existingActorId).system?.attributes?.stealth?.dc) };
+	const existingTokenId = doors.map((door) => door.getFlag(MODULE_ID, 'randomDoorTrapTokenId'))
+		.find((id) => id && scene.tokens.get(id));
+	if (existingActorId && existingTokenId) {
+		return { actorId: existingActorId, tokenId: existingTokenId, stealthDC: Number(game.actors.get(existingActorId).system?.attributes?.stealth?.dc) };
 	}
 
 	const level = getDoorTrapLevel();
