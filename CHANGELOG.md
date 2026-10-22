@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.5.124] - 2026-10-22
+
+### Fixed
+- **Creature ambience**: Continue with bundled database parsing when legacy extraction encounters newer JavaScript syntax.
+- **Random Door Traps**: Avoid deprecated null-based deletion when clearing a trap's stored actor and token references.
+
 ## [2.5.123] - 2026-10-22
 
 ### Fixed

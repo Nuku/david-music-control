@@ -152,8 +152,8 @@ async function applyGMSetDoorState(scene, wall, data) {
 			update[`flags.${MODULE_ID}.${TRAP_TRIGGERED_FLAG}`] = false;
 		} else if (data.trapState === 'clear') {
 			update[`flags.${MODULE_ID}.${TRAP_FLAG}`] = false;
-			update[`flags.${MODULE_ID}.${TRAP_ACTOR_FLAG}`] = null;
-			update[`flags.${MODULE_ID}.randomDoorTrapTokenId`] = null;
+			update[`flags.${MODULE_ID}.${TRAP_ACTOR_FLAG}`] = '';
+			update[`flags.${MODULE_ID}.randomDoorTrapTokenId`] = '';
 			update[`flags.${MODULE_ID}.${TRAP_TRIGGERED_FLAG}`] = false;
 		}
 		return update;

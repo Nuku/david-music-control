@@ -265,7 +265,11 @@ function extractCreatureSoundDatabase(source) {
 	// Compatibility with pre-v2 bundles.
 	const legacyProgram = extractCreatureSoundDatabaseProgram(source);
 	if (legacyProgram) {
-		return Function(`"use strict"; ${legacyProgram}; return creature_sounds_db;`)();
+		try {
+			return Function(`"use strict"; ${legacyProgram}; return creature_sounds_db;`)();
+		} catch (error) {
+			console.warn(`[${MODULE_ID}] Legacy creature sound database extraction failed; trying bundled object parsing.`, error);
+		}
 	}
 
 	// Vite's current JSON bundling emits the database as a JSON-compatible object
