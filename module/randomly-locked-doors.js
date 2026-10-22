@@ -2,11 +2,33 @@ import { MODULE_ID } from './settings.js';
 
 const SCENE_FLAG = 'disableRandomDoorLocks';
 const WALL_FLAG = 'randomDoorChecked';
+const TRAP_FLAG = 'randomDoorTrapped';
+const TRAP_ACTOR_FLAG = 'randomDoorTrapActorId';
+const TRAP_TRIGGERED_FLAG = 'randomDoorTrapTriggered';
 const LOCKED_DOOR_STATE = 2;
 const CLOSED_DOOR_STATE = 0;
 const OPEN_DOOR_STATE = 1;
 const SOCKET_EVENT = `module.${MODULE_ID}`;
 const SOCKET_TYPE = 'dmc-random-door-request';
+const HAZARD_ICON = 'systems/pf2e/icons/default-icons/hazard.svg';
+const RANDOM_HAZARD_FLAG = 'randomDoorHazardBase';
+const HAZARD_ATTACK_BONUS = [10, 11, 13, 14, 16, 17, 19, 20, 22, 23, 25, 26, 28, 29, 31, 32, 34, 35, 37, 38, 40, 41, 43, 44, 46, 47];
+const HAZARD_DAMAGE = ['2d4+1', '2d6+3', '2d6+5', '2d10+7', '2d10+13', '4d8+10', '4d8+14', '4d8+18', '4d10+18', '4d10+22', '4d10+26', '4d12+26', '4d12+30', '6d10+27', '6d10+31', '6d10+35', '6d12+33', '6d12+35', '6d12+37', '6d12+41', '8d10+40', '8d10+44', '8d10+48', '8d10+52', '8d12+48', '8d12+52'];
+const HAZARD_EXTREME_DC = [19, 19, 20, 22, 23, 25, 26, 27, 29, 30, 32, 33, 34, 36, 37, 39, 40, 41, 43, 44, 46, 47, 48, 50, 51, 52];
+const HAZARD_HIGH_AC = [15, 16, 16, 18, 19, 21, 22, 24, 25, 27, 28, 30, 31, 33, 34, 36, 37, 39, 40, 42, 43, 45, 46, 48, 49, 51];
+const HAZARD_HIGH_SAVE = [8, 9, 10, 11, 12, 14, 15, 17, 18, 19, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 35, 36, 38, 39, 40, 42];
+const HAZARD_HP = [12, 16, 24, 32, 44, 48, 52, 56, 60, 64, 68, 72, 80, 84, 88, 92, 96, 104, 112, 120, 128, 136, 148, 160, 172, 184];
+const HAZARD_HARDNESS = [3, 4, 6, 8, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 26, 28, 30, 32, 34, 37, 40, 45, 48];
+const DOOR_TRAPS = [
+	{ name: 'Spring-Loaded Dart Trap', delivery: 'attack', damageType: 'piercing', attackName: 'Dart', trigger: 'A creature opens the door.', effect: 'The trap fires a dart at the creature that opened the door.' },
+	{ name: 'Swinging Blade Trap', delivery: 'attack', damageType: 'slashing', attackName: 'Swinging Blade', trigger: 'A creature opens the door.', effect: 'A concealed blade swings at the creature that opened the door.' },
+	{ name: 'Flame Jet Trap', delivery: 'reflex', damageType: 'fire', trigger: 'A creature opens the door.', effect: 'A jet of flame erupts beside the door.' },
+	{ name: 'Acid Sprayer Trap', delivery: 'reflex', damageType: 'acid', trigger: 'A creature opens the door.', effect: 'A nozzle sprays burning acid at the creature that opened the door.' },
+	{ name: 'Shocking Rune Trap', delivery: 'reflex', damageType: 'electricity', trigger: 'A creature opens the door.', effect: 'A hidden rune discharges a crackling bolt of electricity.' },
+	{ name: 'Crushing Lintel Trap', delivery: 'reflex', damageType: 'bludgeoning', trigger: 'A creature opens the door.', effect: 'A weighted stone lintel drops onto the creature that opened the door.' },
+	{ name: 'Frost Vent Trap', delivery: 'reflex', damageType: 'cold', trigger: 'A creature opens the door.', effect: 'A freezing blast pours from a concealed vent.' },
+	{ name: 'Poison Needle Trap', delivery: 'attack', damageType: 'piercing', attackName: 'Poison Needle', trigger: 'A creature opens the door.', effect: 'A poisoned needle snaps out at the creature that opened the door.' },
+];
 
 function isEnabled(scene = canvas?.scene) {
 	return !!game.settings.get(MODULE_ID, 'randomlyLockedDoors') && scene?.getFlag?.(MODULE_ID, SCENE_FLAG) !== true;
@@ -24,6 +46,18 @@ function sendDoorLockRequest(sceneId, wallId, action) {
 	game.socket?.emit?.(SOCKET_EVENT, { type: SOCKET_TYPE, sceneId, wallId, action, userId: game.user.id });
 }
 
+function getDirectlyConnectedDoors(scene, wall) {
+	const [x1, y1, x2, y2] = wall.c ?? [];
+	if (![x1, y1, x2, y2].every(Number.isFinite)) return [wall];
+	const endpoints = [[x1, y1], [x2, y2]];
+	return scene.walls.contents.filter((candidate) => {
+		if (Number(candidate.door) < 1) return false;
+		const [cx1, cy1, cx2, cy2] = candidate.c ?? [];
+		if (![cx1, cy1, cx2, cy2].every(Number.isFinite)) return candidate.id === wall.id;
+		return endpoints.some(([x, y]) => (x === cx1 && y === cy1) || (x === cx2 && y === cy2));
+	});
+}
+
 async function handleDoorLockRequest(data) {
 	if (!game.user.isGM || game.users.activeGM?.id !== game.user.id || data?.type !== SOCKET_TYPE) return;
 	const requester = game.users.get(data.userId);
@@ -39,13 +73,36 @@ async function handleDoorLockRequest(data) {
 		}
 		if (Number(wall.ds) === OPEN_DOOR_STATE || wall.getFlag(MODULE_ID, WALL_FLAG)) {
 			if (Number(wall.ds) !== OPEN_DOOR_STATE) await wall.update({ ds: OPEN_DOOR_STATE });
+			await notifyDoorTrapTriggered(wall);
 			return;
 		}
 
-		const chance = Math.clamp(Number(game.settings.get(MODULE_ID, 'randomlyLockedDoorsChance')) || 0, 0, 100);
-		const locked = Math.random() * 100 < chance;
-		await wall.update({ ds: locked ? LOCKED_DOOR_STATE : OPEN_DOOR_STATE, [`flags.${MODULE_ID}.${WALL_FLAG}`]: true });
+		const lockChance = Math.clamp(Number(game.settings.get(MODULE_ID, 'randomlyLockedDoorsChance')) || 0, 0, 100);
+		const trapChance = Math.clamp(Number(game.settings.get(MODULE_ID, 'randomlyTrappedDoorsChance')) || 0, 0, 100);
+		const locked = Math.random() * 100 < lockChance;
+		const trapped = Math.random() * 100 < trapChance;
+		const fate = locked ? LOCKED_DOOR_STATE : OPEN_DOOR_STATE;
+		const connectedDoors = getDirectlyConnectedDoors(scene, wall);
+		let trap = null;
+		if (trapped) {
+			try {
+				trap = await createDoorTrap(scene, connectedDoors);
+			} catch (error) {
+				console.error(`[${MODULE_ID}] Failed to create a door trap actor:`, error);
+			}
+		}
+		await Promise.all(connectedDoors.map((door) => door.update({
+			ds: fate,
+			[`flags.${MODULE_ID}.${WALL_FLAG}`]: true,
+			[`flags.${MODULE_ID}.${TRAP_FLAG}`]: trapped && !!trap,
+			...(trap ? {
+				[`flags.${MODULE_ID}.${TRAP_ACTOR_FLAG}`]: trap.actorId,
+				[`flags.${MODULE_ID}.randomDoorTrapTokenId`]: trap.tokenId,
+			} : {}),
+			[`flags.${MODULE_ID}.${TRAP_TRIGGERED_FLAG}`]: false,
+		})));
 		if (locked) makeDoorLockMessage(wall);
+		else if (trapped && trap) await notifyDoorTrapTriggered(wall);
 		return;
 	}
 
@@ -54,6 +111,7 @@ async function handleDoorLockRequest(data) {
 		wall.getFlag(MODULE_ID, WALL_FLAG) && Number(wall.ds) === LOCKED_DOOR_STATE
 	) {
 		await wall.update({ ds: data.action === 'successful-athletics' ? OPEN_DOOR_STATE : CLOSED_DOOR_STATE });
+		if (data.action === 'successful-athletics') await notifyDoorTrapTriggered(wall);
 	}
 }
 
@@ -65,6 +123,163 @@ function getPartyStandardDC() {
 		.filter(Number.isFinite);
 	if (!levels.length) return 14;
 	return 14 + Math.ceil(levels.reduce((sum, level) => sum + level, 0) / levels.length);
+}
+
+function getDoorTrapLevel() {
+	const partyActors = game.actors?.party?.members?.contents ?? game.actors?.party?.members ?? [];
+	const characters = Array.from(partyActors).filter((actor) => actor?.type === 'character');
+	const levels = (characters.length ? characters : game.actors?.contents?.filter((actor) => actor.type === 'character' && actor.hasPlayerOwner) ?? [])
+		.map((actor) => Number(actor.level ?? actor.system?.details?.level?.value))
+		.filter(Number.isFinite);
+	const partyLevel = levels.length ? Math.floor(levels.reduce((sum, level) => sum + level, 0) / levels.length) : 0;
+	return Math.clamp(partyLevel + Math.floor(Math.random() * 3) - 1, -1, 24);
+}
+
+function createDoorTrapAction(trap, level, damage, dc, attackBonus) {
+	const effect = trap.delivery === 'attack'
+		? `The trap makes a ${trap.attackName} Strike (+${attackBonus}) against the triggering creature. On a hit, it deals @Damage[${damage}[${trap.damageType}]] damage.`
+		: `${trap.effect} The triggering creature attempts a @Check[reflex|dc:${dc}|basic] save, taking @Damage[${damage}[${trap.damageType}]] damage.`;
+	return {
+		name: trap.name,
+		type: 'action',
+		system: {
+			actionType: { value: 'reaction' }, actions: { value: null }, category: null,
+			description: { value: `<p><strong>Trigger</strong> ${trap.trigger}</p><hr /><p><strong>Effect</strong> ${effect}</p>` },
+			publication: { license: 'ORC', remaster: true, title: 'PF2 Director' },
+			rules: [], slug: null, traits: { rarity: 'common', value: [] },
+		},
+	};
+}
+
+async function getRandomHazardBaseActor() {
+	let actor = game.actors.contents.find((candidate) => candidate.getFlag(MODULE_ID, RANDOM_HAZARD_FLAG));
+	if (actor) return actor;
+	actor = game.actors.getName('Random Hazard');
+	if (actor?.type === 'hazard') {
+		await actor.setFlag(MODULE_ID, RANDOM_HAZARD_FLAG, true);
+		return actor;
+	}
+	return Actor.create({
+		name: 'Random Hazard', type: 'hazard', img: HAZARD_ICON,
+		ownership: { default: 0 },
+		flags: { [MODULE_ID]: { [RANDOM_HAZARD_FLAG]: true } },
+		system: {
+			attributes: { ac: { value: 10 }, hardness: 0, hasHealth: true, hp: { value: 1, max: 1, temp: 0, tempmax: 0, details: '' }, stealth: { value: 0, details: '' } },
+			details: { description: '', disable: '', isComplex: false, level: { value: 0 }, reset: '', routine: '' },
+			saves: { fortitude: { saveDetail: '', value: 0 }, reflex: { saveDetail: '', value: 0 }, will: { saveDetail: '', value: 0 } },
+			traits: { rarity: 'common', size: { value: 'med' }, value: ['mechanical', 'trap'] },
+		},
+	}, { renderSheet: false });
+}
+
+async function createDoorTrap(scene, walls) {
+	const doors = Array.isArray(walls) ? walls : [walls];
+	const existingActorId = doors.map((door) => door.getFlag(MODULE_ID, TRAP_ACTOR_FLAG)).find((id) => id && game.actors.get(id));
+	if (existingActorId) {
+		const tokenId = doors.map((door) => door.getFlag(MODULE_ID, 'randomDoorTrapTokenId')).find(Boolean);
+		return { actorId: existingActorId, tokenId };
+	}
+
+	const level = getDoorTrapLevel();
+	const index = level + 1;
+	const trap = DOOR_TRAPS[Math.floor(Math.random() * DOOR_TRAPS.length)];
+	const damage = HAZARD_DAMAGE[index];
+	const dc = HAZARD_EXTREME_DC[index];
+	const attackBonus = HAZARD_ATTACK_BONUS[index];
+	const stealthDC = [18, 19, 20, 21, 23, 25, 26, 28, 30, 31, 33, 35, 36, 38, 40, 41, 43, 45, 46, 48, 50, 51, 53, 55, 56, 58][index];
+	const disableDC = [15, 16, 17, 18, 20, 22, 23, 25, 27, 28, 30, 32, 33, 35, 37, 38, 40, 42, 43, 45, 47, 48, 50, 52, 53, 55][index];
+	const name = `${trap.name} (Level ${level})`;
+	const items = [createDoorTrapAction(trap, level, damage, dc, attackBonus)];
+	if (trap.delivery === 'attack') {
+		items.push({
+			name: trap.attackName,
+			type: 'melee',
+			system: {
+				attack: { value: '' }, attackEffects: { custom: '', value: [] }, bonus: { value: attackBonus },
+				damageRolls: { base: { damage, damageType: trap.damageType } },
+				description: { value: 'This attack has no multiple attack penalty.' },
+				range: null, rules: [], slug: null, subjectToMAP: false,
+				traits: { rarity: 'common', value: [] },
+			},
+		});
+	}
+
+	const actor = await getRandomHazardBaseActor();
+	if (!actor) return null;
+	const trapSystem = {
+			attributes: {
+				ac: { value: HAZARD_HIGH_AC[index] },
+				hardness: HAZARD_HARDNESS[index],
+				hasHealth: true,
+				hp: { value: HAZARD_HP[index], max: HAZARD_HP[index], temp: 0, tempmax: 0, details: 'to destroy the trap' },
+				stealth: { value: stealthDC - 10, details: `<p>DC ${stealthDC} to notice the concealed trap</p>` },
+			},
+			details: {
+				description: `<p>A concealed ${trap.name.toLowerCase()} is rigged between these connected doors.</p>`,
+				disable: `<p>@Check[thievery|dc:${disableDC}|name:Disable Door Trap|traits:action:disable-a-device] to disable the mechanism.</p>`,
+				isComplex: false,
+				level: { value: level },
+				reset: '<p>The trap resets after it is manually rearmed.</p>',
+				routine: '',
+			},
+			saves: {
+				fortitude: { saveDetail: '', value: HAZARD_HIGH_SAVE[index] },
+				reflex: { saveDetail: '', value: HAZARD_HIGH_SAVE[index] },
+				will: { saveDetail: '', value: HAZARD_HIGH_SAVE[index] },
+			},
+			traits: { rarity: 'common', size: { value: 'med' }, value: ['mechanical', 'trap'] },
+		};
+
+	const gridSize = Number(scene.grid.size) || 100;
+	const centers = doors.map((door) => {
+		const [x1, y1, x2, y2] = door.c ?? [];
+		return { x: (x1 + x2) / 2, y: (y1 + y2) / 2, x1, y1, x2, y2 };
+	});
+	let centerX = centers.reduce((sum, point) => sum + point.x, 0) / centers.length;
+	let centerY = centers.reduce((sum, point) => sum + point.y, 0) / centers.length;
+	if (doors.length === 1) {
+		const { x1, y1, x2, y2 } = centers[0];
+		const dx = x2 - x1;
+		const dy = y2 - y1;
+		const length = Math.hypot(dx, dy) || 1;
+		centerX -= dy / length * gridSize * 0.55;
+		centerY += dx / length * gridSize * 0.55;
+	}
+	const token = {
+		name, actorId: actor.id, actorLink: false,
+		x: centerX - gridSize / 2,
+		y: centerY - gridSize / 2,
+		width: 1, height: 1, hidden: true,
+		texture: { src: HAZARD_ICON },
+		flags: { [MODULE_ID]: { randomDoorTrap: { wallIds: doors.map((door) => door.id), actorId: actor.id } } },
+	};
+	const [placedToken] = await scene.createEmbeddedDocuments('Token', [token]);
+	if (!placedToken?.actor) return null;
+	await placedToken.actor.update({
+		name,
+		img: HAZARD_ICON,
+		system: trapSystem,
+		flags: { [MODULE_ID]: { randomDoorTrap: { sceneId: scene.id, wallIds: doors.map((door) => door.id) } } },
+	});
+	await placedToken.actor.createEmbeddedDocuments('Item', items);
+	return { actorId: actor.id, tokenId: placedToken?.id ?? null };
+}
+
+async function notifyDoorTrapTriggered(wall) {
+	if (!wall.getFlag(MODULE_ID, TRAP_FLAG) || wall.getFlag(MODULE_ID, TRAP_TRIGGERED_FLAG)) return;
+	const actorId = wall.getFlag(MODULE_ID, TRAP_ACTOR_FLAG);
+	const actor = game.actors.get(actorId);
+	if (!actor) return;
+	const sharedTrapDoors = wall.parent?.walls?.contents?.filter((door) =>
+		door.getFlag(MODULE_ID, TRAP_ACTOR_FLAG) === actorId
+	) ?? [wall];
+	await Promise.all(sharedTrapDoors.map((door) => door.setFlag(MODULE_ID, TRAP_TRIGGERED_FLAG, true)));
+	const gms = game.users.filter((user) => user.isGM && user.active).map((user) => user.id);
+	void ChatMessage.create({
+		speaker: ChatMessage.getSpeaker(),
+		content: `<p><strong>Door trap triggered:</strong> ${actor.name}. Use the hidden hazard actor beside the door to resolve its reaction.</p>`,
+		whisper: gms,
+	});
 }
 
 export function appendRandomDoorLockSetting(rendered, scene) {

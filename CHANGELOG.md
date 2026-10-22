@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.5.118] - 2026-10-22
+
+### Changed
+- **Random Door Traps**: Store one shared Random Hazard base actor in the Actors directory; each hidden scene token keeps its own trap data.
+
+## [2.5.117] - 2026-10-21
+
+### Added
+- **Random Door Traps**: Independently roll trap status, choose a level-scaled PF2e hazard, and place its hidden token beside the door. Connected doors share the same lock and trap outcomes.
+
+## [2.5.116] - 2026-10-21
+
+### Changed
+- **Randomly Locked Doors**: Doors sharing an endpoint with the first-opened door receive the same locked or open outcome.
+
 ## [2.5.115] - 2026-10-21
 
 ### Added

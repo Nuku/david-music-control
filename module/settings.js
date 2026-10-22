@@ -162,6 +162,15 @@ const settings = {
 		range: { min: 0, max: 100, step: 1 },
 		default: 20,
 	},
+	randomlyTrappedDoorsChance: {
+		name: 'Random Door Trap Chance (%)',
+		hint: 'Independently determine whether a door has a trap the first time a player tries to open it.',
+		scope: 'world',
+		config: true,
+		type: Number,
+		range: { min: 0, max: 100, step: 1 },
+		default: 20,
+	},
 	autoTokenLevel: {
 		name: 'Automatically Update Token Level from Elevation',
 		hint: 'When a token elevation changes, assign it to the scene level whose elevation range contains it. Players must confirm level transitions; declining leaves the token in place.',
@@ -601,7 +610,7 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 			'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves',
 			'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug', 'fireGlows',
 			'useDetectedTokenImage', 'detectedTokenImageMenu', 'randomlyLockedDoors',
-			'randomlyLockedDoorsChance', 'enableVillainPoints', 'villainPointHeroPointRate',
+			'randomlyLockedDoorsChance', 'randomlyTrappedDoorsChance', 'enableVillainPoints', 'villainPointHeroPointRate',
 			'villainPointDreadSoundMenu',
 		]) findSettingsRow(root, key)?.remove();
 	}
@@ -632,8 +641,8 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 		},
 		...(isPf2Family ? [{
 			title: 'Doors',
-			description: 'Optional random locks for doors opened by players.',
-			keys: ['randomlyLockedDoors', 'randomlyLockedDoorsChance'],
+			description: 'Set independent lock and trap chances for doors opened by players.',
+			keys: ['randomlyLockedDoors', 'randomlyLockedDoorsChance', 'randomlyTrappedDoorsChance'],
 			gmOnly: true,
 		}, {
 			title: 'Villain Points',
