@@ -126,7 +126,7 @@ async function applyGMSetDoorState(scene, wall, data) {
 	let trap = null;
 	if (data.trapState === 'trapped') {
 		try {
-			trap = await createDoorTrap(scene, [wallDocument, ...doors.filter((door) => door.id !== wallDocument.id)]);
+			trap = await createDoorTrap(scene, [wall, ...doors.filter((door) => door.id !== wall.id)]);
 		} catch (error) {
 			console.error(`[${MODULE_ID}] Failed to create a door trap actor:`, error);
 			ui.notifications.error('Could not create the door trap. Door settings were not changed.');

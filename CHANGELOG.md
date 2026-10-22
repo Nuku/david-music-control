@@ -1,45 +1,10 @@
 # Changelog
 
-## [2.5.125] - 2026-10-22
-
-### Fixed
-- **Random Door Traps**: Place hidden hazard tokens on the level assigned to the clicked door.
-
-## [2.5.124] - 2026-10-22
-
-### Fixed
-- **Creature ambience**: Continue with bundled database parsing when legacy extraction encounters newer JavaScript syntax.
-- **Random Door Traps**: Avoid deprecated null-based deletion when clearing a trap's stored actor and token references.
-
-## [2.5.123] - 2026-10-22
-
-### Fixed
-- **Random Door Traps**: Make manual trap placement robust to Foundry dialog render formats and recreate a trap token when its stored token reference is stale.
-
-## [2.5.122] - 2026-10-22
-
-### Added
-- **Random Door Traps**: Searchers can silently spot newly determined traps; GMs can set a door's lock and trap state from the wall context menu or configuration, and optionally apply those states to touching doors.
-
-## [2.5.121] - 2026-10-22
-
-### Added
-- **Random Door Traps**: Added a poison gas trap that exposes all creatures in a 20-foot emanation to a level-appropriate inhaled poison without direct damage.
-
-## [2.5.120] - 2026-10-22
+## [2.5.126] - 2026-10-22
 
 ### Changed
-- **Random Door Traps**: Poison needles keep their level-based attack bonus, deal piercing damage two hazard levels lower, and randomly use an at-level injury poison from the PF2e compendium.
-
-## [2.5.119] - 2026-10-22
-
-### Changed
-- **Random Door Traps**: Shocking runes can be disabled with Thievery, Arcana, or Nature and use the magical trait.
-
-## [2.5.118] - 2026-10-22
-
-### Changed
-- **Random Door Traps**: Store one shared Random Hazard base actor in the Actors directory; each hidden scene token keeps its own trap data.
+- **Doors and traps**: Doors can be set manually or checked automatically; connected doors share their lock and trap. Thievery unlocks without opening, Athletics forces the door open, and hidden traps appear on the door's level. Traps scale to the party, can be spotted by Searchers, and include mechanical, magical, and poison hazards.
+- **Creature ambience**: Fixed loading when the sound database uses newer JavaScript syntax.
 
 ## [2.5.117] - 2026-10-21
 
