@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.125] - 2026-10-22
+
+### Fixed
+- **Random Door Traps**: Place hidden hazard tokens on the level assigned to the clicked door.
+
 ## [2.5.124] - 2026-10-22
 
 ### Fixed

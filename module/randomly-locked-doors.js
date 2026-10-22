@@ -44,7 +44,8 @@ function makeDoorLockMessage(wall) {
 }
 
 function sendDoorLockRequest(sceneId, wallId, action) {
-	game.socket?.emit?.(SOCKET_EVENT, { type: SOCKET_TYPE, sceneId, wallId, action, userId: game.user.id });
+	const levelId = canvas?.scene?.id === sceneId ? canvas.level?.id : null;
+	game.socket?.emit?.(SOCKET_EVENT, { type: SOCKET_TYPE, sceneId, wallId, action, userId: game.user.id, levelId });
 }
 
 function getDirectlyConnectedDoors(scene, wall) {
@@ -88,7 +89,7 @@ async function handleDoorLockRequest(data) {
 		let trap = null;
 		if (trapped) {
 			try {
-				trap = await createDoorTrap(scene, connectedDoors);
+				trap = await createDoorTrap(scene, [wall, ...connectedDoors.filter((door) => door.id !== wall.id)], data.levelId);
 			} catch (error) {
 				console.error(`[${MODULE_ID}] Failed to create a door trap actor:`, error);
 			}
@@ -125,7 +126,7 @@ async function applyGMSetDoorState(scene, wall, data) {
 	let trap = null;
 	if (data.trapState === 'trapped') {
 		try {
-			trap = await createDoorTrap(scene, doors);
+			trap = await createDoorTrap(scene, [wallDocument, ...doors.filter((door) => door.id !== wallDocument.id)]);
 		} catch (error) {
 			console.error(`[${MODULE_ID}] Failed to create a door trap actor:`, error);
 			ui.notifications.error('Could not create the door trap. Door settings were not changed.');
@@ -369,7 +370,7 @@ async function getRandomHazardBaseActor() {
 	}, { renderSheet: false });
 }
 
-async function createDoorTrap(scene, walls) {
+async function createDoorTrap(scene, walls, preferredLevelId = null) {
 	const doors = Array.isArray(walls) ? walls : [walls];
 	const existingActorId = doors.map((door) => door.getFlag(MODULE_ID, TRAP_ACTOR_FLAG)).find((id) => id && game.actors.get(id));
 	const existingTokenId = doors.map((door) => door.getFlag(MODULE_ID, 'randomDoorTrapTokenId'))
@@ -449,11 +450,28 @@ async function createDoorTrap(scene, walls) {
 		centerX -= dy / length * gridSize * 0.55;
 		centerY += dx / length * gridSize * 0.55;
 	}
+	const levels = Array.from(scene.levels ?? []);
+	const doorElevation = centers.map(({ x, y }) =>
+		doors.find((door) => {
+			const [x1, y1, x2, y2] = door.c ?? [];
+			return (x1 + x2) / 2 === x && (y1 + y2) / 2 === y
+				&& door.elevation !== null && door.elevation !== undefined && Number.isFinite(Number(door.elevation));
+		})?.elevation
+	).find((elevation) => Number.isFinite(Number(elevation)));
+	const sourceLevelId = doors[0]?.levels?.[0];
+	const viewedLevel = levels.find((level) => (level.id ?? level._id) === sourceLevelId)
+		?? levels.find((level) => (level.id ?? level._id) === preferredLevelId)
+		?? (canvas?.scene?.id === scene.id ? canvas.level : null)
+		?? levels.find((level) => (level.id ?? level._id) === scene.initialLevel);
+	const elevation = Number.isFinite(Number(doorElevation))
+		? Number(doorElevation)
+		: Number.isFinite(Number(viewedLevel?.elevation?.bottom)) ? Number(viewedLevel.elevation.bottom) : 0;
 	const token = {
 		name, actorId: actor.id, actorLink: false,
 		x: centerX - gridSize / 2,
 		y: centerY - gridSize / 2,
-		width: 1, height: 1, hidden: true,
+		width: 1, height: 1, hidden: true, elevation,
+		...(viewedLevel ? { level: viewedLevel.id ?? viewedLevel._id } : {}),
 		texture: { src: HAZARD_ICON },
 		flags: { [MODULE_ID]: { randomDoorTrap: { wallIds: doors.map((door) => door.id), actorId: actor.id } } },
 	};
