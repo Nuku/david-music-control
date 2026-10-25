@@ -1011,13 +1011,14 @@ function buildInfluenceExportFromJournalText(text) {
 
 function buildResearchExportFromJournalText(text) {
 	const normalizedText = String(text ?? '')
+		.replace(/Research\s*\n\s*Library\s*\n?\s*(\d+)/i, 'Research Library $1')
 		.replace(/(Regional Libraries)\s+(?=Investigations pursued)/i, '$1\n')
 		.replace(/\s+(Maximum RP\s+\d+)/gi, '\n$1')
 		.replace(/\s+(Research Checks\b)/gi, '\n$1');
 	const lines = splitPlainTextLines(normalizedText);
 	if (!lines.length) throw new Error('PF2 Director | Paste journal text first.');
 
-	const libraryHeaderIndex = lines.findIndex((line) => /\bResearch Library\s+\d+$/i.test(line));
+	const libraryHeaderIndex = lines.findIndex((line) => /\bResearch\s+Library\s+\d+$/i.test(line));
 	const researchHeaderIndex = libraryHeaderIndex >= 0
 		? libraryHeaderIndex
 		: lines.findIndex((line) => /^Research\s+\d+$/i.test(line));
@@ -1197,7 +1198,7 @@ function buildSubsystemExportFromJournalText(text) {
 	if (/\bAwareness Points\b/i.test(normalized) && /\bObstacles\b/i.test(normalized)) {
 		return buildInfiltrationExportFromJournalText(text);
 	}
-	if (/\bResearch Checks\b/i.test(normalized) && (/\bResearch\s+\d+\b/i.test(normalized) || /\bResearch Library\s+\d+\b/i.test(normalized))) {
+	if (/\bResearch Checks\b/i.test(normalized) && (/\bResearch\s+\d+\b/i.test(normalized) || /\bResearch\s+Library\s+\d+\b/i.test(normalized))) {
 		return buildResearchExportFromJournalText(text);
 	}
 	return buildInfluenceExportFromJournalText(text);

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.132] - 2026-10-25
+
+### Fixed
+- **Subsystem export**: Detect research library headings when line breaks split the words in pasted text.
+
 ## [2.5.131] - 2026-10-25
 
 ### Fixed
