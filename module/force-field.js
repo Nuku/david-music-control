@@ -115,7 +115,6 @@ function installDamageHandling() {
 			try {
 				await effect.update({ 'system.badge.value': badgeValue - absorbed });
 				for (const [instance, total] of updatedTotals) instance._total = total;
-				args.damage.instances = remainingInstances;
 				args.damage._total = remainingDamage;
 				Hooks.callAll('pf2-director.forceFieldDamaged', {
 					actor: this,
@@ -126,7 +125,6 @@ function installDamageHandling() {
 				return await original.call(this, args);
 			} finally {
 				for (const [instance, total] of originalTotals) instance._total = total;
-				args.damage.instances = instances;
 				args.damage._total = originalTotal;
 			}
 		};

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.129] - 2026-10-24
+
+### Fixed
+- **Force Field automation**: Preserve the system's getter-only damage instances collection while applying and restoring absorbed damage.
+
 ## [2.5.128] - 2026-10-24
 
 ### Changed
