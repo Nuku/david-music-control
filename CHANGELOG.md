@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.127] - 2026-10-24
+
+### Added
+- **SF2e Force Field**: Force Fields now absorb physical and energy damage using their effect badge HP, regenerate at the start of their owner's turn up to their tier maximum, and whisper the owner when the charge increases. Damage and recharge also emit module hooks for Trigger Engine's Hook Called event.
+
 ## [2.5.126] - 2026-10-22
 
 ### Changed

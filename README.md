@@ -93,6 +93,8 @@ When `Enable Creature Ambience` is on:
 
 ## PF2e Tools
 
+In SF2e, an active Force Field effect automatically absorbs physical and energy damage using its badge value. Its HP regenerates at the start of its owner's turn according to the effect's quality, up to its maximum. The owner receives a whispered chat message whenever the field regains HP. The module emits `pf2-director.forceFieldDamaged` and `pf2-director.forceFieldRegenerated` hooks; Trigger Engine's **On Hook Called** event can listen for those hook names.
+
 ### Chat Tools
 
 When enabled, PF2 Director adds several PF2e-specific chat actions:

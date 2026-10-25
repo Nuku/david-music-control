@@ -23,6 +23,7 @@ import './module/dramatic-health-display.js';
 import './module/journal-transfer.js';
 import './module/creature-ambience.js';
 import './module/combatant-turn-context.js';
+import './module/force-field.js';
 import { migrate } from './module/migrate.js';
 import('./module/encounter.js');
 
