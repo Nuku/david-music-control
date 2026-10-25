@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.128] - 2026-10-24
+
+### Changed
+- **Force Field automation**: Support active `Effect: Force Field` effects in both PF2e and SF2e.
+
 ## [2.5.127] - 2026-10-24
 
 ### Added

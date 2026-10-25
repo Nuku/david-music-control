@@ -22,8 +22,8 @@ const DAMAGE_TYPES = new Set([
 ]);
 const WRAPPED = Symbol.for(`${MODULE_ID}.forceFieldApplyDamage`);
 
-function isSf2e() {
-	return game.system?.id === 'sf2e';
+function supportsForceField() {
+	return ['pf2e', 'sf2e'].includes(game.system?.id);
 }
 
 function getForceField(actor) {
@@ -60,7 +60,7 @@ function maximumFor(effect) {
 }
 
 async function rememberMaximum(effect) {
-	if (!isSf2e() || !effect?.parent || (effect.slug ?? effect.system?.slug) !== EFFECT_SLUG) return;
+	if (!supportsForceField() || !effect?.parent || (effect.slug ?? effect.system?.slug) !== EFFECT_SLUG) return;
 	const maximum = maximumFor(effect);
 	if (!maximum || effect.getFlag?.(MODULE_ID, 'forceFieldMaximum') === maximum) return;
 	await effect.setFlag(MODULE_ID, 'forceFieldMaximum', maximum);
@@ -89,7 +89,7 @@ function installDamageHandling() {
 		if (prototype[WRAPPED] || typeof prototype.applyDamage !== 'function') continue;
 		const original = prototype.applyDamage;
 		prototype.applyDamage = async function (args) {
-			const effect = isSf2e() ? getForceField(this) : null;
+			const effect = supportsForceField() ? getForceField(this) : null;
 			const instances = args?.damage?.instances;
 			const badgeValue = Number(effect?.system?.badge?.value ?? 0);
 			if (!effect || !Array.isArray(instances) || badgeValue <= 0) return original.call(this, args);
@@ -135,7 +135,7 @@ function installDamageHandling() {
 }
 
 async function regenerateForceField(combatant) {
-	if (!isSf2e() || !game.user?.isGM || game.users?.activeGM?.id !== game.user.id) return;
+	if (!supportsForceField() || !game.user?.isGM || game.users?.activeGM?.id !== game.user.id) return;
 	const actor = combatant?.actor;
 	const effect = getForceField(actor);
 	if (!effect) return;
