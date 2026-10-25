@@ -509,15 +509,12 @@ function parseInfluenceSkillList(segment) {
 
 function parseSkillOptions(segment) {
 	const matches = [...segment.matchAll(/DC\s+(\d+)\s+([^,]+?)(?:\s+to\s+([^,]+?))?(?=(?:,\s*or\s+DC\s+\d+\s+)|(?:,\s*DC\s+\d+\s+)|$)/gi)];
-	return matches.map((match) => {
-		const skillText = normalizeWhitespace(match[2]);
-		return {
-			skill: normalizeSkillSlug(skillText),
-			dc: Number(match[1]),
-			lore: /\blore\b/i.test(skillText),
-			description: normalizeWhitespace(match[3] ?? ''),
-		};
-	});
+	return matches.flatMap((match) => normalizeWhitespace(match[2]).split(/\s+or\s+/i).map((skillText) => ({
+		skill: normalizeSkillSlug(skillText),
+		dc: Number(match[1]),
+		lore: /\blore\b/i.test(skillText),
+		description: normalizeWhitespace(match[3] ?? ''),
+	})));
 }
 
 function isIgnorableTraitLine(line) {
@@ -602,15 +599,43 @@ function parseResearchTopics(lines) {
 
 function parseResearchBreakpoints(lines) {
 	const breakpoints = [];
+	let current = null;
 	for (const line of lines) {
 		const match = line.match(/^(\d+)\s+Research Points?\s+(.+)$/i);
-		if (!match) continue;
-		breakpoints.push({
-			breakpoint: Number(match[1]),
-			description: normalizeWhitespace(match[2]),
-		});
+		if (match) {
+			if (current) breakpoints.push(current);
+			current = { breakpoint: Number(match[1]), description: match[2] };
+		} else if (current) {
+			current.description += ` ${line}`;
+		}
 	}
+	if (current) breakpoints.push(current);
+	breakpoints.forEach((breakpoint) => { breakpoint.description = normalizeWhitespace(breakpoint.description); });
 	return breakpoints;
+}
+
+function parseLibraryResearchTopics(lines) {
+	const topics = [];
+	let blockStart = 0;
+	for (let i = 0; i < lines.length; i += 1) {
+		if (!/^Maximum RP\s+\d+/i.test(lines[i])) continue;
+		const checksLine = lines[i + 1] ?? '';
+		if (!/^Research Checks\b/i.test(checksLine)) continue;
+		const block = lines.slice(blockStart, i).filter((line) => !/^OCCULT$/i.test(line));
+		if (block.length) {
+			const name = block[0];
+			const maximumResearchPoints = Number(lines[i].match(/^Maximum RP\s+(\d+)/i)?.[1] ?? 0);
+			topics.push({
+				name,
+				description: normalizeWhitespace(block.slice(1).join(' ')),
+				maximumResearchPoints,
+				skillOptions: parseSkillOptions(checksLine.replace(/^Research Checks\s*/i, '')),
+			});
+		}
+		blockStart = i + 2;
+		i += 1;
+	}
+	return topics;
 }
 
 function parseResearchSummaryLine(line) {
@@ -985,17 +1010,29 @@ function buildInfluenceExportFromJournalText(text) {
 }
 
 function buildResearchExportFromJournalText(text) {
-	const lines = splitPlainTextLines(text);
+	const normalizedText = String(text ?? '')
+		.replace(/(Regional Libraries)\s+(?=Investigations pursued)/i, '$1\n')
+		.replace(/\s+(Maximum RP\s+\d+)/gi, '\n$1')
+		.replace(/\s+(Research Checks\b)/gi, '\n$1');
+	const lines = splitPlainTextLines(normalizedText);
 	if (!lines.length) throw new Error('PF2 Director | Paste journal text first.');
 
-	const researchHeaderIndex = lines.findIndex((line) => /^Research\s+\d+$/i.test(line));
+	const libraryHeaderIndex = lines.findIndex((line) => /\bResearch Library\s+\d+$/i.test(line));
+	const researchHeaderIndex = libraryHeaderIndex >= 0
+		? libraryHeaderIndex
+		: lines.findIndex((line) => /^Research\s+\d+$/i.test(line));
 	if (researchHeaderIndex === -1) {
 		throw new Error('PF2 Director | Could not find the research header in pasted text.');
 	}
 
-	const topics = parseResearchTopics(lines.slice(0, researchHeaderIndex));
-	const name = lines[researchHeaderIndex - 1];
-	const researchLevel = Number(lines[researchHeaderIndex].match(/^Research\s+(\d+)$/i)?.[1] ?? 0);
+	const isLibraryFormat = libraryHeaderIndex >= 0;
+	const topics = isLibraryFormat
+		? parseLibraryResearchTopics(lines.slice(researchHeaderIndex + 1))
+		: parseResearchTopics(lines.slice(0, researchHeaderIndex));
+	const name = isLibraryFormat
+		? lines[researchHeaderIndex].replace(/\s+\d+$/, '').trim()
+		: lines[researchHeaderIndex - 1];
+	const researchLevel = Number(lines[researchHeaderIndex].match(/(\d+)$/)?.[1] ?? 0);
 	const summaryLine = lines.find((line) => /^Research Checks\s+.+\(.+\)/i.test(line)) ?? '';
 	const breakpointLines = lines.slice(researchHeaderIndex + 1);
 	const breakpoints = parseResearchBreakpoints(breakpointLines);
@@ -1160,7 +1197,7 @@ function buildSubsystemExportFromJournalText(text) {
 	if (/\bAwareness Points\b/i.test(normalized) && /\bObstacles\b/i.test(normalized)) {
 		return buildInfiltrationExportFromJournalText(text);
 	}
-	if (/\bResearch Checks\b/i.test(normalized) && /\bResearch\s+\d+\b/i.test(normalized)) {
+	if (/\bResearch Checks\b/i.test(normalized) && (/\bResearch\s+\d+\b/i.test(normalized) || /\bResearch Library\s+\d+\b/i.test(normalized))) {
 		return buildResearchExportFromJournalText(text);
 	}
 	return buildInfluenceExportFromJournalText(text);

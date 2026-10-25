@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.131] - 2026-10-25
+
+### Fixed
+- **Subsystem export**: Recognize library-style research entries such as Spiral Seal Research Library, including skill alternatives and wrapped breakpoint descriptions.
+
 ## [2.5.130] - 2026-10-24
 
 ### Changed
