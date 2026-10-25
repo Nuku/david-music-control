@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.130] - 2026-10-24
+
+### Changed
+- **Force Field automation**: Post a chat explanation whenever a Force Field absorbs damage, including fully absorbed hits.
+
 ## [2.5.129] - 2026-10-24
 
 ### Fixed

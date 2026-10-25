@@ -82,6 +82,17 @@ async function whisperRecharge(actor, amount, current, maximum) {
 	});
 }
 
+async function announceAbsorption(actor, absorbed, remainingDamage, fieldHP, maximumHP) {
+	const outcome = remainingDamage === 0
+		? `absorbed all ${absorbed} damage`
+		: `absorbed ${absorbed} damage; ${remainingDamage} damage reached ${actor.name}`;
+	const fieldStatus = fieldHP > 0 ? `The field has ${fieldHP}/${maximumHP} HP remaining.` : 'The field has been depleted.';
+	await ChatMessage.create({
+		speaker: ChatMessage.getSpeaker({ actor }),
+		content: `<p><strong>Force Field:</strong> ${outcome}. ${fieldStatus}</p>`,
+	});
+}
+
 function installDamageHandling() {
 	const classes = CONFIG.PF2E?.Actor?.documentClasses ?? {};
 	const prototypes = new Set(['character', 'npc', 'hazard'].map((type) => classes[type]?.prototype).filter(Boolean));
@@ -97,6 +108,7 @@ function installDamageHandling() {
 			await rememberMaximum(effect);
 			const originalTotals = new Map(instances.map((instance) => [instance, instance._total]));
 			const originalTotal = Number(args.damage.total ?? args.damage._total ?? 0);
+			const maximumHP = maximumFor(effect) ?? badgeValue;
 			const updatedTotals = new Map();
 			let absorbed = 0;
 			for (const instance of instances) {
@@ -122,7 +134,9 @@ function installDamageHandling() {
 					absorbed,
 					remaining: badgeValue - absorbed,
 				});
-				return await original.call(this, args);
+				const result = await original.call(this, args);
+				await announceAbsorption(this, absorbed, remainingDamage, badgeValue - absorbed, maximumHP);
+				return result;
 			} finally {
 				for (const [instance, total] of originalTotals) instance._total = total;
 				args.damage._total = originalTotal;
