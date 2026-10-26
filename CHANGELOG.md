@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.135] - 2026-10-25
+
+### Fixed
+- **Compendium Browser**: Make Requirements searches refresh the result list immediately as text is entered.
+
 ## [2.5.134] - 2026-10-25
 
 ### Fixed

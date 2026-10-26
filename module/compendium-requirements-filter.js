@@ -21,7 +21,7 @@ function patchTab(tab, browser) {
 			get() {
 				const results = resultsDescriptor.get.call(this);
 				if (this.tabName !== 'feat' && this.tabName !== 'campaignFeature') return results;
-				const query = browser.__requirementsQuery?.trim().toLocaleLowerCase(game.i18n.lang);
+				const query = this.filterData.requirementsQuery?.trim().toLocaleLowerCase(game.i18n.lang);
 				return query ? results.filter((entry) => browser.__requirementsByUuid.get(entry.uuid)?.includes(query)) : results;
 			},
 			set(value) {
@@ -30,14 +30,9 @@ function patchTab(tab, browser) {
 		});
 	}
 
-	const originalInit = tab.init;
-	tab.init = async function (...args) {
-		const result = await originalInit.apply(this, args);
-		for (const entry of this.indexData ?? []) {
-			browser.__requirementsByUuid.set(entry.uuid, requirementsText(entry.system?.description?.value));
-		}
-		return result;
-	};
+	const filterData = foundry.utils.deepClone(tab.filterData);
+	filterData.requirementsQuery = browser.__requirementsQuery ?? '';
+	tab.filterData = filterData;
 }
 
 function addRequirementsInput(app, element) {
@@ -48,7 +43,16 @@ function addRequirementsInput(app, element) {
 		existing?.remove();
 		return;
 	}
-	if (existing) return;
+	const query = app.__requirementsQuery ?? '';
+	if (app.activeTab.filterData.requirementsQuery !== query) {
+		const filterData = foundry.utils.deepClone(app.activeTab.filterData);
+		filterData.requirementsQuery = query;
+		app.activeTab.filterData = filterData;
+	}
+	if (existing) {
+		existing.querySelector('input').value = query;
+		return;
+	}
 	const traitField = [...root.querySelectorAll('.traits-select')].find((node) => node.closest('fieldset'));
 	const traitSet = traitField?.closest('fieldset');
 	if (!traitSet) return;
@@ -58,11 +62,12 @@ function addRequirementsInput(app, element) {
 	field.innerHTML = '<label for="pf2d-requirements-query">Requirements</label><input id="pf2d-requirements-query" type="text" autocomplete="off" placeholder="Search requirements">';
 	traitSet.after(field);
 	const input = field.querySelector('input');
-	input.value = app.__requirementsQuery ?? '';
+	input.value = query;
 	input.addEventListener('input', () => {
 		app.__requirementsQuery = input.value;
-		clearTimeout(app.__requirementsRenderTimer);
-		app.__requirementsRenderTimer = setTimeout(() => app.render(), 180);
+		const filterData = foundry.utils.deepClone(app.activeTab.filterData);
+		filterData.requirementsQuery = app.__requirementsQuery;
+		app.activeTab.filterData = filterData;
 	});
 }
 
