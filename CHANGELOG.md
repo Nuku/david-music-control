@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.137] - 2026-10-25
+
+### Changed
+- **Compendium Browser**: Rename the filter to Prerequisites and search prerequisite text only.
+
 ## [2.5.136] - 2026-10-25
 
 ### Fixed

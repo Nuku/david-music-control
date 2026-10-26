@@ -1,19 +1,9 @@
-function requirementsText(description) {
-	if (typeof description !== 'string' || !description) return '';
-	const section = description.match(/<(?:strong|b|h[1-6])\b[^>]*>\s*Requirements\s*:?[\s\S]*?<\/(?:strong|b|h[1-6])\s*>([\s\S]*?)(?=<hr\b|<(?:strong|b|h[1-6])\b|$)/i);
-	if (!section) return '';
-	const element = document.createElement('div');
-	element.innerHTML = section[1];
-	return (element.textContent ?? '').replace(/\s+/g, ' ').trim().toLocaleLowerCase(game.i18n.lang);
-}
-
 function itemRequirementsText(entry) {
-	const description = requirementsText(entry.system?.description?.value);
 	const prerequisites = (entry.system?.prerequisites?.value ?? []).map((prerequisite) => {
 		const value = typeof prerequisite === 'string' ? prerequisite : prerequisite?.value;
 		return typeof value === 'string' ? value.trim().toLocaleLowerCase(game.i18n.lang) : '';
 	});
-	return [description, ...prerequisites].filter(Boolean).join(' ');
+	return prerequisites.filter(Boolean).join(' ');
 }
 
 function patchTab(tab, browser) {
@@ -68,7 +58,7 @@ function addRequirementsInput(app, element) {
 
 	const field = document.createElement('div');
 	field.className = 'form-group pf2d-requirements-filter';
-	field.innerHTML = '<label for="pf2d-requirements-query">Requirements</label><input id="pf2d-requirements-query" type="text" autocomplete="off" placeholder="Search requirements">';
+	field.innerHTML = '<label for="pf2d-requirements-query">Prerequisites</label><input id="pf2d-requirements-query" type="text" autocomplete="off" placeholder="Search prerequisites">';
 	traitSet.after(field);
 	const input = field.querySelector('input');
 	input.value = query;
@@ -90,7 +80,7 @@ Hooks.once('ready', () => {
 	const originalLoadPacks = loader.loadPacks;
 	loader.loadPacks = async function* (documentName, packs, fields, ...args) {
 		if (Array.isArray(fields)) {
-			fields = [...new Set([...fields, 'system.description.value', 'system.prerequisites.value'])];
+			if (!fields.includes('system.prerequisites.value')) fields = [...fields, 'system.prerequisites.value'];
 		}
 		for await (const result of originalLoadPacks.call(this, documentName, packs, fields, ...args)) {
 			for (const entry of result.index ?? []) {
