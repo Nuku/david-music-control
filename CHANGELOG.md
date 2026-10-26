@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.134] - 2026-10-25
+
+### Fixed
+- **Compendium Browser**: Restrict the Requirements filter to Feats and Campaign Features, and apply it to requirement text from compendium indexes.
+
 ## [2.5.133] - 2026-10-25
 
 ### Added

@@ -20,6 +20,7 @@ function patchTab(tab, browser) {
 			configurable: true,
 			get() {
 				const results = resultsDescriptor.get.call(this);
+				if (this.tabName !== 'feat' && this.tabName !== 'campaignFeature') return results;
 				const query = browser.__requirementsQuery?.trim().toLocaleLowerCase(game.i18n.lang);
 				return query ? results.filter((entry) => browser.__requirementsByUuid.get(entry.uuid)?.includes(query)) : results;
 			},
@@ -41,7 +42,13 @@ function patchTab(tab, browser) {
 
 function addRequirementsInput(app, element) {
 	const root = element instanceof HTMLElement ? element : element?.[0];
-	if (!(root instanceof HTMLElement) || root.querySelector('.pf2d-requirements-filter')) return;
+	if (!(root instanceof HTMLElement)) return;
+	const existing = root.querySelector('.pf2d-requirements-filter');
+	if (app.activeTab?.tabName !== 'feat' && app.activeTab?.tabName !== 'campaignFeature') {
+		existing?.remove();
+		return;
+	}
+	if (existing) return;
 	const traitField = [...root.querySelectorAll('.traits-select')].find((node) => node.closest('fieldset'));
 	const traitSet = traitField?.closest('fieldset');
 	if (!traitSet) return;
@@ -67,11 +74,16 @@ Hooks.once('ready', () => {
 	browser.__requirementsByUuid = new Map();
 	const loader = browser.packLoader;
 	const originalLoadPacks = loader.loadPacks;
-	loader.loadPacks = function (documentName, packs, fields, ...args) {
+	loader.loadPacks = async function* (documentName, packs, fields, ...args) {
 		if (Array.isArray(fields) && !fields.includes('system.description.value')) {
 			fields = [...fields, 'system.description.value'];
 		}
-		return originalLoadPacks.call(this, documentName, packs, fields, ...args);
+		for await (const result of originalLoadPacks.call(this, documentName, packs, fields, ...args)) {
+			for (const entry of result.index ?? []) {
+				browser.__requirementsByUuid.set(entry.uuid, requirementsText(entry.system?.description?.value));
+			}
+			yield result;
+		}
 	};
 	for (const tab of browser.tabsArray ?? []) patchTab(tab, browser);
 	Hooks.on('renderCompendiumBrowser', (app, element) => {
