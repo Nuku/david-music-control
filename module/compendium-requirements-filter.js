@@ -1,0 +1,88 @@
+function requirementsText(description) {
+	if (typeof description !== 'string' || !description) return '';
+	const section = description.match(/<(?:strong|b|h[1-6])\b[^>]*>\s*Requirements\s*:?[\s\S]*?<\/(?:strong|b|h[1-6])\s*>([\s\S]*?)(?=<hr\b|<(?:strong|b|h[1-6])\b|$)/i);
+	if (!section) return '';
+	const element = document.createElement('div');
+	element.innerHTML = section[1];
+	return (element.textContent ?? '').replace(/\s+/g, ' ').trim().toLocaleLowerCase(game.i18n.lang);
+}
+
+function patchTab(tab, browser) {
+	if (tab.__requirementsFilterPatched) return;
+	tab.__requirementsFilterPatched = true;
+	const prototype = Object.getPrototypeOf(tab);
+	let resultsDescriptor;
+	for (let current = prototype; current && !resultsDescriptor; current = Object.getPrototypeOf(current)) {
+		resultsDescriptor = Object.getOwnPropertyDescriptor(current, 'results');
+	}
+	if (resultsDescriptor?.get && resultsDescriptor?.set) {
+		Object.defineProperty(tab, 'results', {
+			configurable: true,
+			get() {
+				const results = resultsDescriptor.get.call(this);
+				const query = browser.__requirementsQuery?.trim().toLocaleLowerCase(game.i18n.lang);
+				return query ? results.filter((entry) => browser.__requirementsByUuid.get(entry.uuid)?.includes(query)) : results;
+			},
+			set(value) {
+				resultsDescriptor.set.call(this, value);
+			}
+		});
+	}
+
+	const originalInit = tab.init;
+	tab.init = async function (...args) {
+		const result = await originalInit.apply(this, args);
+		for (const entry of this.indexData ?? []) {
+			browser.__requirementsByUuid.set(entry.uuid, requirementsText(entry.system?.description?.value));
+		}
+		return result;
+	};
+}
+
+function addRequirementsInput(app, element) {
+	const root = element instanceof HTMLElement ? element : element?.[0];
+	if (!(root instanceof HTMLElement) || root.querySelector('.pf2d-requirements-filter')) return;
+	const traitField = [...root.querySelectorAll('.traits-select')].find((node) => node.closest('fieldset'));
+	const traitSet = traitField?.closest('fieldset');
+	if (!traitSet) return;
+
+	const field = document.createElement('div');
+	field.className = 'form-group pf2d-requirements-filter';
+	field.innerHTML = '<label for="pf2d-requirements-query">Requirements</label><input id="pf2d-requirements-query" type="text" autocomplete="off" placeholder="Search requirements">';
+	traitSet.after(field);
+	const input = field.querySelector('input');
+	input.value = app.__requirementsQuery ?? '';
+	input.addEventListener('input', () => {
+		app.__requirementsQuery = input.value;
+		clearTimeout(app.__requirementsRenderTimer);
+		app.__requirementsRenderTimer = setTimeout(() => app.render(), 180);
+	});
+}
+
+Hooks.once('ready', () => {
+	if (game.system.id !== 'pf2e') return;
+	const browser = game.pf2e?.compendiumBrowser;
+	if (!browser) return;
+	browser.__requirementsQuery ??= '';
+	browser.__requirementsByUuid = new Map();
+	const loader = browser.packLoader;
+	const originalLoadPacks = loader.loadPacks;
+	loader.loadPacks = function (documentName, packs, fields, ...args) {
+		if (Array.isArray(fields) && !fields.includes('system.description.value')) {
+			fields = [...fields, 'system.description.value'];
+		}
+		return originalLoadPacks.call(this, documentName, packs, fields, ...args);
+	};
+	for (const tab of browser.tabsArray ?? []) patchTab(tab, browser);
+	Hooks.on('renderCompendiumBrowser', (app, element) => {
+		if (app !== browser) return;
+		for (const tab of browser.tabsArray ?? []) patchTab(tab, browser);
+		addRequirementsInput(app, element);
+		const root = element instanceof HTMLElement ? element : element?.[0];
+		if (root && !root.__pf2dRequirementsObserver) {
+			const observer = new MutationObserver(() => addRequirementsInput(app, root));
+			observer.observe(root, { childList: true, subtree: true });
+			root.__pf2dRequirementsObserver = observer;
+		}
+	});
+});

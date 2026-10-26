@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.133] - 2026-10-25
+
+### Added
+- **Compendium Browser**: Filter PF2e browser results by text in their Requirements section.
+
 ## [2.5.132] - 2026-10-25
 
 ### Fixed
