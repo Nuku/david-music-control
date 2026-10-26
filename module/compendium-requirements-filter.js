@@ -7,6 +7,15 @@ function requirementsText(description) {
 	return (element.textContent ?? '').replace(/\s+/g, ' ').trim().toLocaleLowerCase(game.i18n.lang);
 }
 
+function itemRequirementsText(entry) {
+	const description = requirementsText(entry.system?.description?.value);
+	const prerequisites = (entry.system?.prerequisites?.value ?? []).map((prerequisite) => {
+		const value = typeof prerequisite === 'string' ? prerequisite : prerequisite?.value;
+		return typeof value === 'string' ? value.trim().toLocaleLowerCase(game.i18n.lang) : '';
+	});
+	return [description, ...prerequisites].filter(Boolean).join(' ');
+}
+
 function patchTab(tab, browser) {
 	if (tab.__requirementsFilterPatched) return;
 	tab.__requirementsFilterPatched = true;
@@ -80,12 +89,12 @@ Hooks.once('ready', () => {
 	const loader = browser.packLoader;
 	const originalLoadPacks = loader.loadPacks;
 	loader.loadPacks = async function* (documentName, packs, fields, ...args) {
-		if (Array.isArray(fields) && !fields.includes('system.description.value')) {
-			fields = [...fields, 'system.description.value'];
+		if (Array.isArray(fields)) {
+			fields = [...new Set([...fields, 'system.description.value', 'system.prerequisites.value'])];
 		}
 		for await (const result of originalLoadPacks.call(this, documentName, packs, fields, ...args)) {
 			for (const entry of result.index ?? []) {
-				browser.__requirementsByUuid.set(entry.uuid, requirementsText(entry.system?.description?.value));
+				browser.__requirementsByUuid.set(entry.uuid, itemRequirementsText(entry));
 			}
 			yield result;
 		}

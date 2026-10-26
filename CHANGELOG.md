@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.136] - 2026-10-25
+
+### Fixed
+- **Compendium Browser**: Search feat prerequisites as well as Requirements text.
+
 ## [2.5.135] - 2026-10-25
 
 ### Fixed
