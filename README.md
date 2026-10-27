@@ -1,233 +1,236 @@
-# Foundry VTT - PF2 Director
+# PF2 Director
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Nuku/david-music-control)
 ![GitHub Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/latest/pf2-david-music-control.zip)
 ![GitHub All Releases](https://img.shields.io/github/downloads/Nuku/david-music-control/pf2-david-music-control.zip?label=downloads)
 
-PF2 Director is a Foundry VTT module for PF2e, SF2e, and DnD5E with encounter music control, scene presentation, party utilities, dramatic overlays, subsystem export tools, and cinematic end credits.
+PF2 Director helps GMs run Foundry VTT sessions with automatic combat and scene music, dramatic health displays, vision tools, and end credits. Pathfinder Second Edition and Starfinder Second Edition worlds also get party utilities, chat actions, door hazards, and rules automation.
 
-## Installation
+## Install and get started
 
-Install from the manifest URL:
+In Foundry's **Add-on Modules** installer, use this manifest URL:
 
-`https://raw.githubusercontent.com/Nuku/david-music-control/main/module.json`
+```text
+https://raw.githubusercontent.com/Nuku/david-music-control/main/module.json
+```
 
-Compatibility:
+Enable **PF2 Director** in your world, then open **Configure Settings → PF2 Director**.
 
-- Minimum Foundry version: `13`
-- Verified Foundry version: `14`
-- Supported game systems: **Pathfinder Second Edition (`pf2e`)**, **Starfinder Second Edition (`sf2e`)**, and **Dungeons & Dragons Fifth Edition (`dnd5e`)**
-- Current release: **2.5.121**
+- **Foundry compatibility:** versions 13–14; verified for version 14.
+- **Supported systems:** Pathfinder Second Edition (`pf2e`), Starfinder Second Edition (`sf2e`), and Dungeons & Dragons Fifth Edition (`dnd5e`).
+- **Release information:** see [module.json](module.json) for the package version and [CHANGELOG.md](CHANGELOG.md) for recent changes.
 
-SF2e uses the shared PF2e rules API for chat, rerolls, and party tools. Multi-target Taunt uses the active system's effect when available and a bundled effect otherwise, retaining the taunting creature as its origin. Roll retyping uses the active system's configured damage types, including homebrew types.
+For a first session:
 
-DnD5E worlds can use combat and scene music, victory playback and fireworks, token vision enhancements, dramatic health displays, end credits, and performance diagnostics. PF2e/SF2e party, chat, subsystem, creature sound, fire-light, and skill-check tools are system-specific and are only shown in those systems.
+1. In the **Music** section, open the **PF2 Director** playlist chooser. Check the playlists you want to use for combat; click a playlist name to star it as the default, then save.
+2. Start a combat to use the selected music. Configure **Victory Music** if you want a closing track when the encounter is deleted.
+3. Enable **Play Scene Music** if you want scene activation to look for matching playlists.
+4. Browse the remaining settings and enable the tools your table wants. Most optional automation starts disabled. **At-Will Recharge** starts enabled in PF2e/SF2e; **Pause Ambience Sounds** and **Pause Tracks** also start enabled.
 
-Optional integrations still require compatible versions of their dependencies. PF2e Subsystems declares support for both systems. The inspected PF2e Creature Sounds and Item Piles: PF2e releases declare only PF2e support; their ambience and merchant integrations are available only when those dependencies can be activated and used with your system.
+## Find a feature
 
-## Feature Overview
+- [Music and creature ambience](#music-and-creature-ambience)
+- [Scene presentation and vision](#scene-presentation-and-vision)
+- [PF2e and SF2e tools](#pf2e-and-sf2e-tools)
+- [End credits](#end-credits)
+- [Optional integrations](#optional-integrations)
+- [Macros and integration hooks](#macros-and-integration-hooks)
+- [Troubleshooting](#troubleshooting)
 
-PF2 Director currently includes:
+Combat and scene music, victory playback, enhanced vision, elevation-based level changes, dramatic health displays, end credits, diagnostics, and the **Make Current Turn** control are available across all three supported systems. The party, chat, creature ambience, fire-light, detected-token image, and door tools below are intended for PF2e/SF2e. The compendium prerequisite filter is PF2e-only.
 
-- Combat music selection with per-token music, priorities, combat themes, encounter overrides, and a default combat playlist fallback
-- Scene music lookup and manual scene-music playback from the playlists sidebar
-- PF2e trait-based combat music rules
-- Creature ambience using `pf2e-creature-sounds`, including audibility checks, distance and door muffling, and player-aware playback
-- Victory music and Foundry V14 victory fireworks
-- PF2e party utilities such as Full Rest, Cult tracking, and clustered party token art
+## Music and creature ambience
 
-When Item Piles is enabled, `Enable Item Piles Party Stash Merchant` is on by default. This adds a `Use Party Stash` button inside Item Piles merchant windows. Clicking it changes the merchant's `Shopping as` actor to the PF2e party actor, so purchases use the stash's inventory and funds while sales return items and funds to the stash. Install and activate `Item Piles: PF2e` alongside Item Piles for PF2e item pricing and currency support. The GM can disable this in PF2 Director settings.
-- PF2e chat tools including roll retyping, villain-point rerolls, and explicit Half buttons for strikes, spells, impulses, and other cards that can roll damage
-- Automatic Pacifying property-rune handling: the attacker is prompted to spend the reaction; if accepted, damaged creatures attempt a DC 20 Will save and, on failure, receive a 1-minute Pacified effect with a –2 penalty to attacks lacking the nonlethal trait
-- Dramatic health display overlays with optional damage and healing sounds
-- PF2e subsystem export and generation tools, including live creation support when `pf2e-subsystems` is installed
-- Integrated end credits with configurable music, background media, and GM start or stop controls
-- Optional Enhanced Vision, which calculates token vision from each of its four corners
-- Optional custom art beneath PF2e's detected-token tint, fade, and concentric rings
-- Optional Fire Glows: persistent fire damage adds a torch-animated light effect with 15 feet bright, 30 feet dim, and a 360-degree angle; losing all persistent fire damage removes it
-- Automatic token level changes when elevation changes, preserving the current level in overlapping elevation ranges and asking players to confirm transitions
-- Optional Randomized Door Locks and Traps, with independent configurable chances, hidden level-scaled trap hazards, per-scene opt-out, and Thievery or Athletics checks for locked doors
+### Combat music
+
+The playlist chooser marks playlists as combat music and lets you star a default. For more control, use **Combat Music** in Token Configuration's header controls, **Trait Music Rules** in PF2e/SF2e, or **Set Encounter Music** in the combat tracker's context menu.
+
+Token music supports:
+
+- An **Active** switch and a playlist or individual track.
+- Different selections at HP or other tracked-resource thresholds.
+- **Priority** for competing music selections.
+- **Turn Only** music and an encounter-wide **Combat Theme**.
+
+The encounter's background music is selected in this order:
+
+1. A manually assigned encounter override.
+2. An active **Combat Theme** token, choosing among the highest-priority themes.
+3. A matching trait rule for a non-friendly combatant, using the highest-priority matching rule.
+4. The highest-priority choice among combat playlists and eligible token music with **Turn Only** off. Combat playlists have priority 0, the starred default has priority 1, and token music defaults to priority 10.
+
+Tied themes or fallback candidates are chosen randomly. On a combatant's turn, its active personal music can interrupt the encounter background; the saved background resumes when the interruption ends.
+
+**Pause Ambience Sounds** saves and pauses playing playlist audio at combat start. When the combat is deleted, the module stops its combat music, plays any configured victory selection, then resumes the saved audio after victory playback finishes. With no victory selection, it resumes immediately. **Pause Tracks** controls whether switched tracks are paused for later playback.
+
+**Victory Music** offers generic, trivial, and boss selections. On Foundry 14, **Fireworks on Victory** adds bursts scaled from the encounter's calculated difficulty, with an optional custom particle image.
+
+The **Music** settings also provide JSON export and import for combat playlist configuration, trait rules, and victory selections. Audio file paths are stored in the export; the media files themselves are not included.
+
+### Scene music
+
+Enable **Play Scene Music** to search when a scene activates or its canvas loads. You can also click **Play Scene Music** in the playlists sidebar without enabling automatic playback. Neither action replaces music during an active combat.
+
+The search uses the scene name and navigation name to find a matching playlist and a matching playlist folder. It also tries shortened names and ignores common leading articles or prefixes. Playlists directly inside the matching folder join the choices.
+
+- **One choice:** plays immediately.
+- **Multiple choices:** asks the GM to choose.
+- **No choice:** leaves current music playing.
+
+Selecting a replacement stops playing non-combat playlists before starting it.
+
+### Creature ambience — PF2e/SF2e
+
+Enable **Enable Creature Ambience** with **PF2e Creature Sounds** active to play periodic creature noises. Each player's listener is their nearest suitable placed token with Observer or Owner permission. Distance and closed doors muffle the sound, and path checks determine whether it can be heard.
+
+Scene configuration includes an ambience opt-out. Debug logging and a local GM test mode are available in settings; the latter allows testing without connected players.
+
+## Scene presentation and vision
+
+### Dramatic health display
+
+HP changes show a brief portrait panel with an animated health bar and separate visual effects for damage and healing. Settings control screen position and the minimum change as a percentage of maximum HP.
+
+Players normally see panels according to token bar permissions. **Show For Everyone** bypasses that restriction. The GM can see panels regardless of token bar permissions.
 
 ### Enhanced Vision
 
-When `Enhanced Vision` is enabled, tokens provide vision from four slightly inset corner positions rather than only from the center. Each corner still obeys wall line-of-sight, allowing an unobstructed corner to see around a wall without allowing the token to see through a wall it is touching. This costs additional perception calculations.
+Enable **Enhanced Vision** to calculate vision from four slightly inset token corners. Each viewpoint respects wall collisions, allowing an unobstructed corner to see around a wall. This adds perception work, especially in scenes with many tokens. Reload the scene if changing the setting does not immediately update the view.
 
-For troubleshooting, `Enhanced Vision Debug` draws the center, intended corners, wall collision points, and final viewpoints, and logs their coordinates in the browser console.
+**Enhanced Vision Debug** draws viewpoints and wall collisions and logs their coordinates for troubleshooting.
 
-In the `Vision` settings, enable `Use Custom Image for Detected Tokens` and choose an image. PF2e's normal detection appearance remains in place; the selected image replaces the token art only while a detection filter is active.
+### Elevation and scene levels
 
-Enable `Fire Glows` in the `Vision` settings to automatically add the light effect to PF2e and SF2e actors with persistent fire damage. Other persistent damage types do not trigger it. An active GM manages the effects, including existing actors and unlinked scene tokens when the option is enabled. Disabling the option removes its effects. The effect uses the systems' TokenLight rule, so removing it restores the token's normal light configuration.
+Enable **Automatically Update Token Level from Elevation** to assign tokens to the scene level containing their new elevation. This requires a scene with configured levels and elevation ranges. If ranges overlap, the token keeps its current level when that range still fits. Players must confirm transitions; declining cancels the move.
 
-## Music
+### Combat tracker and dice controls
 
-### Combat Music
+During an active combat, GMs can right-click a combatant and choose **Make Current Turn** to change the active turn without changing the round or initiative.
 
-- Marks playlists as combat playlists and selects encounter music when combat starts
-- Supports a default combat playlist when nothing else has higher priority
-- Lets tokens define their own combat playlist, track, and priority
-- Supports token rules such as HP or resource thresholds, turn-only tracks, and combat theme tokens
-- Lets the GM set encounter music directly from the combat tracker
-- Supports PF2e trait-based encounter music rules
-- Pauses and restores non-combat ambience around combat
-- Plays optional victory music after combat
-- After victory music ends, automatically resumes the saved pre-combat ambience
-- On Foundry V14+, can display colorful victory fireworks scaled from encounter difficulty
+Foundry's dice fulfillment choices also include **Digital Roll (PCG)** as an optional digital rolling method.
 
-### Scene Music
+### Detected-token art and Fire Glows — PF2e/SF2e
 
-- `Play Scene Music` can automatically look for music when a scene is activated
-- A matching playlist by scene name is treated as a strong candidate, but the search continues through folders and other playlist options
-- If multiple candidates are found, the GM gets a chooser
-- If one candidate is found, it plays directly
-- If no replacement is found, current music is left alone
-- A manual `Play Scene Music` button is added to the playlists sidebar
+Under **Vision**, enable **Use Custom Image for Detected Tokens** and choose an image to replace token art while a detection filter is active. The system's tint, fading, and rings remain in place.
 
-### Creature Ambience
+**Fire Glows** gives actors with persistent fire damage a torch-animated light: 15 feet bright, 30 feet dim, and 360 degrees. An active GM manages the effect, including existing actors and unlinked scene tokens. Ending all persistent fire damage, or disabling the option, removes the effect and restores normal token lighting.
 
-When `Enable Creature Ambience` is on:
+## PF2e and SF2e tools
 
-- ambient creature noises are sourced from `pf2e-creature-sounds`
-- audibility is checked to each player's nearest suitable token
-- doors and distance reduce what each player hears
-- the GM can enable debug logging and a local test override when no players are connected
+Settings for these tools appear under **PF2e / SF2e Tools**, **Villain Points**, or **Doors**, as appropriate. Force Field, multi-target Taunt, and Pacifying automation work without a separate enable setting.
 
-## PF2e Tools
+### Party management
 
-In PF2e and SF2e, an active `Effect: Force Field` effect automatically absorbs physical and energy damage using its badge value. A public chat note reports the absorbed amount and remaining field HP, including when the field absorbs all damage. Its HP regenerates at the start of its owner's turn according to the effect's quality, up to its maximum. The owner receives a whispered chat message whenever the field regains HP. The module emits `pf2-director.forceFieldDamaged` and `pf2-director.forceFieldRegenerated` hooks; Trigger Engine's **On Hook Called** event can listen for those hook names. PF2e's standard Force Shield item does not use a Force Field HP badge and is not affected by this automation.
+| Tool | Where to use it | What it does |
+| --- | --- | --- |
+| Full Rest | Enable **Enable Full Rest**, then use **Recover** on the party sheet as GM | Restores character members to full HP and focus points, removes Wounded, and posts a summary and report. |
+| Cluster Party | **Cluster Party** in a party token's Token Configuration, as GM | Combines party member token art into a crowd image, saves it under the world folder, and applies it to the party actor and token. |
+| Cult | Enable **Enable Cult System**, then open the party sheet's **Cult** tab | Tracks cult name and level, Fervor, Recruitment, Mythic points, mantles, activities, phase notes, events, and level checks. |
+| Party Stash merchant | **Use Party Stash** in an Item Piles merchant window | Changes **Shopping as** to the party actor, so purchases and sales use its inventory and funds. Requires Item Piles and an appropriate system integration. |
 
-### Chat Tools
+**Enable Item Piles Party Stash Merchant** defaults on when Item Piles is active. The GM can disable it in settings.
 
-When enabled, PF2 Director adds several PF2e-specific chat actions:
+### Chat and item actions
 
-- Roll retyping for eligible non-d20 chat cards, allowing typed damage or healing follow-up cards
-- Half-damage buttons for PF2e cards that already expose a damage action, including strikes, spells, and impulses
-- Half uses the same underlying PF2e damage action as the normal damage button, then rewrites the created damage card to half damage so traits and context carry over cleanly
-- Villain-point reroll buttons on eligible d20 chat messages
+- **Roll retyping:** enable **Enable Roll Retyping** to create typed damage or healing follow-up cards from eligible non-d20 rolls. Damage types come from the active system, including configured homebrew types.
+- **Half damage:** enable **Enable Half Damage Button** to add Half actions to eligible damage cards and cards with damage actions, including strikes, spells, and impulses. It uses the original damage action and preserves its context in the resulting half-damage card.
+- **Automatic damage application:** **Apply Damage Automatically** can activate compatible target-aware damage buttons for NPC targets or all targets. It defaults to nobody.
+- **Automatic saves:** **Roll Toolbelt Saves Automatically** can roll saves on PF2e Toolbelt cards for NPC targets or everyone. It also defaults to nobody and requires Toolbelt's compatible card controls.
+- **At-Will Recharge:** automatically restores innate spell uses and frequency-based uses for items named with `(at will)` or `at-will`. Enabled by default.
+- **Multi-target Taunt:** when a Taunt chat action has multiple selected creature targets, applies the Taunt effect to targets without one and preserves the taunting creature as its origin. Uses the active system's effect when available, with a bundled fallback.
+- **Pacifying rune:** after damage from a Pacifying weapon, prompts the attacker to use the reaction. If accepted, damaged creatures attempt DC 20 Will saves. Failure applies a 1-minute Pacified effect with a –2 penalty to attacks lacking the nonlethal trait.
 
-### Cluster Party
+### Villain points
 
-PF2e party actors get a `Cluster Party` button in Token Configuration. It builds a combined crowd-style token image from party member token art, saves it in the world folder, and applies it to the party actor and token.
+Enable **Enable Villain Points** to track characters' hero and mythic point spending. Every two spent points grant the GM one villain point by default; **Hero Points Per Villain Point** changes that rate.
 
-### Full Rest
+The GM gets a floating counter with manual adjustment and villain-point reroll buttons on eligible d20 chat messages. An optional dread sound and synchronized overlay accompany gains and spending. A gap of at least 12 hours between consecutive messages in the last five chat messages resets both the spending counter and villain points.
 
-When `Enable Full Rest` is on, PF2e party sheets gain a `Recover` button that:
+### Force Fields
 
-- heals all party members to full HP
-- restores all focus points
-- removes the `Wounded` condition
-- posts a chat summary and opens a rest report dialog
+An active **Effect: Force Field** (`effect-force-field`) uses its HP badge to absorb supported physical and energy damage. A public chat message reports absorption and remaining field HP, including fully absorbed hits.
 
-### At-Will Recharge
+At the start of the owner's turn, the field regenerates HP according to its quality, up to its maximum, and whispers player owners when HP returns. The module recognizes standard Commercial through Paragon field tiers. PF2e's **Force Shield** item does not use this HP badge and is unaffected.
 
-When `Enable At-Will Recharge` is on, PF2e items with `(at will)` in their name automatically restore their expended use immediately after activation. This applies to both innate spell uses and frequency-based actions.
+[Integration hooks](#macros-and-integration-hooks) let other modules respond to absorption and recharge.
 
-### Villain Points
+### Door locks and traps
 
-When `Enable Villain Points` is on:
+Enable **Randomly Locked Doors** to check a door on a player's first attempt to open it. Lock and trap chances are independent and each defaults to 20%. Scenes can opt out in Scene Configuration, and doors sharing an endpoint share the generated outcome.
 
-- every time a PF2e character's hero or mythic point total drops, the module tracks that spend
-- every configured number of tracked point spends grants the GM 1 villain point, defaulting to 2
-- if the most recent 5 chat messages include a gap of 12 hours or more between consecutive messages, tracked point uses and villain points reset to 0
-- the GM gets a villain-point reroll button on eligible d20 chat messages
-- the GM gets a floating villain-point widget for manual adjustment
-- the module can play an optional synchronized dread sound and overlay when villain points are gained or spent
+Locked doors offer chat checks: successful **Thievery** unlocks without opening; successful **Athletics** unlocks and opens. Traps create hidden hazard tokens on the door's level, scale to the party, and include mechanical, magical, and poison hazards. Party members using Search can spot them.
 
-### Cult System
+With the door feature enabled, GMs can also use **Set Door Lock / Trap…** in wall configuration or the wall context menu to choose lock and trap states manually, with an option to apply them to touching doors.
 
-When `Enable PF2e Cult System` is on, PF2e party sheets gain a `Cult` tab for tracking:
+### Subsystem preparation
 
-- cult name and level
-- Fervor, Recruitment, and Mythic points
-- mantles and activities
-- phase notes and current event state
-- cult level checks and related rolls
+Open **PF2 Director Transfer** from a journal's header to parse subsystem text or generate content at a chosen level. The tools support **Influence**, **Research**, and **Infiltration**, including research-library entries.
 
-### Subsystem Export And Generation
+Preview the JSON and download it for later use, or create a live subsystem when **PF2e Subsystems** is active. Parsing depends on recognizable headings and structure; review the preview before using the result.
 
-PF2 Director includes subsystem tools for PF2e journals and GM prep:
+### Compendium prerequisite search — PF2e only
 
-- parses subsystem-style journal text into exportable subsystem JSON
-- supports Influence, Research, and Infiltration style data
-- can generate new subsystem content from a chosen level
-- can download generated subsystem data as JSON
-- can create live subsystem entries directly when `pf2e-subsystems` is installed and enabled
+The PF2e Compendium Browser gains a **Prerequisites** text filter on its **Feats** and **Campaign Features** tabs. It matches prerequisite text as you type.
 
-## Dramatic Health Display
+## End credits
 
-The module includes a dramatic health overlay system that can:
+Use the **End Credits** settings to select music, a background image or video, background opacity, and an optional **In Memoriam** source-folder override. The GM can start or stop credits from settings or a macro.
 
-- show large transient damage or healing panels when visible tokens lose or gain HP
-- animate HP bars and deltas with configurable thresholds
-- optionally show numbers or rely more on visual presentation
-- play separate configurable audio for damage and healing
+Credits synchronize across connected clients, including players who join while they are running. Saved settings from the legacy `end-credits` module migrate into the integrated feature.
 
-## Settings
+## Optional integrations
 
-The settings UI is grouped into sections for:
+These modules are optional; enable the ones needed for your chosen features.
 
-- Music
-- PF2e Tools
-- Villain Points
-- Dramatic Health Display
-- Vision
-- Doors
-- End Credits
+| Module | Enables |
+| --- | --- |
+| PF2e Creature Sounds (`pf2e-creature-sounds`) | Creature ambience sound selection. |
+| PF2e Subsystems (`pf2e-subsystems`) | Creating live subsystem entries from parsed or generated data. JSON export works without it. |
+| Item Piles (`item-piles`) | The Party Stash merchant button. For PF2e transactions, also activate **Item Piles: PF2e** (`itempiles-pf2e`) for pricing and currency support. |
+| PF2e Toolbelt (`pf2e-toolbelt`) | Compatible target-aware card controls for automatic saves and damage application. |
+| Trigger Engine (`trigger-engine`) | Listening for Force Field hooks through **On Hook Called** events. |
 
-Additional settings menus include:
+SF2e tools use the shared PF2e rules API. Each external dependency must also support your active system and Foundry version; listing an integration here does not establish SF2e compatibility for that dependency.
 
-- trait music rule configuration
-- victory music configuration
-- victory fireworks image configuration
-- detected token image configuration
-- villain point dread sound configuration
-- dramatic health sound configuration
-- end credits music configuration
-- end credits background image or video configuration
-- end credits In Memoriam folder override
-- end credits start or stop control
+## Macros and integration hooks
 
-## End Credits
+Run these as GM in script macros after the world is ready.
 
-The module includes integrated end credits tools for campaign finales and session wrap-ups.
-
-GMs can configure:
-
-- optional credits music
-- optional background image or video
-- background opacity
-- In Memoriam source folder
-
-Credits can then be:
-
-- started or stopped from Module Settings
-- prompted with a GM confirmation flow
-- controlled by macro or integration code
-
-Macro / API entry points:
+**End credits:** prompt for confirmation or toggle immediately.
 
 ```js
 game.modules.get("pf2-david-music-control").api.endCredits.prompt();
+```
+
+```js
 game.modules.get("pf2-david-music-control").api.endCredits.toggle();
 ```
 
-Victory fireworks macro / API entry points:
+**Victory fireworks (Foundry 14):** derive intensity and burst anchors from the current combat, or supply an intensity.
 
 ```js
 game.modules.get("pf2-david-music-control").api.victoryFireworks.trigger();
+```
+
+```js
 game.modules.get("pf2-david-music-control").api.victoryFireworks.trigger({ intensity: 100 });
 ```
 
-Calling `trigger()` with no arguments uses the current combat to derive intensity and party-centered burst anchors. If no combat is active, it falls back to intensity `60`.
+Without a current combat, the automatic intensity is 60.
 
-If the legacy `end-credits` module was previously used, this module migrates its saved settings into the integrated end credits feature.
+**Force Field events:** use these names with Trigger Engine's **On Hook Called**, or subscribe with Foundry's `Hooks.on`.
 
-## How Combat Selection Works
+| Hook | Payload fields |
+| --- | --- |
+| `pf2-director.forceFieldDamaged` | `actor`, `effect`, `absorbed`, `remaining` |
+| `pf2-director.forceFieldRegenerated` | `actor`, `effect`, `gained`, `current`, `maximum` |
 
-When combat starts, the module determines the best music candidate using these broad rules:
+## Troubleshooting
 
-- combat playlists begin at baseline priority
-- the configured default playlist can override that baseline
-- tokens can raise priority with their own assigned music
-- encounter-level overrides can replace the normal selection entirely
+- **No combat music:** confirm the playlists are checked in the playlist chooser. For token music, confirm **Active** is checked and the selected tracks still exist.
+- **No scene music:** check scene, navigation, playlist, and playlist-folder names. The search leaves current playback alone if it finds no match and does not run during active combat.
+- **No creature ambience:** confirm the sound module is active, the scene allows ambience, and a suitable listener token is placed. Use ambience debug logging or the local GM test option to inspect playback decisions.
+- **Slow vision:** disable **Enhanced Vision** to compare, and use **Enhanced Vision Debug** only while investigating.
+- **Other browser lag:** under **Diagnostics**, click **Run 10-Second Diagnostic**, reproduce the lag, then use **Copy Report** to capture the results.
 
-If multiple candidates tie at the top, one is selected from the tied results.
+Two smaller controls are also available: GMs can right-click a combatant and choose **Make Current Turn** to change the active turn without changing the round or initiative; Foundry's dice fulfillment choices include **Digital Roll (PCG)** as an optional digital rolling method.
