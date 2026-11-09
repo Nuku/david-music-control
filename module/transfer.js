@@ -54,6 +54,7 @@ export function buildMusicConfigExportData() {
 		playlists,
 		traitRules: resolvedTraitRules,
 		victoryMusic: {
+			combatComing: resolveVictoryMusic('combatComingMusic'),
 			generic: resolveVictoryMusic('victoryMusicGeneric'),
 			trivial: resolveVictoryMusic('victoryMusicTrivial'),
 			boss: resolveVictoryMusic('victoryMusicBoss'),
@@ -193,8 +194,10 @@ export async function applyImport(data) {
 			return track ? (playlist.id + '.' + track.id) : playlist.id;
 		};
 		const generic = resolveVictory(data.victoryMusic.generic);
+		const combatComing = resolveVictory(data.victoryMusic.combatComing);
 		const trivial = resolveVictory(data.victoryMusic.trivial);
 		const boss = resolveVictory(data.victoryMusic.boss);
+		if (Object.hasOwn(data.victoryMusic, 'combatComing')) await setSetting('combatComingMusic', combatComing);
 		if (generic) await setSetting('victoryMusicGeneric', generic);
 		if (trivial) await setSetting('victoryMusicTrivial', trivial);
 		if (boss) await setSetting('victoryMusicBoss', boss);

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.139] - 2026-11-09
+
+### Fixed
+- **Music config**: Include the combat anticipation playlist in exports and imports.
+
 ## [2.5.138] - 2026-11-09
 
 ### Added
