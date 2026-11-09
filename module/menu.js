@@ -258,7 +258,7 @@ class VictoryMusicManager extends HandlebarsApplicationMixin(ApplicationV2) {
 
 	_onRender(context, options) {
 		super._onRender(context, options);
-		const keys = ['victoryMusicGeneric', 'victoryMusicTrivial', 'victoryMusicBoss'];
+		const keys = ['combatComingMusic', 'victoryMusicGeneric', 'victoryMusicTrivial', 'victoryMusicBoss'];
 		const playlists = getCombatMusic().concat(
 			game.playlists.contents.filter((p) => !getCombatMusic().find((cp) => cp.id === p.id))
 		);
@@ -304,7 +304,7 @@ class VictoryMusicManager extends HandlebarsApplicationMixin(ApplicationV2) {
 	}
 
 	static async #saveSettings(_event, _form, _formData) {
-		const keys = ['victoryMusicGeneric', 'victoryMusicTrivial', 'victoryMusicBoss'];
+		const keys = ['combatComingMusic', 'victoryMusicGeneric', 'victoryMusicTrivial', 'victoryMusicBoss'];
 		for (const key of keys) {
 			const playlistId = this.element.querySelector(`select[name="${key}-playlist"]`).value;
 			const trackId = this.element.querySelector(`select[name="${key}-track"]`).value;

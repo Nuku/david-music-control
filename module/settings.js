@@ -137,6 +137,14 @@ const settings = {
 		type: Boolean,
 		default: true,
 	},
+	combatComingMusic: {
+		name: 'Combat Is Coming Music',
+		hint: 'Play this playlist while a combat encounter is prepared but initiative has not started.',
+		scope: 'world',
+		config: false,
+		type: String,
+		default: '',
+	},
 	playSceneMusic: {
 		name: 'Play Scene Music',
 		hint: 'When entering a scene, if nothing is playing, look for a playlist matching the scene name and play it.',

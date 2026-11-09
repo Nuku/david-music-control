@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.138] - 2026-11-09
+
+### Added
+- **Combat music**: Configure an anticipation playlist for prepared encounters; it stops when combat starts or is aborted.
+
 ## [2.5.137] - 2026-10-25
 
 ### Changed

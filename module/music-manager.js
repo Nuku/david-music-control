@@ -267,8 +267,34 @@ export function resolveEncounterMusic(combat) {
 /* -------------------------------------------- */
 
 async function playCombatMusic(combat) {
+	await stopCombatComingMusic(combat);
 	if (getSetting('pauseAmbience')) await pauseAllMusic(combat);
 	await updateTurnMusic(combat);
+}
+
+async function stopCombatComingMusic(combat) {
+	const anticipation = combat.getFlag(MODULE_ID, 'combatComingMusic');
+	if (!anticipation) return;
+	const sound = parseMusic(anticipation);
+	if (!('error' in sound)) await stopSound(sound);
+	await combat.unsetFlag(MODULE_ID, 'combatComingMusic');
+}
+
+async function prepareCombatMusic(combat) {
+	if (combat.started) return;
+	const music = getSetting('combatComingMusic');
+	if (!music) return;
+	const sound = parseMusic(music);
+	if ('error' in sound) return;
+	const playingMusic = game.playlists.playing
+		.flatMap((playlist) => playlist.sounds.contents.filter((track) => track.playing))
+		.map(stringifyMusic);
+	for (const playlist of game.playlists.playing) {
+		for (const track of playlist.sounds.contents.filter((track) => track.playing)) await pauseSound(track);
+	}
+	await playSound(sound);
+	await combat.setFlag(MODULE_ID, 'combatComingMusic', music);
+	await combat.setFlag(MODULE_ID, 'preCombatMusic', playingMusic);
 }
 
 async function resumeSavedMusic(flags = []) {
@@ -298,6 +324,11 @@ function watchVictoryMusic(sound, preCombatMusic) {
 }
 
 async function resumePlaylists(combat) {
+	if (!combat.started) {
+		await stopCombatComingMusic(combat);
+		await resumeSavedMusic(combat.getFlag(MODULE_ID, 'preCombatMusic') ?? []);
+		return;
+	}
 	const victoryMusic = pendingVictoryMusic;
 	pendingVictoryMusic = null;
 	triggerVictoryFireworks(combat);
@@ -543,6 +574,7 @@ let pendingVictoryMusic = null;
 
 Hooks.once('setup', () => {
 	if (game.user.isGM) {
+		Hooks.on('createCombat', prepareCombatMusic);
 		Hooks.on('combatStart', playCombatMusic);
 		Hooks.on('updateCombat', updateTurnMusic);
 		Hooks.on('preDeleteCombat', (combat) => {
