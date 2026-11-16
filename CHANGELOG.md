@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.155] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Apply disguise art directly to unlinked scene tokens without changing their actor prototype art.
+
 ## [2.5.154] - 2026-11-16
 
 ### Fixed

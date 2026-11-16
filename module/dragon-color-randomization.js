@@ -139,12 +139,13 @@ Hooks.on('createToken', (token) => {
 				console.warn('PF2 Director | No dragon actors with usable token art were found in installed compendiums.');
 			} else if (token.parent?.tokens?.get(token.id)) {
 				const disguise = chooseDisguise(token.actor, choices);
-				await token.actor.update({
-					img: disguise.actorImg,
-					'prototypeToken.texture.src': disguise.img,
-					'prototypeToken.texture.scaleX': disguise.scaleX,
-					'prototypeToken.texture.scaleY': disguise.scaleY,
-				});
+				const actorChanges = { img: disguise.actorImg };
+				if (token.actorLink) {
+					actorChanges['prototypeToken.texture.src'] = disguise.img;
+					actorChanges['prototypeToken.texture.scaleX'] = disguise.scaleX;
+					actorChanges['prototypeToken.texture.scaleY'] = disguise.scaleY;
+				}
+				await token.actor.update(actorChanges);
 				const currentToken = token.parent.tokens.get(token.id) ?? token;
 				await currentToken.update({
 					name: disguise.name,

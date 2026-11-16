@@ -48,7 +48,19 @@ try {
 			stdio: 'inherit',
 		});
 
-		execFileSync('git', ['add', 'module.json', 'CHANGELOG.md', `${manifest.id}.zip`], { cwd: root, stdio: 'inherit' });
+		execFileSync('git', [
+			'add',
+			'module.json',
+			'CHANGELOG.md',
+			`${manifest.id}.zip`,
+			'main.js',
+			'main.css',
+			'README.md',
+			'module/',
+			'styles/',
+			'templates/',
+			'build.mjs',
+		], { cwd: root, stdio: 'inherit' });
 		execFileSync('git', ['commit', '-m', `Release ${tag}`], { cwd: root, stdio: 'inherit' });
 		execFileSync('git', ['tag', tag], { cwd: root, stdio: 'inherit' });
 		execFileSync('git', ['push', 'origin', branch], { cwd: root, stdio: 'inherit' });
