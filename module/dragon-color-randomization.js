@@ -98,12 +98,17 @@ function chooseDisguise(actor, choices) {
 }
 
 async function revealPendingToken(token) {
-	const originalAlpha = token.getFlag(MODULE_ID, 'dragonColorRandomizationOriginalAlpha');
+	const currentToken = token.parent?.tokens?.get(token.id) ?? token;
+	const originalAlpha = currentToken.getFlag(MODULE_ID, 'dragonColorRandomizationOriginalAlpha');
 	if (originalAlpha === undefined) return;
-	await token.update({
-		alpha: originalAlpha,
-		[`flags.${MODULE_ID}.-=dragonColorRandomizationOriginalAlpha`]: null,
-	});
+	const changes = { alpha: originalAlpha };
+	const ForcedDeletion = foundry?.data?.operators?.ForcedDeletion;
+	if (ForcedDeletion) {
+		changes[`flags.${MODULE_ID}.dragonColorRandomizationOriginalAlpha`] = new ForcedDeletion();
+	} else {
+		changes[`flags.${MODULE_ID}.-=dragonColorRandomizationOriginalAlpha`] = null;
+	}
+	await currentToken.update(changes);
 }
 
 Hooks.on('preCreateToken', (token) => {
@@ -140,7 +145,8 @@ Hooks.on('createToken', (token) => {
 					'prototypeToken.texture.scaleX': disguise.scaleX,
 					'prototypeToken.texture.scaleY': disguise.scaleY,
 				});
-				await token.update({
+				const currentToken = token.parent.tokens.get(token.id) ?? token;
+				await currentToken.update({
 					name: disguise.name,
 					'texture.src': disguise.img,
 					'texture.scaleX': disguise.scaleX,
@@ -148,8 +154,10 @@ Hooks.on('createToken', (token) => {
 					[`flags.${MODULE_ID}.${disguiseFlag}`]: disguise.uuid,
 					[`flags.${MODULE_ID}.dragonColorRandomizationImage`]: disguise.img,
 				});
-				if (token.texture?.src !== disguise.img) {
-					console.error(`PF2 Director | Token art did not update to ${disguise.img}.`);
+				const updatedToken = token.parent.tokens.get(token.id) ?? currentToken;
+				updatedToken.object?.refresh?.();
+				if (updatedToken.texture?.src !== disguise.img) {
+					console.error(`PF2 Director | Token art did not update. Expected ${disguise.img}; token stores ${updatedToken.texture?.src}.`);
 				}
 			}
 		} catch (error) {

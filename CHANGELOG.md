@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.151] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Use Foundry's v14 forced deletion operator and verify image updates against the current scene token document.
+
 ## [2.5.150] - 2026-11-16
 
 ### Fixed
