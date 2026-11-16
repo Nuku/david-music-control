@@ -263,12 +263,17 @@ async function loadBuiltinCreatureSoundDatabase() {
 
 function extractCreatureSoundDatabase(source) {
 	// Compatibility with pre-v2 bundles.
-	const legacyProgram = extractCreatureSoundDatabaseProgram(source);
-	if (legacyProgram) {
-		try {
-			return Function(`"use strict"; ${legacyProgram}; return creature_sounds_db;`)();
-		} catch (error) {
-			console.warn(`[${MODULE_ID}] Legacy creature sound database extraction failed; trying bundled object parsing.`, error);
+	const legacyObjectStart = source.indexOf('const creature_sounds_db =');
+	if (legacyObjectStart !== -1) {
+		const objectStart = source.indexOf('{', legacyObjectStart);
+		const objectText = objectStart === -1 ? null : extractBalancedObject(source, objectStart);
+		if (objectText) {
+			try {
+				const candidate = JSON.parse(objectText);
+				if (isCreatureSoundDatabase(candidate)) return candidate;
+			} catch (_error) {
+				// Fall through to the bundled object search below.
+			}
 		}
 	}
 
@@ -283,7 +288,7 @@ function extractCreatureSoundDatabase(source) {
 		try {
 			const candidate = JSON.parse(objectText);
 			const values = Object.values(candidate);
-			if (values.some((value) => value?.attack_sounds && value?.hurt_sounds && value?.display_name)) {
+			if (values.some((value) => value?.display_name && ['attack_sounds', 'hurt_sounds', 'death_sounds'].some((field) => Array.isArray(value[field])))) {
 				return candidate;
 			}
 		} catch (_error) {
@@ -291,6 +296,11 @@ function extractCreatureSoundDatabase(source) {
 		}
 	}
 	return null;
+}
+
+function isCreatureSoundDatabase(candidate) {
+	return candidate && typeof candidate === 'object' && !Array.isArray(candidate)
+		&& Object.values(candidate).some((value) => value?.display_name && ['attack_sounds', 'hurt_sounds', 'death_sounds'].some((field) => Array.isArray(value[field])));
 }
 
 function extractBalancedObject(source, start) {
@@ -313,25 +323,6 @@ function extractBalancedObject(source, start) {
 		else if (character === '}' && --depth === 0) return source.slice(start, index + 1);
 	}
 	return null;
-}
-
-function extractCreatureSoundDatabaseProgram(source) {
-	const functionMarker = 'function getActorName';
-	const dbMarker = 'const creature_sounds_db =';
-	const endMarker = 'const soundDatabase = Object.fromEntries';
-	const functionIndex = source.indexOf(functionMarker);
-	const dbIndex = source.indexOf(dbMarker);
-	const endIndex = source.indexOf(endMarker, dbIndex);
-	if (functionIndex === -1 || dbIndex === -1 || endIndex === -1) {
-		return null;
-	}
-	const startIndex = source.indexOf('const ', functionIndex);
-	if (startIndex === -1 || startIndex > dbIndex) {
-		return null;
-	}
-	const program = source.slice(startIndex, endIndex).trim();
-	if (!program) return null;
-	return program;
 }
 
 function getCustomSoundDatabase() {

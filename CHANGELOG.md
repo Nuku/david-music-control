@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.154] - 2026-11-16
+
+### Fixed
+- **Creature ambience**: Extract the Creature Sounds database without evaluating unrelated bundled code, which could fail on function declarations.
+
 ## [2.5.153] - 2026-11-16
 
 ### Changed
