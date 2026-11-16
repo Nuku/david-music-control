@@ -34,6 +34,8 @@ async function loadDragonDisguises() {
 					'system.details.type.value',
 					'system.traits.value',
 					'prototypeToken.texture.src',
+					'prototypeToken.texture.scaleX',
+					'prototypeToken.texture.scaleY',
 				],
 			});
 			for (const entry of index) {
@@ -41,10 +43,14 @@ async function loadDragonDisguises() {
 				const type = entry.system?.details?.creatureType?.value ?? entry.system?.details?.creatureType ?? entry.system?.details?.type?.value ?? entry.system?.details?.type ?? '';
 				if (!/dragon/i.test(`${entry.name ?? ''} ${type} ${traits.join(' ')}`)) continue;
 				let img = entry.prototypeToken?.texture?.src ?? entry['prototypeToken.texture.src'];
+				let scaleX = entry.prototypeToken?.texture?.scaleX ?? entry['prototypeToken.texture.scaleX'];
+				let scaleY = entry.prototypeToken?.texture?.scaleY ?? entry['prototypeToken.texture.scaleY'];
 				let actorImg = entry.img;
-				if (!hasUsableTokenArt(img)) {
+				if (!hasUsableTokenArt(img) || scaleX === undefined || scaleY === undefined) {
 					const actorDocument = await pack.getDocument(entry._id);
-					img = actorDocument?.prototypeToken?.texture?.src;
+					img = actorDocument?.prototypeToken?.texture?.src ?? img;
+					scaleX = actorDocument?.prototypeToken?.texture?.scaleX ?? scaleX;
+					scaleY = actorDocument?.prototypeToken?.texture?.scaleY ?? scaleY;
 					actorImg = actorDocument?.img ?? actorImg;
 				}
 				if (!entry.name || !hasUsableTokenArt(img) || seenImages.has(img)) continue;
@@ -52,6 +58,8 @@ async function loadDragonDisguises() {
 				options.push({
 					name: entry.name,
 					img,
+					scaleX: Number.isFinite(Number(scaleX)) ? Number(scaleX) : 1,
+					scaleY: Number.isFinite(Number(scaleY)) ? Number(scaleY) : 1,
 					actorImg: hasUsableTokenArt(actorImg) ? actorImg : img,
 					uuid: `Compendium.${pack.collection}.${entry._id}`,
 					id: entry._id,
@@ -130,6 +138,8 @@ Hooks.on('createToken', (token) => {
 				await token.update({
 					name: disguise.name,
 					'texture.src': disguise.img,
+					'texture.scaleX': disguise.scaleX,
+					'texture.scaleY': disguise.scaleY,
 					[`flags.${MODULE_ID}.${disguiseFlag}`]: disguise.uuid,
 					[`flags.${MODULE_ID}.dragonColorRandomizationImage`]: disguise.img,
 				});

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.149] - 2026-11-16
+
+### Changed
+- **Dragon color randomization**: Copy the replacement creature's prototype token texture scale.
+
 ## [2.5.148] - 2026-11-16
 
 ### Fixed
