@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.140] - 2026-11-16
+
+### Added
+- **Dragon color randomization**: Optionally disguise placed dragon tokens with another dragon's compendium name and portrait while preserving the original actor and stats.
+
 ## [2.5.139] - 2026-11-09
 
 ### Fixed

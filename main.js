@@ -4,6 +4,7 @@ import './module/settings.js';
 import './module/enhanced-vision.js';
 import './module/menu.js';
 import './module/token.js';
+import './module/dragon-color-randomization.js';
 import './module/detected-token-image.js';
 import './module/automatic-token-level.js';
 import './module/party-cluster.js';

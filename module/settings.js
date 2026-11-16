@@ -153,6 +153,14 @@ const settings = {
 		type: Boolean,
 		default: false,
 	},
+	dragonColorRandomization: {
+		name: 'Dragon Color Randomization',
+		hint: 'When a dragon token is placed, disguise it with another dragon portrait and name from an installed compendium. Its actor and stats remain unchanged.',
+		scope: 'world',
+		config: true,
+		type: Boolean,
+		default: false,
+	},
 	randomlyLockedDoors: {
 		name: 'Randomly Locked Doors',
 		hint: 'On a player’s first attempt to open each door in a scene, there is a chance it is found locked.',
@@ -628,8 +636,8 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 			title: 'Music',
 			description: 'Combat playlists, scene matching, and victory audio behavior.',
 			keys: isPf2Family
-				? ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'enableCreatureAmbience', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu']
-				: ['combatMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
+				? ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'dragonColorRandomization', 'enableCreatureAmbience', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu']
+				: ['combatMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'dragonColorRandomization', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
 			gmOnly: true,
 			extraRow: game.user.isGM ? buildTransferRow() : null,
 		},
