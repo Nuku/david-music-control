@@ -231,21 +231,17 @@ async function loadBuiltinCreatureSoundDatabase() {
 	if (builtinSoundDatabasePromise) return builtinSoundDatabasePromise;
 	builtinSoundDatabasePromise = (async () => {
 		let parsed = null;
-		// v2 of PF2e Creature Sounds moved the database to a source JSON file and
-		// bundles it into the module. Prefer the JSON path so this integration does
-		// not depend on the upstream bundle's variable names or function order.
+		// The installed Creature Sounds release embeds its database in the bundle.
 		try {
-			const databaseResponse = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/databases/creature_sounds_db.json`);
-			if (databaseResponse.ok) parsed = await databaseResponse.json();
+			const response = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/dist/pf2e-creature-sounds.js`);
+			if (response.ok) parsed = extractCreatureSoundDatabase(await response.text());
 		} catch (error) {
-			logDebug('Could not read the standalone Creature Sounds database.', error);
+			logDebug('Could not read the Creature Sounds bundle.', error);
 		}
 
 		if (!isCreatureSoundDatabase(parsed)) {
-			const response = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/dist/pf2e-creature-sounds.js`);
-			if (!response.ok) throw new Error(`Unable to load ${CREATURE_SOUNDS_MODULE_ID} database or bundle.`);
-			const source = await response.text();
-			parsed = extractCreatureSoundDatabase(source);
+			const response = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/databases/creature_sounds_db.json`);
+			if (response.ok) parsed = await response.json();
 		}
 
 		if (!isCreatureSoundDatabase(parsed)) {

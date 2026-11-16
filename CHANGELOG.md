@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.159] - 2026-11-16
+
+### Fixed
+- **Creature ambience**: Read the bundled Creature Sounds database first to avoid a missing JSON request on standard installations.
+
 ## [2.5.158] - 2026-11-16
 
 ### Fixed
