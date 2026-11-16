@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.141] - 2026-11-16
+
+### Fixed
+- **Release archive**: Rebuild the package with all manifest-referenced stylesheets so Foundry can validate the install.
+
 ## [2.5.140] - 2026-11-16
 
 ### Added

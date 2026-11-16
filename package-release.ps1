@@ -8,7 +8,7 @@ $canonicalPath = Join-Path $releaseRoot "$($manifest.id).zip"
 $releaseFiles = @('module.json', 'main.js', 'main.css', 'README.md', 'CHANGELOG.md')
 foreach ($directory in @('module', 'styles', 'templates')) {
     $releaseFiles += Get-ChildItem -LiteralPath (Join-Path $releaseRoot $directory) -Recurse -File |
-        ForEach-Object { [IO.Path]::GetRelativePath($releaseRoot, $_.FullName) }
+        ForEach-Object { $_.FullName.Substring($releaseRoot.Length + 1) }
 }
 
 $stream = [IO.File]::Open($canonicalPath, [IO.FileMode]::Create)
@@ -35,8 +35,8 @@ try {
         $localStream = [IO.File]::OpenRead((Join-Path $releaseRoot $file))
         $hash = [Security.Cryptography.SHA256]::Create()
         try {
-            $packedHash = [Convert]::ToHexString($hash.ComputeHash($entryStream))
-            $localHash = [Convert]::ToHexString($hash.ComputeHash($localStream))
+            $packedHash = [BitConverter]::ToString($hash.ComputeHash($entryStream)).Replace('-', '')
+            $localHash = [BitConverter]::ToString($hash.ComputeHash($localStream)).Replace('-', '')
             if ($packedHash -ne $localHash) { throw "Release archive differs from $file" }
         } finally {
             $hash.Dispose()
