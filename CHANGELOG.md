@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.146] - 2026-11-16
+
+### Changed
+- **Dragon color randomization**: Hide GM-placed dragon tokens until randomization completes, cache compendium candidates, and update the actor sheet portrait to match.
+
 ## [2.5.145] - 2026-11-16
 
 ### Fixed

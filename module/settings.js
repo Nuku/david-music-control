@@ -155,7 +155,7 @@ const settings = {
 	},
 	dragonColorRandomization: {
 		name: 'Dragon Color Randomization',
-		hint: 'When a dragon token is placed, disguise it with another dragon portrait and name from an installed compendium. Its actor and stats remain unchanged.',
+		hint: 'When a GM places a dragon token, keep it invisible while choosing another dragon name and token art. The token and actor sheet portrait change; the actor name and stats stay unchanged.',
 		scope: 'world',
 		config: true,
 		type: Boolean,
