@@ -3,7 +3,7 @@ import { MODULE_ID, getSetting } from './settings.js';
 const disguiseFlag = 'dragonColorRandomization';
 const pending = new Set();
 const usedDisguisesByActor = new Map();
-const dragonDisguisesPromises = new Map();
+let dragonDisguisesPromise;
 
 function hasUsableTokenArt(src) {
 	if (typeof src !== 'string' || !src.trim()) return false;
@@ -19,7 +19,7 @@ function dragonType(actor) {
 	return /dragon/i.test(`${actor?.name ?? ''} ${type ?? ''} ${traits.join(' ')}`);
 }
 
-async function loadDragonDisguises(systemId) {
+async function loadDragonDisguises() {
 	const options = [];
 	const seenImages = new Set();
 	for (const pack of game.packs ?? []) {
@@ -33,17 +33,12 @@ async function loadDragonDisguises(systemId) {
 					'system.details.creatureType.value',
 					'system.details.type.value',
 					'system.traits.value',
-					'_stats.systemId',
 					'prototypeToken.texture.src',
 					'prototypeToken.texture.scaleX',
 					'prototypeToken.texture.scaleY',
 				],
 			});
 			for (const entry of index) {
-				const entrySystemId = entry._stats?.systemId ?? entry['_stats.systemId'];
-				const packSystemId = String(pack.collection ?? '').split('.')[0];
-				const packMatchesSystem = packSystemId === systemId || packSystemId.startsWith(`${systemId}-`);
-				if (entrySystemId ? entrySystemId !== systemId : !packMatchesSystem) continue;
 				const traits = entry.system?.traits?.value ?? entry['system.traits.value'] ?? [];
 				const type = entry.system?.details?.creatureType?.value ?? entry.system?.details?.creatureType ?? entry.system?.details?.type?.value ?? entry.system?.details?.type ?? '';
 				if (!/dragon/i.test(`${entry.name ?? ''} ${type} ${traits.join(' ')}`)) continue;
@@ -78,15 +73,11 @@ async function loadDragonDisguises(systemId) {
 }
 
 function getDragonDisguises(actor) {
-	const systemId = actor?._stats?.systemId ?? game.system?.id;
-	if (!dragonDisguisesPromises.has(systemId)) {
-		const promise = loadDragonDisguises(systemId).catch((error) => {
-			dragonDisguisesPromises.delete(systemId);
-			throw error;
-		});
-		dragonDisguisesPromises.set(systemId, promise);
-	}
-	return dragonDisguisesPromises.get(systemId).then((options) => options.filter((option) => option.id !== actor.id && option.name !== actor.name));
+	dragonDisguisesPromise ??= loadDragonDisguises().catch((error) => {
+		dragonDisguisesPromise = null;
+		throw error;
+	});
+	return dragonDisguisesPromise.then((options) => options.filter((option) => option.id !== actor.id && option.name !== actor.name));
 }
 
 function chooseDisguise(actor, choices) {

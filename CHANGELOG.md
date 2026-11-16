@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.153] - 2026-11-16
+
+### Changed
+- **Dragon color randomization**: Allow visual replacement art from dragon actors in any installed system's compendiums while preserving the placed actor's stats.
+
 ## [2.5.152] - 2026-11-16
 
 ### Fixed
