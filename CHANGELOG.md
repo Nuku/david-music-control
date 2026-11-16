@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.150] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Update actor prototype token art along with its portrait so linked PF2e tokens retain the replacement image.
+
 ## [2.5.149] - 2026-11-16
 
 ### Changed
