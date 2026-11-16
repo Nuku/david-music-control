@@ -3,7 +3,7 @@ import { MODULE_ID, getSetting } from './settings.js';
 const disguiseFlag = 'dragonColorRandomization';
 const pending = new Set();
 const usedDisguisesByActor = new Map();
-let dragonDisguisesPromise;
+const dragonDisguisesPromises = new Map();
 
 function hasUsableTokenArt(src) {
 	if (typeof src !== 'string' || !src.trim()) return false;
@@ -19,7 +19,7 @@ function dragonType(actor) {
 	return /dragon/i.test(`${actor?.name ?? ''} ${type ?? ''} ${traits.join(' ')}`);
 }
 
-async function loadDragonDisguises() {
+async function loadDragonDisguises(systemId) {
 	const options = [];
 	const seenImages = new Set();
 	for (const pack of game.packs ?? []) {
@@ -33,12 +33,17 @@ async function loadDragonDisguises() {
 					'system.details.creatureType.value',
 					'system.details.type.value',
 					'system.traits.value',
+					'_stats.systemId',
 					'prototypeToken.texture.src',
 					'prototypeToken.texture.scaleX',
 					'prototypeToken.texture.scaleY',
 				],
 			});
 			for (const entry of index) {
+				const entrySystemId = entry._stats?.systemId ?? entry['_stats.systemId'];
+				const packSystemId = String(pack.collection ?? '').split('.')[0];
+				const packMatchesSystem = packSystemId === systemId || packSystemId.startsWith(`${systemId}-`);
+				if (entrySystemId ? entrySystemId !== systemId : !packMatchesSystem) continue;
 				const traits = entry.system?.traits?.value ?? entry['system.traits.value'] ?? [];
 				const type = entry.system?.details?.creatureType?.value ?? entry.system?.details?.creatureType ?? entry.system?.details?.type?.value ?? entry.system?.details?.type ?? '';
 				if (!/dragon/i.test(`${entry.name ?? ''} ${type} ${traits.join(' ')}`)) continue;
@@ -73,11 +78,15 @@ async function loadDragonDisguises() {
 }
 
 function getDragonDisguises(actor) {
-	dragonDisguisesPromise ??= loadDragonDisguises().catch((error) => {
-		dragonDisguisesPromise = null;
-		throw error;
-	});
-	return dragonDisguisesPromise.then((options) => options.filter((option) => option.id !== actor.id && option.name !== actor.name));
+	const systemId = actor?._stats?.systemId ?? game.system?.id;
+	if (!dragonDisguisesPromises.has(systemId)) {
+		const promise = loadDragonDisguises(systemId).catch((error) => {
+			dragonDisguisesPromises.delete(systemId);
+			throw error;
+		});
+		dragonDisguisesPromises.set(systemId, promise);
+	}
+	return dragonDisguisesPromises.get(systemId).then((options) => options.filter((option) => option.id !== actor.id && option.name !== actor.name));
 }
 
 function chooseDisguise(actor, choices) {
@@ -157,7 +166,7 @@ Hooks.on('createToken', (token) => {
 				const updatedToken = token.parent.tokens.get(token.id) ?? currentToken;
 				updatedToken.object?.refresh?.();
 				if (updatedToken.texture?.src !== disguise.img) {
-					console.error(`PF2 Director | Token art did not update. Expected ${disguise.img}; token stores ${updatedToken.texture?.src}.`);
+					console.error(`PF2 Director | Token art did not update. Expected ${disguise.img}; token stores ${updatedToken.texture?.src}; actor prototype stores ${updatedToken.actor?.prototypeToken?.texture?.src}; actor linked=${updatedToken.actorLink}.`);
 				}
 			}
 		} catch (error) {

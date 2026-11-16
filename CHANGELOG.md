@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.152] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Restrict disguise candidates to the placed actor's game system, preventing PF2e and SF2e art from mixing.
+
 ## [2.5.151] - 2026-11-16
 
 ### Fixed
