@@ -84,6 +84,7 @@ async function loadDragonDisguises() {
 					'prototypeToken.texture.scaleX',
 					'prototypeToken.texture.scaleY',
 					'prototypeToken.ring.subject.texture',
+					'prototypeToken.ring.subject.scale',
 				],
 			});
 			for (const entry of index) {
@@ -94,6 +95,7 @@ async function loadDragonDisguises() {
 				let scaleX = entry.prototypeToken?.texture?.scaleX ?? entry['prototypeToken.texture.scaleX'];
 				let scaleY = entry.prototypeToken?.texture?.scaleY ?? entry['prototypeToken.texture.scaleY'];
 				let ringTexture = entry.prototypeToken?.ring?.subject?.texture ?? entry['prototypeToken.ring.subject.texture'];
+				let ringScale = entry.prototypeToken?.ring?.subject?.scale ?? entry['prototypeToken.ring.subject.scale'];
 				let actorImg = entry.img;
 				if (!hasUsableTokenArt(img) || scaleX === undefined || scaleY === undefined) {
 					const actorDocument = await pack.getDocument(entry._id);
@@ -101,6 +103,7 @@ async function loadDragonDisguises() {
 					scaleX = actorDocument?.prototypeToken?.texture?.scaleX ?? scaleX;
 					scaleY = actorDocument?.prototypeToken?.texture?.scaleY ?? scaleY;
 					ringTexture = actorDocument?.prototypeToken?.ring?.subject?.texture ?? ringTexture;
+					ringScale = actorDocument?.prototypeToken?.ring?.subject?.scale ?? ringScale;
 					actorImg = actorDocument?.img ?? actorImg;
 				}
 				if (!entry.name || !hasUsableTokenArt(img) || seenImages.has(img)) continue;
@@ -109,6 +112,7 @@ async function loadDragonDisguises() {
 					name: entry.name,
 					img,
 					ringTexture: hasUsableTokenArt(ringTexture) ? ringTexture : null,
+					ringScale: Number.isFinite(Number(ringScale)) ? Number(ringScale) : 1,
 					scaleX: Number.isFinite(Number(scaleX)) ? Number(scaleX) : 1,
 					scaleY: Number.isFinite(Number(scaleY)) ? Number(scaleY) : 1,
 					actorImg: hasUsableTokenArt(actorImg) ? actorImg : img,
@@ -196,6 +200,7 @@ Hooks.on('createToken', (token, _options, userId) => {
 					name: disguise.name,
 					texture: { src: disguise.img, scaleX: disguise.scaleX, scaleY: disguise.scaleY },
 					'ring.subject.texture': disguise.ringTexture,
+					'ring.subject.scale': disguise.ringScale,
 					[`flags.${game.system.id}.autoscale`]: false,
 					[`flags.${MODULE_ID}.${disguiseFlag}`]: disguise.uuid,
 					[`flags.${MODULE_ID}.${imageFlag}`]: disguise.img,

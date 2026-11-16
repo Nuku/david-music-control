@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.158] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Copy the replacement token's ring subject scale correction.
+
 ## [2.5.157] - 2026-11-16
 
 ### Fixed
