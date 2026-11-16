@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.147] - 2026-11-16
+
+### Changed
+- **Dragon color randomization**: Avoid repeating a disguise image for the same source dragon until the eligible art pool has been cycled.
+
 ## [2.5.146] - 2026-11-16
 
 ### Changed

@@ -2,6 +2,7 @@ import { MODULE_ID, getSetting } from './settings.js';
 
 const disguiseFlag = 'dragonColorRandomization';
 const pending = new Set();
+const usedDisguisesByActor = new Map();
 let dragonDisguisesPromise;
 
 function hasUsableTokenArt(src) {
@@ -20,6 +21,7 @@ function dragonType(actor) {
 
 async function loadDragonDisguises() {
 	const options = [];
+	const seenImages = new Set();
 	for (const pack of game.packs ?? []) {
 		if (!pack.documentName || !['Actor', 'NPC'].includes(pack.documentName)) continue;
 		try {
@@ -45,7 +47,8 @@ async function loadDragonDisguises() {
 					img = actorDocument?.prototypeToken?.texture?.src;
 					actorImg = actorDocument?.img ?? actorImg;
 				}
-				if (!entry.name || !hasUsableTokenArt(img)) continue;
+				if (!entry.name || !hasUsableTokenArt(img) || seenImages.has(img)) continue;
+				seenImages.add(img);
 				options.push({
 					name: entry.name,
 					img,
@@ -67,6 +70,23 @@ function getDragonDisguises(actor) {
 		throw error;
 	});
 	return dragonDisguisesPromise.then((options) => options.filter((option) => option.id !== actor.id && option.name !== actor.name));
+}
+
+function chooseDisguise(actor, choices) {
+	const key = actor._stats?.compendiumSource ?? actor.uuid ?? actor.name;
+	let used = usedDisguisesByActor.get(key);
+	if (!used) {
+		used = new Set();
+		usedDisguisesByActor.set(key, used);
+	}
+	let available = choices.filter((choice) => !used.has(choice.img));
+	if (!available.length) {
+		used.clear();
+		available = choices;
+	}
+	const choice = available[Math.floor(Math.random() * available.length)];
+	used.add(choice.img);
+	return choice;
 }
 
 async function revealPendingToken(token) {
@@ -98,10 +118,13 @@ Hooks.on('createToken', (token) => {
 	void (async () => {
 		try {
 			const choices = await getDragonDisguises(token.actor);
+			if (choices.length < 2) {
+				console.warn(`PF2 Director | Found ${choices.length} distinct dragon disguise image(s) for ${token.actor.name}.`);
+			}
 			if (!choices.length) {
 				console.warn('PF2 Director | No dragon actors with usable token art were found in installed compendiums.');
 			} else if (token.parent?.tokens?.get(token.id)) {
-				const disguise = choices[Math.floor(Math.random() * choices.length)];
+				const disguise = chooseDisguise(token.actor, choices);
 				await token.actor.update({ img: disguise.actorImg });
 				await token.update({
 					name: disguise.name,
