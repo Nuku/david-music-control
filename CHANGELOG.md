@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.145] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Resolve candidate token art from the actor document when compendium art mappings are not reflected in the index.
+
 ## [2.5.144] - 2026-11-16
 
 ### Changed

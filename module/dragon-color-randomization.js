@@ -38,7 +38,11 @@ async function getDragonDisguises(actor) {
 				const traits = entry.system?.traits?.value ?? entry['system.traits.value'] ?? [];
 				const type = entry.system?.details?.creatureType?.value ?? entry.system?.details?.creatureType ?? entry.system?.details?.type?.value ?? entry.system?.details?.type ?? '';
 				if (!/dragon/i.test(`${entry.name ?? ''} ${type} ${traits.join(' ')}`)) continue;
-				const img = entry.prototypeToken?.texture?.src ?? entry['prototypeToken.texture.src'];
+				let img = entry.prototypeToken?.texture?.src ?? entry['prototypeToken.texture.src'];
+				if (!hasUsableTokenArt(img)) {
+					const actorDocument = await pack.getDocument(entry._id);
+					img = actorDocument?.prototypeToken?.texture?.src;
+				}
 				if (!entry.name || !hasUsableTokenArt(img)) continue;
 				options.push({ name: entry.name, img, uuid: `Compendium.${pack.collection}.${entry._id}` });
 			}
