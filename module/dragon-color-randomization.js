@@ -3,6 +3,11 @@ import { MODULE_ID, getSetting } from './settings.js';
 const disguiseFlag = 'dragonColorRandomization';
 const pending = new Set();
 
+function hasUsableTokenArt(src) {
+	if (typeof src !== 'string' || !src.trim()) return false;
+	return !/(?:^|\/)(?:default-icons|icons\/svg)\//i.test(src.trim());
+}
+
 function dragonType(actor) {
 	const type = actor?.system?.details?.creatureType?.value
 		?? actor?.system?.details?.creatureType
@@ -33,8 +38,8 @@ async function getDragonDisguises(actor) {
 				const traits = entry.system?.traits?.value ?? entry['system.traits.value'] ?? [];
 				const type = entry.system?.details?.creatureType?.value ?? entry.system?.details?.creatureType ?? entry.system?.details?.type?.value ?? entry.system?.details?.type ?? '';
 				if (!/dragon/i.test(`${entry.name ?? ''} ${type} ${traits.join(' ')}`)) continue;
-				const img = entry.prototypeToken?.texture?.src ?? entry['prototypeToken.texture.src'] ?? entry.img;
-				if (!entry.name || !img) continue;
+				const img = entry.prototypeToken?.texture?.src ?? entry['prototypeToken.texture.src'];
+				if (!entry.name || !hasUsableTokenArt(img)) continue;
 				options.push({ name: entry.name, img, uuid: `Compendium.${pack.collection}.${entry._id}` });
 			}
 		} catch (error) {

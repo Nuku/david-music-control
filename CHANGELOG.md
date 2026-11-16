@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.144] - 2026-11-16
+
+### Changed
+- **Dragon color randomization**: Only select replacement dragons with non-default token artwork.
+
 ## [2.5.143] - 2026-11-16
 
 ### Fixed
