@@ -17,13 +17,25 @@ async function getDragonDisguises(actor) {
 	for (const pack of game.packs ?? []) {
 		if (!pack.documentName || !['Actor', 'NPC'].includes(pack.documentName)) continue;
 		try {
-			const index = await pack.getIndex({ fields: ['name', 'img', 'type', 'system.details.creatureType', 'system.details.type', 'system.traits'] });
+			const index = await pack.getIndex({
+				fields: [
+					'name',
+					'img',
+					'type',
+					'system.details.creatureType.value',
+					'system.details.type.value',
+					'system.traits.value',
+					'prototypeToken.texture.src',
+				],
+			});
 			for (const entry of index) {
 				if (entry._id === actor.id || entry.name === actor.name) continue;
-				const traits = entry.system?.traits?.value ?? [];
+				const traits = entry.system?.traits?.value ?? entry['system.traits.value'] ?? [];
 				const type = entry.system?.details?.creatureType?.value ?? entry.system?.details?.creatureType ?? entry.system?.details?.type?.value ?? entry.system?.details?.type ?? '';
 				if (!/dragon/i.test(`${entry.name ?? ''} ${type} ${traits.join(' ')}`)) continue;
-				options.push({ name: entry.name, img: entry.img, uuid: `Compendium.${pack.collection}.${entry._id}` });
+				const img = entry.prototypeToken?.texture?.src ?? entry['prototypeToken.texture.src'] ?? entry.img;
+				if (!entry.name || !img) continue;
+				options.push({ name: entry.name, img, uuid: `Compendium.${pack.collection}.${entry._id}` });
 			}
 		} catch (error) {
 			console.debug(`PF2 Director | Could not inspect dragon compendium ${pack.collection}`, error);
@@ -40,7 +52,11 @@ Hooks.on('createToken', (token) => {
 	void (async () => {
 		try {
 			const choices = await getDragonDisguises(token.actor);
-			if (!choices.length || !token.parent || token.parent.tokens.get(token.id) !== token) return;
+			if (!choices.length) {
+				console.warn('PF2 Director | No dragon actors with usable token art were found in installed compendiums.');
+				return;
+			}
+			if (!token.parent?.tokens?.get(token.id)) return;
 			const disguise = choices[Math.floor(Math.random() * choices.length)];
 			await token.update({ name: disguise.name, texture: { src: disguise.img }, [`flags.${MODULE_ID}.${disguiseFlag}`]: disguise.uuid });
 		} catch (error) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.143] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Read dragon traits from the correct compendium index field, avoid brittle token document identity checks, and prefer candidate token art.
+
 ## [2.5.142] - 2026-11-16
 
 ### Changed
