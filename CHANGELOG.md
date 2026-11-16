@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.157] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Prevent system token image rules from overriding disguise art on placed tokens.
+
 ## [2.5.156] - 2026-11-16
 
 ### Fixed
