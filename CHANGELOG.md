@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.142] - 2026-11-16
+
+### Changed
+- **Settings**: Move Dragon Color Randomization into the PF2e / SF2e Tools section.
+
 ## [2.5.141] - 2026-11-16
 
 ### Fixed

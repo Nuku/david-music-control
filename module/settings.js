@@ -636,15 +636,15 @@ Hooks.on('renderSettingsConfig', (_app, html) => {
 			title: 'Music',
 			description: 'Combat playlists, scene matching, and victory audio behavior.',
 			keys: isPf2Family
-				? ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'dragonColorRandomization', 'enableCreatureAmbience', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu']
-				: ['combatMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'dragonColorRandomization', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
+				? ['combatMusicMenu', 'traitMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'enableCreatureAmbience', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu']
+				: ['combatMusicMenu', 'victoryMusicMenu', 'pauseAmbience', 'playSceneMusic', 'pauseTrack', 'fireworksOnVictory', 'victoryFireworksImageMenu'],
 			gmOnly: true,
 			extraRow: game.user.isGM ? buildTransferRow() : null,
 		},
 		...(isPf2Family ? [{
 			title: 'PF2e / SF2e Tools',
-			description: 'Optional PF2e and SF2e utilities for party management and chat workflows.',
-			keys: ['enableCultSystem', 'enableFullRest', 'enablePartyStashMerchant', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
+			description: 'Optional PF2e and SF2e utilities for party management, chat workflows, and creature presentation.',
+			keys: ['dragonColorRandomization', 'enableCultSystem', 'enableFullRest', 'enablePartyStashMerchant', 'enableAtWillRecharge', 'enableUntypedRollRetyping', 'enableHalfDamageButton', 'autoApplyDamage', 'autoRollToolbeltSaves', 'creatureAmbienceDebug', 'creatureAmbienceForceLocalDebug'],
 			gmOnlyKeys: ['autoApplyDamage', 'autoRollToolbeltSaves'],
 		}] : []),
 		{
