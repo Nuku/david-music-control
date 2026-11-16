@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.148] - 2026-11-16
+
+### Fixed
+- **Dragon color randomization**: Apply replacement art through the token texture source field and exclude the token's current image from the candidate pool.
+
 ## [2.5.147] - 2026-11-16
 
 ### Changed

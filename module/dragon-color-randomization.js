@@ -117,7 +117,8 @@ Hooks.on('createToken', (token) => {
 	pending.add(uuid);
 	void (async () => {
 		try {
-			const choices = await getDragonDisguises(token.actor);
+			const currentImage = token.texture?.src;
+			const choices = (await getDragonDisguises(token.actor)).filter((choice) => choice.img !== currentImage);
 			if (choices.length < 2) {
 				console.warn(`PF2 Director | Found ${choices.length} distinct dragon disguise image(s) for ${token.actor.name}.`);
 			}
@@ -128,9 +129,13 @@ Hooks.on('createToken', (token) => {
 				await token.actor.update({ img: disguise.actorImg });
 				await token.update({
 					name: disguise.name,
-					texture: { src: disguise.img },
+					'texture.src': disguise.img,
 					[`flags.${MODULE_ID}.${disguiseFlag}`]: disguise.uuid,
+					[`flags.${MODULE_ID}.dragonColorRandomizationImage`]: disguise.img,
 				});
+				if (token.texture?.src !== disguise.img) {
+					console.error(`PF2 Director | Token art did not update to ${disguise.img}.`);
+				}
 			}
 		} catch (error) {
 			console.error('PF2 Director | Dragon color randomization failed:', error);
