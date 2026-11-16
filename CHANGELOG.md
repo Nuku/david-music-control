@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.156] - 2026-11-16
+
+### Fixed
+- **Creature ambience**: Restore random attack and hurt murmurs with the PF2e Creature Sounds v2 release.
+
 ## [2.5.155] - 2026-11-16
 
 ### Fixed

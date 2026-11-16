@@ -30,7 +30,6 @@ const NORMAL_RETRY_MIN_SECONDS = 31;
 const NORMAL_RETRY_MAX_SECONDS = 60;
 const KEYWORD_NAME_SCORE = 5;
 const KEYWORD_BLURB_SCORE = 4;
-const TRAIT_SCORE = 1;
 const OPEN_DOOR_STATE = 1;
 
 let ambienceTimerId = null;
@@ -235,17 +234,21 @@ async function loadBuiltinCreatureSoundDatabase() {
 		// v2 of PF2e Creature Sounds moved the database to a source JSON file and
 		// bundles it into the module. Prefer the JSON path so this integration does
 		// not depend on the upstream bundle's variable names or function order.
-		const databaseResponse = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/databases/creature_sounds_db.json`);
-		if (databaseResponse.ok) parsed = await databaseResponse.json();
+		try {
+			const databaseResponse = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/databases/creature_sounds_db.json`);
+			if (databaseResponse.ok) parsed = await databaseResponse.json();
+		} catch (error) {
+			logDebug('Could not read the standalone Creature Sounds database.', error);
+		}
 
-		if (!parsed) {
+		if (!isCreatureSoundDatabase(parsed)) {
 			const response = await fetch(`modules/${CREATURE_SOUNDS_MODULE_ID}/dist/pf2e-creature-sounds.js`);
 			if (!response.ok) throw new Error(`Unable to load ${CREATURE_SOUNDS_MODULE_ID} database or bundle.`);
 			const source = await response.text();
 			parsed = extractCreatureSoundDatabase(source);
 		}
 
-		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+		if (!isCreatureSoundDatabase(parsed)) {
 			throw new Error(`Unable to parse ${CREATURE_SOUNDS_MODULE_ID} database.`);
 		}
 		return Object.fromEntries(
@@ -257,50 +260,62 @@ async function loadBuiltinCreatureSoundDatabase() {
 				},
 			])
 		);
-	})();
+	})().catch((error) => {
+		console.warn('[PF2 Director] Could not load built-in Creature Sounds sound sets.', error);
+		return {};
+	});
 	return builtinSoundDatabasePromise;
 }
 
 function extractCreatureSoundDatabase(source) {
-	// Compatibility with pre-v2 bundles.
-	const legacyObjectStart = source.indexOf('const creature_sounds_db =');
-	if (legacyObjectStart !== -1) {
-		const objectStart = source.indexOf('{', legacyObjectStart);
-		const objectText = objectStart === -1 ? null : extractBalancedObject(source, objectStart);
-		if (objectText) {
-			try {
-				const candidate = JSON.parse(objectText);
-				if (isCreatureSoundDatabase(candidate)) return candidate;
-			} catch (_error) {
-				// Fall through to the bundled object search below.
-			}
-		}
-	}
-
-	// Vite's current JSON bundling emits the database as a JSON-compatible object
-	// assigned to a generated const. Find that object without relying on its name.
-	const assignment = /const\s+[A-Za-z_$][\w$]*\s*=\s*(\{)/g;
+	// Vite 5 emits individual sound sets and a default object that references
+	// them. Keys that cannot be identifiers can also have inline sound sets.
+	const soundSets = new Map();
+	const assignment = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*\{/g;
 	let match;
 	while ((match = assignment.exec(source))) {
-		const objectStart = match.index + match[0].lastIndexOf('{');
-		const objectText = extractBalancedObject(source, objectStart);
+		const objectText = extractBalancedObject(source, assignment.lastIndex - 1);
 		if (!objectText) continue;
 		try {
-			const candidate = JSON.parse(objectText);
-			const values = Object.values(candidate);
-			if (values.some((value) => value?.display_name && ['attack_sounds', 'hurt_sounds', 'death_sounds'].some((field) => Array.isArray(value[field])))) {
-				return candidate;
+			const candidate = parseBundledSoundObject(objectText);
+			if (isCreatureSoundSet(candidate)) {
+				soundSets.set(match[1], candidate);
+				continue;
 			}
+			const database = Object.fromEntries(Object.entries(candidate).map(([key, value]) => [
+				key,
+				typeof value === 'string' ? soundSets.get(value) : value,
+			]));
+			if (isCreatureSoundDatabase(database)) return database;
 		} catch (_error) {
-			// This const was not the bundled JSON object.
+			// Ignore declarations outside the JSON-derived data.
 		}
 	}
 	return null;
 }
 
+function parseBundledSoundObject(source) {
+	// Preserve quoted strings while converting bare keys, shorthand
+	// properties, references, and trailing commas to JSON.
+	const tokens = /"(?:\\.|[^"\\])*"|([,{]\s*)([A-Za-z_$][\w$]*)(?=\s*[,}])|(:\s*)([A-Za-z_$][\w$]*)(?=\s*[,}])|([A-Za-z_$][\w$]*)(?=\s*:)|,(?=\s*[}\]])/g;
+	const json = source.replace(tokens, (token, shorthandPrefix, shorthand, valuePrefix, reference, key) => {
+		if (shorthand) return shorthandPrefix + JSON.stringify(shorthand) + ':' + JSON.stringify(shorthand);
+		if (reference && !['true', 'false', 'null'].includes(reference)) return valuePrefix + JSON.stringify(reference);
+		if (key) return JSON.stringify(key);
+		return token === ',' ? '' : token;
+	});
+	return JSON.parse(json);
+}
+
+function isCreatureSoundSet(value) {
+	return typeof value?.display_name === 'string'
+		&& Array.isArray(value.attack_sounds) && Array.isArray(value.hurt_sounds);
+}
+
 function isCreatureSoundDatabase(candidate) {
-	return candidate && typeof candidate === 'object' && !Array.isArray(candidate)
-		&& Object.values(candidate).some((value) => value?.display_name && ['attack_sounds', 'hurt_sounds', 'death_sounds'].some((field) => Array.isArray(value[field])));
+	if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return false;
+	const values = Object.values(candidate);
+	return values.length > 0 && values.every(isCreatureSoundSet);
 }
 
 function extractBalancedObject(source, start) {
@@ -389,13 +404,15 @@ function scoreSoundSets(soundDatabase, actor) {
 			if (regex.test(getActorName(actor))) score += KEYWORD_NAME_SCORE;
 			if (blurb && regex.test(blurb)) score += KEYWORD_BLURB_SCORE;
 		}
+		let traitWeight = 0;
 		for (const trait of soundSet.traits ?? []) {
 			if (Array.isArray(trait)) {
-				if (trait.every((requiredTrait) => traits.includes(requiredTrait))) score += TRAIT_SCORE + (trait.length - 1) * 0.1;
+				if (trait.every((requiredTrait) => traits.includes(requiredTrait))) traitWeight += 1 + (trait.length - 1) * 0.1;
 			} else if (traits.includes(trait)) {
-				score += trait === 'male' || trait === 'female' ? 0.5 : TRAIT_SCORE;
+				traitWeight += trait === 'male' || trait === 'female' ? 0.5 : 1;
 			}
 		}
+		if (traitWeight > 0) score += Math.min(1.9, 0.9 + 0.1 * traitWeight);
 		if (score > 0 && soundSet.size !== -1 && creatureSize !== -1) {
 			score += (2 - Math.abs(creatureSize - soundSet.size)) / 10;
 		}
@@ -422,14 +439,15 @@ function getMatchingSoundSetByScore(soundDatabase, actor) {
 }
 
 async function findCreatureSoundSet(actor) {
-	const builtinSoundDatabase = await loadBuiltinCreatureSoundDatabase();
-	const customSoundDatabase = getCustomSoundDatabase();
 	const chosenSoundSet = actor?.flags?.[CREATURE_SOUNDS_MODULE_ID]?.soundset;
+	if (chosenSoundSet === CREATURE_SOUND_NONE) return null;
+	const builtinSoundDatabase = await loadBuiltinCreatureSoundDatabase();
 	if (chosenSoundSet) {
-		if (chosenSoundSet === CREATURE_SOUND_NONE) return null;
-		if (builtinSoundDatabase[chosenSoundSet]) return builtinSoundDatabase[chosenSoundSet];
-		if (customSoundDatabase[chosenSoundSet]) return customSoundDatabase[chosenSoundSet];
+		if (Object.hasOwn(builtinSoundDatabase, chosenSoundSet)) return builtinSoundDatabase[chosenSoundSet];
+		const customSoundDatabase = getCustomSoundDatabase();
+		if (Object.hasOwn(customSoundDatabase, chosenSoundSet)) return customSoundDatabase[chosenSoundSet];
 	}
+	if (actor.type === 'character' && /\b(they|them)\b/i.test(actor.system?.details?.gender?.value ?? '')) return null;
 	return getMatchingSoundSetByName(builtinSoundDatabase, getActorName(actor)) ?? getMatchingSoundSetByScore(builtinSoundDatabase, actor);
 }
 
@@ -729,8 +747,10 @@ async function runCreatureAmbienceCycle() {
 		scheduleNextCycle('short');
 		return;
 	}
+	const cycleToken = ambienceCycleToken;
 	const soundType = chooseSoundType();
 	const src = await resolveCreatureSound(sourceToken.actor, soundType);
+	if (cycleToken !== ambienceCycleToken) return;
 	if (!src) {
 		logDebug(`Source ${sourceToken.name} had no ${soundType} sound available.`);
 		scheduleNextCycle('short');
