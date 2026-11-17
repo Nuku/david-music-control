@@ -247,6 +247,7 @@ async function loadBuiltinCreatureSoundDatabase() {
 		if (!isCreatureSoundDatabase(parsed)) {
 			throw new Error(`Unable to parse ${CREATURE_SOUNDS_MODULE_ID} database.`);
 		}
+		logDebug(`Loaded ${Object.keys(parsed).length} built-in Creature Sounds sound sets.`);
 		return Object.fromEntries(
 			Object.entries(parsed).map(([key, value]) => [
 				key,
@@ -636,7 +637,7 @@ function computePlaybackVolume(volume) {
 	return Math.pow(clamped, PLAYBACK_VOLUME_EXPONENT);
 }
 
-function triggerLocalSoundPlayback({ src, volume }) {
+async function triggerLocalSoundPlayback({ src, volume }) {
 	try {
 		if (isEndCreditsActive()) {
 			logDebug(`Ignoring creature ambience playback for ${src} because end credits are active.`);
@@ -650,7 +651,7 @@ function triggerLocalSoundPlayback({ src, volume }) {
 		logDebug(
 			`Local playback requested for ${src} at computed volume ${Math.max(0, Math.min(1, volume)).toFixed(4)} and playback volume ${playbackVolume.toFixed(4)}.`
 		);
-		foundry.audio.AudioHelper.play(
+		await foundry.audio.AudioHelper.play(
 			{
 				src,
 				volume: playbackVolume,
@@ -660,7 +661,7 @@ function triggerLocalSoundPlayback({ src, volume }) {
 			false
 		);
 	} catch (error) {
-		console.warn('[PF2 Director] Failed to play creature ambience sound:', error);
+		console.warn(`[PF2 Director] Failed to play creature ambience sound ${src}:`, error);
 	}
 }
 
@@ -679,7 +680,7 @@ function emitSoundToUser(userId, src, volume, sourceToken, listenerToken, pathRe
 		logDebug(
 			`Direct local playback shortcut for source token ${payload.sourceTokenId} to listener ${payload.listenerTokenId} at volume ${Number(payload.volume ?? 0).toFixed(4)}.`
 		);
-		triggerLocalSoundPlayback(payload);
+		void triggerLocalSoundPlayback(payload);
 		return;
 	}
 	game.socket?.emit(SOCKET_EVENT, payload);
@@ -859,7 +860,7 @@ Hooks.once('ready', () => {
 		logDebug(
 			`Socket playback received for source token ${data.sourceTokenId ?? '?'} to listener ${data.listenerTokenId ?? '?'} at volume ${Number(data.volume ?? 0).toFixed(4)}.`
 		);
-		triggerLocalSoundPlayback(data);
+		void triggerLocalSoundPlayback(data);
 	});
 	restartCreatureAmbience();
 });

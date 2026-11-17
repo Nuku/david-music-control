@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.160] - 2026-11-16
+
+### Changed
+- **Creature ambience**: Log the number of loaded sound sets in debug mode and report audio playback failures with the affected sound path.
+
 ## [2.5.159] - 2026-11-16
 
 ### Fixed
