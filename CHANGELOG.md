@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.161] - 2026-11-16
+
+### Fixed
+- **Creature ambience**: Walls on other floors no longer block sound paths between tokens on the same scene level.
+
 ## [2.5.160] - 2026-11-16
 
 ### Changed

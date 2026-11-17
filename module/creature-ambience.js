@@ -497,8 +497,13 @@ function nodeKey(node) {
 	return `${node.col},${node.row}`;
 }
 
-function getSoundBlockingWalls() {
-	return canvas.scene?.walls?.contents?.filter((wall) => Number(wall.sound ?? wall.document?.sound ?? 0) !== 0) ?? [];
+function getSoundBlockingWalls(levelId) {
+	return canvas.scene?.walls?.contents?.filter((wall) => {
+		if (Number(wall.sound ?? wall.document?.sound ?? 0) === 0) return false;
+		// Foundry v14 stores walls for every scene level in the same collection.
+		const levels = wall._source?.levels;
+		return !levelId || !levels?.length || levels.includes(levelId);
+	}) ?? [];
 }
 
 function orientation(ax, ay, bx, by, cx, cy) {
@@ -543,13 +548,13 @@ function evaluateStepWalls(fromPoint, toPoint, walls) {
 	return { blocked: false, closedDoors };
 }
 
-function findPathBetweenPoints(startPoint, endPoint) {
+function findPathBetweenPoints(startPoint, endPoint, levelId) {
 	const metrics = getSceneGridMetrics();
 	if (!metrics) return null;
 	if (canvas.grid?.isGridless) return null;
 	const start = snapPointToGridNode(startPoint, metrics);
 	const goal = snapPointToGridNode(endPoint, metrics);
-	const walls = getSoundBlockingWalls();
+	const walls = getSoundBlockingWalls(levelId);
 	const open = [start];
 	const openSet = new Set([nodeKey(start)]);
 	const cameFrom = new Map();
@@ -623,7 +628,10 @@ function computeAudibility(sourceToken, listenerToken) {
 	const sourceCenter = getTokenCenter(sourceToken.document);
 	const listenerCenter = getTokenCenter(listenerToken.document);
 	if (!sourceCenter || !listenerCenter) return null;
-	const path = findPathBetweenPoints(sourceCenter, listenerCenter);
+	const sourceLevel = sourceToken.document._source?.level;
+	const listenerLevel = listenerToken.document._source?.level;
+	const sharedLevel = sourceLevel === listenerLevel ? sourceLevel : undefined;
+	const path = findPathBetweenPoints(sourceCenter, listenerCenter, sharedLevel);
 	if (!path) return null;
 	return path;
 }
