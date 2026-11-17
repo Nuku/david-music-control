@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.162] - 2026-11-16
+
+### Changed
+- Removed unused settings controls.
+
 ## [2.5.161] - 2026-11-16
 
 ### Fixed
@@ -204,7 +209,7 @@
 ## [2.5.113] - 2026-10-17
 
 ### Added
-- **System compatibility**: Added DnD5E support for system-agnostic music, vision, dramatic health display, end credits, and diagnostics features. System-specific settings are only shown for PF2e and SF2e.
+- **System compatibility**: Added DnD5E support for system-agnostic music, vision, dramatic health display, and end credits. System-specific settings are only shown for PF2e and SF2e.
 
 ## [2.5.112] - 2026-10-14
 
@@ -343,55 +348,10 @@
 ### Added
 - **Creature ambience**: Added a per-scene setting to disable passive creature sounds, enabled by default.
 
-## [2.4.183] - 2026-08-08
-
-### Added
-- **Diagnostics**: Added interaction tracing, token-hover probes, and per-callback module ownership near frame stalls.
-
-## [2.4.182] - 2026-08-08
-
-### Added
-- **Diagnostics**: Performance reports now include a Copy Report button and selectable plain-text output.
-
-## [2.4.181] - 2026-08-08
-
-### Added
-- **Diagnostics**: Slow runtime reports now include invocation caller sources and the active hook/module context.
-
-## [2.4.180] - 2026-08-08
-
-### Added
-- **Diagnostics**: Added scene complexity metrics, a recent hook-event timeline, and temporary probes for actor preparation, token refresh, and vision initialization.
-
-## [2.4.179] - 2026-08-08
-
-### Added
-- **Diagnostics**: Added temporary runtime probes for PIXI ticker, canvas rendering, perception updates, and Foundry application rendering.
-
-## [2.4.178] - 2026-08-08
-
-### Added
-- **Diagnostics**: Timer and animation reports now include registration source locations, call counts, and worst single-callback duration.
-
-## [2.4.177] - 2026-08-08
-
-### Added
-- **Diagnostics**: Performance diagnostics now tracks slow timers, intervals, and animation callbacks by their registering module when possible.
-
-## [2.4.176] - 2026-08-08
-
-### Added
-- **Diagnostics**: Performance diagnostics now tracks the module or system that registered slow Foundry hook callbacks when browser attribution is unavailable.
-
 ## [2.4.166] - 2026-08-06
 
 ### Added
 - **PF2e tools**: Added Pacifying property-rune automation with an attacker reaction prompt, the DC 20 Will save, and the Pacified effect's –2 penalty to attacks without the nonlethal trait.
-
-## [2.4.163] - 2026-08-06
-
-### Added
-- **Diagnostics**: Added a settings button that captures recent and live frame stalls, long main-thread tasks, and slow Foundry hooks during a 10-second lag investigation.
 
 ## [2.4.161] - 2026-08-05
 

@@ -1,4 +1,3 @@
-import './module/performance-diagnostics.js';
 import './module/compendium-requirements-filter.js';
 import './module/settings.js';
 import './module/enhanced-vision.js';

@@ -37,7 +37,7 @@ For a first session:
 - [Macros and integration hooks](#macros-and-integration-hooks)
 - [Troubleshooting](#troubleshooting)
 
-Combat and scene music, victory playback, enhanced vision, elevation-based level changes, dramatic health displays, end credits, diagnostics, and the **Make Current Turn** control are available across all three supported systems. The party, chat, creature ambience, fire-light, detected-token image, and door tools below are intended for PF2e/SF2e. The compendium prerequisite filter is PF2e-only.
+Combat and scene music, victory playback, enhanced vision, elevation-based level changes, dramatic health displays, end credits, and the **Make Current Turn** control are available across all three supported systems. The party, chat, creature ambience, fire-light, detected-token image, and door tools below are intended for PF2e/SF2e. The compendium prerequisite filter is PF2e-only.
 
 ## Music and creature ambience
 
@@ -231,6 +231,5 @@ Without a current combat, the automatic intensity is 60.
 - **No scene music:** check scene, navigation, playlist, and playlist-folder names. The search leaves current playback alone if it finds no match and does not run during active combat.
 - **No creature ambience:** confirm the sound module is active, the scene allows ambience, and a suitable listener token is placed. Use ambience debug logging or the local GM test option to inspect playback decisions.
 - **Slow vision:** disable **Enhanced Vision** to compare, and use **Enhanced Vision Debug** only while investigating.
-- **Other browser lag:** under **Diagnostics**, click **Run 10-Second Diagnostic**, reproduce the lag, then use **Copy Report** to capture the results.
 
 Two smaller controls are also available: GMs can right-click a combatant and choose **Make Current Turn** to change the active turn without changing the round or initiative; Foundry's dice fulfillment choices include **Digital Roll (PCG)** as an optional digital rolling method.
