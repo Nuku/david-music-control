@@ -16,6 +16,7 @@ import './module/chat-roll-type.js';
 import './module/taunt.js';
 import './module/pacifying.js';
 import './module/dice-pcg.js';
+import './module/startplaying-dice.js';
 import './module/villain-points.js';
 import './module/scene-music.js';
 import './module/randomly-locked-doors.js';

@@ -180,6 +180,8 @@ Credits synchronize across connected clients, including players who join while t
 
 ## Optional integrations
 
+**StartPlaying Dice** comes with PF2 Director. In Dicer, open **Browse dice themes → Module dice** and select **StartPlaying**. In Dice So Nice, select **StartPlaying** under **Dice Presets**. The set includes d2, d4, d6, d8, d10, d12, d20, and d100, with the StartPlaying wizard hat on the natural 20.
+
 These modules are optional; enable the ones needed for your chosen features.
 
 | Module | Enables |

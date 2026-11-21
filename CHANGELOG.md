@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.163] - 2026-11-20
+
+### Added
+- **StartPlaying Dice** adds eight blue dice to Dicer and Dice So Nice, with the StartPlaying wizard hat on the natural 20.
+
 ## [2.5.162] - 2026-11-16
 
 ### Changed
