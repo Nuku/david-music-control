@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.164] - 2026-11-24
+
+### Added
+- **Generate Terrain Features** rolls for unmarked hexes and pins Landmarks, Secrets, and Resources with distinct icons and journal entries in a folder named for the scene.
+
 ## [2.5.163] - 2026-11-20
 
 ### Added

@@ -1,8 +1,8 @@
 {
     "id": "pf2-david-music-control",
     "title": "PF2 Director",
-    "description": "Direct combat music, scene presentation, system-specific party tools, persistent fire lighting, and cinematic end credits.",
-    "version": "2.5.163",
+    "description": "Direct combat music, scene presentation, hex-map terrain generation, system-specific party tools, persistent fire lighting, and cinematic end credits.",
+    "version": "2.5.164",
     "authors": [
         {
             "name": "Mad Wizard",

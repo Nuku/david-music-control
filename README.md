@@ -87,6 +87,12 @@ Scene configuration includes an ambience opt-out. Debug logging and a local GM t
 
 ## Scene presentation and vision
 
+### Hex-map terrain features
+
+As GM, open a hex-grid scene and select **Journal Notes → Generate Terrain Features**. The tool rolls 1d20 for each hex whose center lies inside the map, skipping any hex that already contains a Map Note. Rolls of 1–3 place a Landmark (obelisk), 4–6 place a Secret (cave), 7–9 place a Resource (chest), and 10–20 leave the hex unmarked.
+
+Each pin opens an editable, GM-only journal entry in a Journal folder named after the scene. Running the tool again rolls for the hexes that are still unmarked, including previous Standard results.
+
 ### Dramatic health display
 
 HP changes show a brief portrait panel with an animated health bar and separate visual effects for damage and healing. Settings control screen position and the minimum change as a percentage of maximum HP.

@@ -20,6 +20,7 @@ import './module/startplaying-dice.js';
 import './module/villain-points.js';
 import './module/scene-music.js';
 import './module/randomly-locked-doors.js';
+import './module/hex-terrain-features.js';
 import './module/end-credits.js';
 import './module/dramatic-health-display.js';
 import './module/journal-transfer.js';
