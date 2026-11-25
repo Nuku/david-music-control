@@ -21,46 +21,49 @@ test('manifest declares the supported systems', () => {
 	assert.deepEqual(manifest.relationships.systems.map((system) => system.id), ['pf2e', 'sf2e', 'dnd5e']);
 });
 
-test('Skip to Turn jumps in either direction within the round of the viewed encounter', async () => {
-	const user = { isGM: true };
-	const viewed = {
-		started: true,
-		round: 4,
-		turn: 1,
-		turns: [{ id: 'first' }, { id: 'second' }, { id: 'last' }],
-		async update(changes) {
-			assert.deepEqual(Object.keys(changes), ['turn']);
-			Object.assign(this, changes);
-		},
-	};
-	const options = [];
-	load('combatant-turn-context.js', {
-		game: { system: { id: 'pf2e' }, user, combat: { started: true } },
-		Hooks: { on(name, callback) {
-			assert.equal(name, 'getCombatantContextOptions');
-			callback({ viewed }, options);
-		} },
+for (const [generation, hook] of [[13, 'getCombatantContextOptions'], [14, 'getCombatTrackerContextOptions']]) {
+	test(`Foundry ${generation}: Skip to Turn jumps within the round of the viewed encounter`, async () => {
+		const user = { isGM: true };
+		const viewed = {
+			started: true,
+			round: 4,
+			turn: 1,
+			turns: [{ id: 'first' }, { id: 'second' }, { id: 'last' }],
+			async update(changes) {
+				assert.deepEqual(Object.keys(changes), ['turn']);
+				Object.assign(this, changes);
+			},
+		};
+		const options = [];
+		const hooks = new Map();
+		load('combatant-turn-context.js', {
+			game: { release: { generation }, system: { id: 'pf2e' }, user, combat: { started: true } },
+			Hooks: { on: (name, callback) => hooks.set(name, callback) },
+		});
+		hooks.get(hook)({ viewed }, options);
+		const [option] = options;
+		const row = (combatantId) => ({ dataset: { combatantId } });
+		const visible = generation === 14 ? option.visible : option.condition;
+		const click = generation === 14 ? (entry) => option.onClick({}, entry) : option.callback;
+
+		assert.equal(generation === 14 ? option.label : option.name, 'Skip to Turn');
+		assert.equal(visible(row('second')), false);
+		assert.equal(visible(row('missing')), false);
+		assert.equal(visible(row('last')), true);
+		await click(row('last'));
+		assert.equal(viewed.turn, 2);
+		assert.equal(viewed.round, 4);
+
+		assert.equal(visible(row('first')), true);
+		await click(row('first'));
+		assert.equal(viewed.turn, 0);
+		assert.equal(viewed.round, 4);
+		assert.equal(visible(row('first')), false);
+
+		user.isGM = false;
+		assert.equal(visible(row('last')), false);
 	});
-	const [option] = options;
-	const row = (combatantId) => ({ dataset: { combatantId } });
-
-	assert.equal(option.name, 'Skip to Turn');
-	assert.equal(option.condition(row('second')), false);
-	assert.equal(option.condition(row('missing')), false);
-	assert.equal(option.condition(row('last')), true);
-	await option.callback(row('last'));
-	assert.equal(viewed.turn, 2);
-	assert.equal(viewed.round, 4);
-
-	assert.equal(option.condition([row('first')]), true);
-	await option.callback([row('first')]);
-	assert.equal(viewed.turn, 0);
-	assert.equal(viewed.round, 4);
-	assert.equal(option.condition(row('first')), false);
-
-	user.isGM = false;
-	assert.equal(option.condition(row('last')), false);
-});
+}
 
 for (const systemId of ['pf2e', 'sf2e']) {
 	test(`${systemId}: Taunt uses the native effect and retains the attacking creature`, async () => {

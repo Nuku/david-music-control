@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.166] - 2026-11-25
+
+### Fixed
+- **Skip to Turn** now appears in the combatant right-click menu on Foundry V14.
+
 ## [2.5.165] - 2026-11-24
 
 ### Fixed
