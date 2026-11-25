@@ -37,7 +37,7 @@ For a first session:
 - [Macros and integration hooks](#macros-and-integration-hooks)
 - [Troubleshooting](#troubleshooting)
 
-Combat and scene music, victory playback, enhanced vision, elevation-based level changes, dramatic health displays, end credits, and the **Make Current Turn** control are available across all three supported systems. The party, chat, creature ambience, fire-light, detected-token image, and door tools below are intended for PF2e/SF2e. The compendium prerequisite filter is PF2e-only.
+Combat and scene music, victory playback, enhanced vision, elevation-based level changes, dramatic health displays, end credits, and the **Skip to Turn** control are available across all three supported systems. The party, chat, creature ambience, fire-light, detected-token image, and door tools below are intended for PF2e/SF2e. The compendium prerequisite filter is PF2e-only.
 
 ## Music and creature ambience
 
@@ -111,7 +111,7 @@ Enable **Automatically Update Token Level from Elevation** to assign tokens to t
 
 ### Combat tracker and dice controls
 
-During an active combat, GMs can right-click a combatant and choose **Make Current Turn** to change the active turn without changing the round or initiative.
+After combat starts, GMs can right-click another combatant and choose **Skip to Turn** to jump forward or backward in initiative within the same round.
 
 Foundry's dice fulfillment choices also include **Digital Roll (PCG)** as an optional digital rolling method.
 
@@ -240,4 +240,4 @@ Without a current combat, the automatic intensity is 60.
 - **No creature ambience:** confirm the sound module is active, the scene allows ambience, and a suitable listener token is placed. Use ambience debug logging or the local GM test option to inspect playback decisions.
 - **Slow vision:** disable **Enhanced Vision** to compare, and use **Enhanced Vision Debug** only while investigating.
 
-Two smaller controls are also available: GMs can right-click a combatant and choose **Make Current Turn** to change the active turn without changing the round or initiative; Foundry's dice fulfillment choices include **Digital Roll (PCG)** as an optional digital rolling method.
+Foundry's dice fulfillment choices include **Digital Roll (PCG)** as an optional digital rolling method.

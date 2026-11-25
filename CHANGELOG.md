@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.165] - 2026-11-24
+
+### Fixed
+- **Skip to Turn** lets GMs jump forward or backward within the same round of the encounter shown in the combat tracker.
+
 ## [2.5.164] - 2026-11-24
 
 ### Added

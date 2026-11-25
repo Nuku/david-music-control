@@ -1,33 +1,25 @@
-function addMakeCurrentTurnOption(tracker, options) {
-	const getCombatant = (entry) => {
-		const id = entry?.dataset?.combatantId ?? entry?.[0]?.dataset?.combatantId;
-		return (tracker.viewed ?? game.combat)?.combatants?.get(id);
+function addSkipToTurnOption(tracker, options) {
+	const getTargetTurn = (entry, combat) => {
+		if (!game.user?.isGM || !combat?.started) return -1;
+		if (!['pf2e', 'sf2e', 'dnd5e'].includes(game.system?.id)) return -1;
+
+		const id = (entry?.[0] ?? entry)?.dataset?.combatantId;
+		if (!id) return -1;
+
+		const turn = combat.turns.findIndex((combatant) => combatant.id === id);
+		return turn === combat.turn ? -1 : turn;
 	};
 
 	options.unshift({
-		name: 'Make Current Turn',
+		name: 'Skip to Turn',
 		icon: '<i class="fas fa-forward-step"></i>',
-		condition: (entry) => {
-			const combat = game.combat;
-			const combatant = getCombatant(entry);
-			return ['pf2e', 'sf2e', 'dnd5e'].includes(game.system?.id)
-				&& game.user?.isGM
-				&& combat?.started
-				&& combatant?.combat?.id === combat.id
-				&& combatant.id !== combat.combatant?.id;
-		},
+		condition: (entry) => getTargetTurn(entry, tracker.viewed) >= 0,
 		callback: (entry) => {
-			const combat = game.combat;
-			const combatant = getCombatant(entry);
-			if (!combat || combatant?.combat?.id !== combat.id) return;
-
-			const turns = combat.turns;
-			const turn = turns.findIndex((entry) => entry.id === combatant.id);
-			if (turn < 0 || turn === combat.turn) return;
-
-			return combat.update({ turn });
+			const combat = tracker.viewed;
+			const turn = getTargetTurn(entry, combat);
+			if (turn >= 0) return combat.update({ turn });
 		},
 	});
 }
 
-Hooks.on('getCombatantContextOptions', addMakeCurrentTurnOption);
+Hooks.on('getCombatantContextOptions', addSkipToTurnOption);
